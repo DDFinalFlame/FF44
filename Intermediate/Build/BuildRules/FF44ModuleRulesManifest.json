@@ -1,0 +1,8 @@
+{
+	"SourceFiles": [
+		"D:\\Unreal\\FF44\\FF44\\Source\\FF44\\FF44.Build.cs",
+		"D:\\Unreal\\FF44\\FF44\\Source\\FF44.Target.cs",
+		"D:\\Unreal\\FF44\\FF44\\Source\\FF44Editor.Target.cs"
+	],
+	"EngineVersion": "5.6.0"
+}
