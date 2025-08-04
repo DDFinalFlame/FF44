@@ -361,3 +361,63 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignore Unreal build folders
+Binaries/
+Content/Assets/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+
+# Ignore user-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignore Visual Studio folders
+.vs/
+
+# Ignore backup and autosave files
+Backup/
+*.tmp
+*.bak
+*.log
+
+# Ignore compiled binaries
+*.dll
+*.exe
+*.pdb
+*.lib
+*.app
+*.dSYM/
+*.ipa
+
+# Ignore macOS system files (if applicable)
+.DS_Store
+
+# Ignore Windows thumbnails and system files
+Thumbs.db
+desktop.ini
+
+# Ignore Unreal VS temporary files
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Ignore crash reports and upgrade logs
+*.crash
+*.log
+*.mdmp
+UpgradeLog.htm
+
+# Ignore project-specific temporary files
+*.xcodeproj/*
+*.xcworkspace/*
+.vscode/
+
+# Optional: Ignore local config (but keep Default configs)
+Config/DefaultEditor.ini
+Config/DefaultEditorPerProjectUserSettings.ini
+Config/EditorPerProjectUserSettings.ini
