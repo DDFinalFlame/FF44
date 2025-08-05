@@ -17,8 +17,11 @@ public class FF44 : ModuleRules
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
-			"UMG"
-		});
+			"UMG",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
