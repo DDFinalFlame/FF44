@@ -31,6 +31,10 @@ public:
 	FGameplayAttributeData AttackPower;
 	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, AttackPower)
 
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MoveSpeed, Category = "Attributes")
+	FGameplayAttributeData MoveSpeed;
+	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, MoveSpeed)
+
 	// OnRep ÇÔ¼ö
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -39,4 +43,7 @@ public:
 
 	UFUNCTION()
 	void OnRep_AttackPower(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	void OnRep_MoveSpeed(const FGameplayAttributeData& OldValue);
 };

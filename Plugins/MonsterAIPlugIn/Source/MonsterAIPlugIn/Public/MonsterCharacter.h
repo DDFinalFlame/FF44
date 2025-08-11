@@ -2,10 +2,13 @@
 
 #pragma once
 
+#include "MonsterStatRow.h"          
+#include "MonsterDefinition.h"   
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "MonsterCharacter.generated.h"
+    
 
 class UAbilitySystemComponent;
 class UMonsterAttributeSet;
@@ -54,8 +57,18 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditAnywhere, Category = "Monster|Data")
+	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Monster|Data")
+	UDataTable* MonsterStatTable = nullptr;   // DT_MonsterStats 지정
+
+	// SetByCaller 값 주입 헬퍼
+	void ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
+
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	EMonsterState CurrentState;
+	EMonsterState CurrentState = EMonsterState::Idle;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;

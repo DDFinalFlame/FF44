@@ -16,6 +16,11 @@ void UMonsterAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldVa
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UMonsterAttributeSet, AttackPower, OldValue);
 }
 
+void UMonsterAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMonsterAttributeSet, MoveSpeed, OldValue);
+}
+
 void UMonsterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
