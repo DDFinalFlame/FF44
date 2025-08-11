@@ -4,6 +4,7 @@
 #include "DungeonGenerator.h"
 #include "RB_DungeonRoom1.h"
 #include "RoomBase.h"
+#include "Components/BoxComponent.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -17,7 +18,7 @@ void ADungeonGenerator::BeginPlay()
 
 	SpawnStarterRoom();
 	SpawnNextRoom();
-	
+
 }
 
 void ADungeonGenerator::Tick(float DeltaTime)
@@ -36,11 +37,49 @@ void ADungeonGenerator::SpawnStarterRoom()
 
 void ADungeonGenerator::SpawnNextRoom()
 {
-	ARoomBase* LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
+	bCanSpawn = true;
+
+	LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
 
 	USceneComponent* SelectedExitPoint = Exits[rand() % Exits.Num()];
 
 	LastestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
 	LastestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
+
+	RemoveOverlappingRooms();
+
+	if (bCanSpawn)
+	{
+		Exits.Remove(SelectedExitPoint);
+		TArray<USceneComponent*> LastestRoomExitPoints;
+		LastestSpawnedRoom->ExitPointsFolder->GetChildrenComponents(false, LastestRoomExitPoints);
+		Exits.Append(LastestRoomExitPoints);
+	}
+
+	RoomAmount = RoomAmount - 1;
+
+	if (RoomAmount > 0)
+	{
+		SpawnNextRoom();
+	}
+}
+
+void ADungeonGenerator::RemoveOverlappingRooms()
+{
+	TArray<USceneComponent*> OverlappedRooms;
+	LastestSpawnedRoom->OverlapFolder->GetChildrenComponents(false, OverlappedRooms);
+
+	TArray<UPrimitiveComponent*> OverlappingComponents;
+
+	for (USceneComponent* Element : OverlappedRooms)
+	{
+		Cast<UBoxComponent>(Element)->GetOverlappingComponents(OverlappingComponents);
+	}
+
+	for (UPrimitiveComponent* Element : OverlappingComponents)
+	{
+		bCanSpawn = false;
+		LastestSpawnedRoom->Destroy();
+	}
 }
 

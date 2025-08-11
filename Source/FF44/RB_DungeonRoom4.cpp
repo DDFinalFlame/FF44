@@ -7,8 +7,6 @@
 
 ARB_DungeonRoom4::ARB_DungeonRoom4()
 {
-	Start_Arrow = CreateDefaultSubobject<UArrowComponent>(TEXT("Start_Arrow"));
-	Start_Arrow->SetupAttachment(ExitPointsFolder);
 	Exit_Arrow_1 = CreateDefaultSubobject<UArrowComponent>(TEXT("Exit_Arrow_1"));
 	Exit_Arrow_1->SetupAttachment(ExitPointsFolder);
 	ClosingWall_1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ClosingWall_1"));

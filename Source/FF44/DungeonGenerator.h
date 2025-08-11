@@ -27,6 +27,7 @@ public:
 public:
 	void SpawnStarterRoom();
 	void SpawnNextRoom();
+	void RemoveOverlappingRooms();
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Rooms")
@@ -36,5 +37,12 @@ public:
 	TArray<TSubclassOf<ARoomBase>> RoomsToBeSpawned;
 
 	TArray<USceneComponent*> Exits;
+
+	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
+	int32 RoomAmount;
+
+	ARoomBase* LastestSpawnedRoom;
+
+	bool bCanSpawn;
 
 };
