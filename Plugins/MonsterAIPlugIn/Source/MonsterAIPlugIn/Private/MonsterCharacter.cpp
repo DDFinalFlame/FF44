@@ -115,6 +115,7 @@ void AMonsterCharacter::BeginPlay()
         }
     }
 
+
 	// 고정형 GE 적용 로직
 	//if (HasAuthority() && AbilitySystemComponent)
 	//{
