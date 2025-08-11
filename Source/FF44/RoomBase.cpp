@@ -19,6 +19,9 @@ ARoomBase::ARoomBase()
 	OverlapFolder = CreateDefaultSubobject<USceneComponent>(TEXT("OverlapFolder"));
 	OverlapFolder->SetupAttachment(DefaultSceneRoot);
 
+	ExitPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ExitPointsFolder"));
+	ExitPointsFolder->SetupAttachment(DefaultSceneRoot);
+
 	Floor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor"));
 	Floor->SetupAttachment(GeometryFolder);
 
