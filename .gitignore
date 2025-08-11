@@ -417,7 +417,3 @@ UpgradeLog.htm
 *.xcworkspace/*
 .vscode/
 
-# Optional: Ignore local config (but keep Default configs)
-Config/DefaultEditor.ini
-Config/DefaultEditorPerProjectUserSettings.ini
-Config/EditorPerProjectUserSettings.ini
