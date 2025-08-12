@@ -5,6 +5,8 @@
 #include "RB_DungeonRoom1.h"
 #include "RoomBase.h"
 #include "Components/BoxComponent.h"
+#include "ClosingWall.h"
+#include "Door.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -16,8 +18,16 @@ void ADungeonGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
+	FTimerHandle ExitsHandle;
+	FTimerHandle DoorsHandle;
+
+	SetSeed();
+
 	SpawnStarterRoom();
 	SpawnNextRoom();
+
+	GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
 
 }
 
@@ -39,12 +49,16 @@ void ADungeonGenerator::SpawnNextRoom()
 {
 	bCanSpawn = true;
 
-	LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
+	int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
+	LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
 
-	USceneComponent* SelectedExitPoint = Exits[rand() % Exits.Num()];
+	int32 ExitInder = RandomStream.RandRange(0, Exits.Num() - 1);
+	USceneComponent* SelectedExitPoint = Exits[ExitInder];
 
 	LastestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
 	LastestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
+
+	Doors.Add(SelectedExitPoint);
 
 	RemoveOverlappingRooms();
 
@@ -79,7 +93,53 @@ void ADungeonGenerator::RemoveOverlappingRooms()
 	for (UPrimitiveComponent* Element : OverlappingComponents)
 	{
 		bCanSpawn = false;
+		RoomAmount = RoomAmount + 1;
+
 		LastestSpawnedRoom->Destroy();
 	}
+}
+
+void ADungeonGenerator::CloseUnusedExits()
+{
+	for (USceneComponent* Element : Exits)
+	{
+		AClosingWall* LastestSpawnedClosingWall = GetWorld()->SpawnActor<AClosingWall>(ClosingWall);
+
+		FVector RelativeOffset(-50.f, 0.f, 250.f);
+		FVector WorldOffset = Element->GetComponentRotation().RotateVector(RelativeOffset);
+
+		LastestSpawnedClosingWall->SetActorLocation(Element->GetComponentLocation() + WorldOffset);
+		LastestSpawnedClosingWall->SetActorRotation(Element->GetComponentRotation() + FRotator(0.f, 90.f, 0.f));
+	}
+}
+
+void ADungeonGenerator::SpawnDoors()
+{
+	for (USceneComponent* Element : Doors)
+	{
+		ADoor* LastestSpawnedDoor = GetWorld()->SpawnActor<ADoor>(Door);
+
+		FVector RelativeOffset(0.f, 0.f, 250.f);
+		FVector WorldOffset = Element->GetComponentRotation().RotateVector(RelativeOffset);
+
+		LastestSpawnedDoor->SetActorLocation(Element->GetComponentLocation() + WorldOffset);
+		LastestSpawnedDoor->SetActorRotation(Element->GetComponentRotation() + FRotator(0.f, 90.f, 0.f));
+	}
+}
+
+void ADungeonGenerator::SetSeed()
+{
+	int32 Results;
+	if (Seed == -1)
+	{
+		Results = FMath::Rand();
+	}
+	else
+	{
+		Results = Seed;
+	}
+
+	RandomStream.Initialize(Results);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("%d"), Results));
 }
 

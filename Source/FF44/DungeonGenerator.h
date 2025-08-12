@@ -9,6 +9,8 @@
 
 class ARB_DungeonRoom1;
 class ARoomBase;
+class AClosingWall;
+class ADoor;
 
 UCLASS()
 class FF44_API ADungeonGenerator : public AActor
@@ -28,6 +30,9 @@ public:
 	void SpawnStarterRoom();
 	void SpawnNextRoom();
 	void RemoveOverlappingRooms();
+	void CloseUnusedExits();
+	void SpawnDoors();
+	void SetSeed();
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Rooms")
@@ -36,13 +41,25 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> RoomsToBeSpawned;
 
-	TArray<USceneComponent*> Exits;
+	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
+	TSubclassOf<AClosingWall> ClosingWall;
+
+	UPROPERTY(EditAnywhere, Category = "Door")
+	TSubclassOf<ADoor> Door;
 
 	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
 	int32 RoomAmount;
 
+	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
+	int32 Seed;
+
 	ARoomBase* LastestSpawnedRoom;
 
+	TArray<USceneComponent*> Exits;
+	TArray<USceneComponent*> Doors;
+
 	bool bCanSpawn;
+
+	FRandomStream RandomStream;
 
 };
