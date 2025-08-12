@@ -25,11 +25,10 @@ ABasePlayer::ABasePlayer()
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	
-	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
-	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	GetCharacterMovement()->MaxWalkSpeed = 100.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
@@ -39,6 +38,7 @@ ABasePlayer::ABasePlayer()
 	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
 	CameraBoom->TargetArmLength = 200.f;
 	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
 	// 카메라가 늦게 따라오는 설정
 	//CameraBoom->bEnableCameraLag = true;
 	//CameraBoom->bEnableCameraRotationLag = true;
@@ -75,6 +75,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	if(UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		// Movement Actions
 		if(MoveAction)
 		{
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABasePlayer::Move);
@@ -92,17 +93,33 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		{
 			EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABasePlayer::Dodge);
 		}
+
+		// Interact Actions
 		if(InteractAction)
 		{
 			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ABasePlayer::Interact);
 		}
+		if(LockOnAction)
+		{
+			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Triggered, this, &ABasePlayer::LockOn);
+		}
+		if(ToggleCombatAction)
+		{
+			EnhancedInputComponent->BindAction(ToggleCombatAction, ETriggerEvent::Triggered, this, &ABasePlayer::ToggleCombat);
+		}
+
+		// Combat Actions
 		if(AttackAction)
 		{
 			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ABasePlayer::Attack);
 		}
-		if(RSkillAction)
+		if(SpecialAction)
 		{
-			EnhancedInputComponent->BindAction(RSkillAction, ETriggerEvent::Triggered, this, &ABasePlayer::RSkill);
+			EnhancedInputComponent->BindAction(SpecialAction, ETriggerEvent::Triggered, this, &ABasePlayer::SpecialAct);
+		}
+		if(SkillAction)
+		{
+			EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ABasePlayer::Skill);
 		}
 	}
 	else
@@ -150,21 +167,56 @@ void ABasePlayer::Run(const FInputActionValue& Value)
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	GetCharacterMovement()->MaxWalkSpeed = 100.f;
 }
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
 {
+	// Change State
+	
+	// PlayMontage
 }
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
 {
+	// Change State
+
+	// PlayMontage
+}
+
+void ABasePlayer::LockOn(const FInputActionValue& Value)
+{
+	// Change State
+
+	// Camera Lock-On Logic
+}
+
+void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
+{
+	// Change State
+
+	// PlayMontage
+	
+	// Attach Socket
 }
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
+	// Change State
+
+	// PlayMontage
 }
 
-void ABasePlayer::RSkill(const FInputActionValue& Value)
+void ABasePlayer::SpecialAct(const FInputActionValue& Value)
 {
+	// Change State
+
+	// PlayMontage
+}
+
+void ABasePlayer::Skill(const FInputActionValue& Value)
+{
+	// Change State
+
+	// PlayMontage
 }

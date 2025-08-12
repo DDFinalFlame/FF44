@@ -23,6 +23,8 @@ protected:
 	USpringArmComponent* CameraBoom;
 
 protected:
+	// Input Actions
+	// Movement Actions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* MoveAction;
 
@@ -35,14 +37,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* DodgeAction;
 
+	// Interact Action
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* LockOnAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* ToggleCombatAction;
+
+	// Combat Action
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* AttackAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
-	UInputAction* RSkillAction;
+	UInputAction* SpecialAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* SkillAction;
 
 public:
 	ABasePlayer();
@@ -56,20 +69,20 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
+	// Movement Actions
 	virtual void Move(const FInputActionValue& Value);
 	virtual void Look(const FInputActionValue& Value);
 	virtual void Run(const FInputActionValue& Value);
 	virtual void StopRun(const FInputActionValue& Value);
-
-	UFUNCTION(BlueprintCallable, Category = "PlayerActions")
 	virtual void Dodge(const FInputActionValue& Value);
 
-	UFUNCTION(BlueprintCallable, Category = "PlayerActions")
+	// Interact Actions
 	virtual void Interact(const FInputActionValue& Value);
+	virtual void LockOn(const FInputActionValue& Value);
+	virtual void ToggleCombat(const FInputActionValue& Value);
 
-	UFUNCTION(BlueprintCallable, Category = "PlayerActions")
+	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);
-
-	UFUNCTION(BlueprintCallable, Category = "PlayerActions")
-	virtual void RSkill(const FInputActionValue& Value);
+	virtual void SpecialAct(const FInputActionValue& Value);
+	virtual void Skill(const FInputActionValue& Value);
 };
