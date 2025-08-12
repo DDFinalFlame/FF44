@@ -25,7 +25,6 @@ ABasePlayer::ABasePlayer()
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	
-	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
@@ -39,6 +38,7 @@ ABasePlayer::ABasePlayer()
 	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
 	CameraBoom->TargetArmLength = 200.f;
 	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
 	// 카메라가 늦게 따라오는 설정
 	//CameraBoom->bEnableCameraLag = true;
 	//CameraBoom->bEnableCameraRotationLag = true;
