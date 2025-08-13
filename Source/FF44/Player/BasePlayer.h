@@ -2,28 +2,101 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+
 #include "BasePlayer.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
+class UGameplayAbility;
+class AActor;
 struct FInputActionValue;
 
 UCLASS()
-class FF44_API ABasePlayer : public ACharacter
+class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
+public:
+	ABasePlayer();
+
 protected:
-	// Components
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///										Components										///
+///////////////////////////////////////////////////////////////////////////////////////////
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UCameraComponent* FollowCamera;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USpringArmComponent* CameraBoom;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UAbilitySystemComponent* AbilitySystem;
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///										Abilities										///
+///////////////////////////////////////////////////////////////////////////////////////////
 protected:
-	// Input Actions
+	// Abilities
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> EquipWeaponAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
+	struct FGameplayTagContainer EquipWeaponTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> UnEquipWeaponAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
+	struct FGameplayTagContainer UnEquipWeaponTag;
+
+public:
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///										Weapons											///
+///////////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	AActor* Weapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	TSubclassOf<class ABaseWeapon> WeaponClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName EquipSocket= "Equip_Weapon";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName UnEquipSocket = "UnEquip_Weapon";
+
+public:
+	virtual void AttachWeapon(FName _Socket);
+	virtual void DetachWeapon(FName _Socket);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	virtual void EquipWeapon();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	virtual void UnEquipWeapon();
+
+public:
+	AActor* GetWeapon() const { return Weapon; }
+	void SetWeapon(AActor* _Weapon) { Weapon = _Weapon; }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///										Input											///
+///////////////////////////////////////////////////////////////////////////////////////////
+
+protected:
 	// Movement Actions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* MoveAction;
@@ -57,18 +130,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
 
-public:
-	ABasePlayer();
-
 protected:
-	virtual void BeginPlay() override;
-
-public:	
-	virtual void Tick(float DeltaTime) override;
-
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-protected:
 	// Movement Actions
 	virtual void Move(const FInputActionValue& Value);
 	virtual void Look(const FInputActionValue& Value);

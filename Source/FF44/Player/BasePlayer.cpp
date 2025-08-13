@@ -14,6 +14,9 @@
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
 
+// Class
+#include "Weapon/BaseWeapon.h"
+
 ABasePlayer::ABasePlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -46,6 +49,8 @@ ABasePlayer::ABasePlayer()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
 void ABasePlayer::BeginPlay()
@@ -63,12 +68,67 @@ void ABasePlayer::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
 	}
+
+	// Weapon를 월드에 생성
+	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
+
+	FGameplayAbilitySpec EquipWeaponSpec(EquipWeaponAbility);	
+	FGameplayAbilitySpec UnEquipWeaponSpec(UnEquipWeaponAbility);
+
+	if (AbilitySystem)
+	{
+		auto handle = AbilitySystem->GiveAbility(EquipWeaponSpec);
+		AbilitySystem->GiveAbility(UnEquipWeaponSpec);
+
+		AbilitySystem->TryActivateAbility(handle);
+	}	
 }
 
 void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABasePlayer::AttachWeapon(FName _Socket)
+{
+	if (Weapon && GetMesh())
+	{
+		Weapon->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::KeepRelativeTransform,
+			_Socket);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to attach weapon: Invalid Weapon or Mesh"));
+	}
+}
+
+void ABasePlayer::DetachWeapon(FName _Socket)
+{
+	if (Weapon && GetMesh())
+	{
+		Weapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to detach weapon: Invalid Weapon or Mesh"));
+	}
+}
+
+void ABasePlayer::EquipWeapon()
+{
+	AttachWeapon(EquipSocket);
+
+	// Equip Animation 재생
+}
+
+void ABasePlayer::UnEquipWeapon()
+{
+	// UnEquip Animation 재생
+
+	AttachWeapon(UnEquipSocket);
 }
 
 void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
