@@ -13,6 +13,7 @@ class AClosingWall;
 class ADoor;
 class ACoinBase;
 class ATreasureChestBase;
+class ARB_BossRoom;
 
 UCLASS()
 class FF44_API ADungeonGenerator : public AActor
@@ -36,6 +37,7 @@ public:
 	void SpawnDoors();
 	void SpawnCoins();
 	void SpawnChests();
+	void SpawnBossRoom();
 	void SetSeed();
 
 public:
@@ -47,6 +49,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> SpecialRoomsToBeSpawned;
+
+	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
+	TSubclassOf<ARB_BossRoom> BossRoomToBeSpawned;
 
 	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
 	TSubclassOf<AClosingWall> ClosingWall;
@@ -73,6 +78,7 @@ public:
 	int32 Seed;
 
 	ARoomBase* LastestSpawnedRoom;
+	USceneComponent* SelectedExitPoint;
 
 	TArray<USceneComponent*> Exits;
 	TArray<USceneComponent*> Doors;
@@ -80,7 +86,12 @@ public:
 	TArray<USceneComponent*> LastestRoomSpawnPoints;
 
 	bool bCanSpawn;
+	bool bDungeonCompleted = false;
 
 	FRandomStream RandomStream;
+
+	FTimerHandle ExitsHandle;
+	FTimerHandle DoorsHandle;
+	FTimerHandle SpawningRoomHandle;
 
 };

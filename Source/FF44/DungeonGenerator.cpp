@@ -9,6 +9,7 @@
 #include "Door.h"
 #include "CoinBase.h"
 #include "TreasureChestBase.h"
+#include "RB_BossRoom.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -20,32 +21,10 @@ void ADungeonGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FTimerHandle ExitsHandle;
-	FTimerHandle DoorsHandle;
-
 	SetSeed();
 
 	SpawnStarterRoom();
 	SpawnNextRoom();
-
-	//for (USceneComponent* Element : SpawnPoints)
-	//{
-	//	SpawnCoins();
-	//	SpawnChests();
-	//}
-
-	for (int32 i = 0; i < CoinAmount; ++i)
-	{
-		SpawnCoins();
-	}
-
-	for (int32 i = 0; i < ChestAmount; ++i)
-	{
-		SpawnChests();
-	}
-
-	GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
-	GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
 
 }
 
@@ -53,6 +32,25 @@ void ADungeonGenerator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bDungeonCompleted == true)
+	{
+		for (int32 i = 0; i < CoinAmount; ++i)
+		{
+			SpawnCoins();
+		}
+
+		for (int32 i = 0; i < ChestAmount; ++i)
+		{
+			SpawnChests();
+		}
+
+		CloseUnusedExits();
+		SpawnDoors();
+
+		SpawnBossRoom();
+
+		bDungeonCompleted = false;
+	}
 }
 
 void ADungeonGenerator::SpawnStarterRoom()
@@ -80,7 +78,7 @@ void ADungeonGenerator::SpawnNextRoom()
 	}
 
 	int32 ExitInder = RandomStream.RandRange(0, Exits.Num() - 1);
-	USceneComponent* SelectedExitPoint = Exits[ExitInder];
+	SelectedExitPoint = Exits[ExitInder];
 
 	LastestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
 	LastestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
@@ -104,7 +102,11 @@ void ADungeonGenerator::SpawnNextRoom()
 
 	if (RoomAmount > 0)
 	{
-		SpawnNextRoom();
+		GetWorld()->GetTimerManager().SetTimer(SpawningRoomHandle, this, &ADungeonGenerator::SpawnNextRoom, 0.01f, false);
+	}
+	else
+	{
+		bDungeonCompleted = true;
 	}
 }
 
@@ -193,6 +195,18 @@ void ADungeonGenerator::SpawnChests()
 
 		ChestAmount = ChestAmount - 1;
 	}
+}
+
+void ADungeonGenerator::SpawnBossRoom()
+{
+	ARB_BossRoom* BossRoom = GetWorld()->SpawnActor<ARB_BossRoom>(BossRoomToBeSpawned);
+
+	BossRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
+	BossRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
+
+	LastestSpawnedRoom->Destroy();
+
+
 }
 
 void ADungeonGenerator::SetSeed()

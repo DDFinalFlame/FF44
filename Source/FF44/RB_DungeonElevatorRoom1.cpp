@@ -26,11 +26,11 @@ ARB_DungeonElevatorRoom1::ARB_DungeonElevatorRoom1()
 	Floor_3->SetupAttachment(GeometryFolder);
 	Floor_4 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_4"));
 	Floor_4->SetupAttachment(GeometryFolder);
-	Floor_5 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_2"));
+	Floor_5 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_5"));
 	Floor_5->SetupAttachment(GeometryFolder);
-	Floor_6 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_3"));
+	Floor_6 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_6"));
 	Floor_6->SetupAttachment(GeometryFolder);
-	Floor_7 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_4"));
+	Floor_7 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_7"));
 	Floor_7->SetupAttachment(GeometryFolder);
 
 	SecondF_Wall_1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SecondF_Wall_1"));
