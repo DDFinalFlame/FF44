@@ -7,6 +7,8 @@
 #include "Components/BoxComponent.h"
 #include "ClosingWall.h"
 #include "Door.h"
+#include "CoinBase.h"
+#include "TreasureChestBase.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -26,6 +28,22 @@ void ADungeonGenerator::BeginPlay()
 	SpawnStarterRoom();
 	SpawnNextRoom();
 
+	//for (USceneComponent* Element : SpawnPoints)
+	//{
+	//	SpawnCoins();
+	//	SpawnChests();
+	//}
+
+	for (int32 i = 0; i < CoinAmount; ++i)
+	{
+		SpawnCoins();
+	}
+
+	for (int32 i = 0; i < ChestAmount; ++i)
+	{
+		SpawnChests();
+	}
+
 	GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
 	GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
 
@@ -42,6 +60,7 @@ void ADungeonGenerator::SpawnStarterRoom()
 	ARB_DungeonRoom1* SpawnedStarterRoom = this->GetWorld()->SpawnActor<ARB_DungeonRoom1>(StarterRoom);
 	SpawnedStarterRoom->SetActorLocation(this->GetActorLocation());
 	SpawnedStarterRoom->ExitPointsFolder->GetChildrenComponents(false, Exits);
+	SpawnedStarterRoom->FloorSpawnPoints->GetChildrenComponents(false, SpawnPoints);
 
 }
 
@@ -49,8 +68,16 @@ void ADungeonGenerator::SpawnNextRoom()
 {
 	bCanSpawn = true;
 
-	int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
-	LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
+	if (RoomAmount % 10 == 0)
+	{
+		int32 SpecialRoomIndex = RandomStream.RandRange(0, SpecialRoomsToBeSpawned.Num() - 1);
+		LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(SpecialRoomsToBeSpawned[SpecialRoomIndex]);
+	}
+	else
+	{
+		int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
+		LastestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
+	}
 
 	int32 ExitInder = RandomStream.RandRange(0, Exits.Num() - 1);
 	USceneComponent* SelectedExitPoint = Exits[ExitInder];
@@ -59,6 +86,9 @@ void ADungeonGenerator::SpawnNextRoom()
 	LastestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
 
 	Doors.Add(SelectedExitPoint);
+
+	LastestSpawnedRoom->FloorSpawnPoints->GetChildrenComponents(false, LastestRoomSpawnPoints);
+	SpawnPoints.Append(LastestRoomSpawnPoints);
 
 	RemoveOverlappingRooms();
 
@@ -124,6 +154,44 @@ void ADungeonGenerator::SpawnDoors()
 
 		LastestSpawnedDoor->SetActorLocation(Element->GetComponentLocation() + WorldOffset);
 		LastestSpawnedDoor->SetActorRotation(Element->GetComponentRotation() + FRotator(0.f, 90.f, 0.f));
+	}
+}
+
+void ADungeonGenerator::SpawnCoins()
+{
+	if (CoinAmount > 0)
+	{
+		USceneComponent* SelectedSpawnPoint;
+
+		int32 SpawnPointIndex = RandomStream.RandRange(0, SpawnPoints.Num() - 1);
+		SelectedSpawnPoint = SpawnPoints[SpawnPointIndex];
+
+		ACoinBase* LastestCoinSpawned = this->GetWorld()->SpawnActor<ACoinBase>(Coin);
+
+		LastestCoinSpawned->SetActorLocation(SelectedSpawnPoint->GetComponentLocation() + FVector(0.f, 0.f, 100.f));
+
+		SpawnPoints.Remove(SelectedSpawnPoint);
+
+		CoinAmount = CoinAmount - 1;
+	}
+}
+
+void ADungeonGenerator::SpawnChests()
+{
+	if (ChestAmount > 0)
+	{
+		USceneComponent* SelectedSpawnPoint;
+
+		int32 SpawnPointIndex = RandomStream.RandRange(0, SpawnPoints.Num() - 1);
+		SelectedSpawnPoint = SpawnPoints[SpawnPointIndex];
+
+		ATreasureChestBase* LastestChestSpawned = this->GetWorld()->SpawnActor<ATreasureChestBase>(Chest);
+
+		LastestChestSpawned->SetActorLocation(SelectedSpawnPoint->GetComponentLocation());
+
+		SpawnPoints.Remove(SelectedSpawnPoint);
+
+		ChestAmount = ChestAmount - 1;
 	}
 }
 

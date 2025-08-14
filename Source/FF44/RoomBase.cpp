@@ -16,6 +16,9 @@ ARoomBase::ARoomBase()
 	GeometryFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GeometryFolder"));
 	GeometryFolder->SetupAttachment(DefaultSceneRoot);
 
+	FloorSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("FloorSpawnPoints"));
+	FloorSpawnPoints->SetupAttachment(DefaultSceneRoot);
+
 	OverlapFolder = CreateDefaultSubobject<USceneComponent>(TEXT("OverlapFolder"));
 	OverlapFolder->SetupAttachment(DefaultSceneRoot);
 

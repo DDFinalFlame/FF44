@@ -29,5 +29,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* ClosingWall_2;
-	
+
+
 };

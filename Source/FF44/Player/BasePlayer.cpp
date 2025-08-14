@@ -18,6 +18,7 @@
 #include "Door.h"
 #include "RB_DungeonElevatorRoom1.h"
 
+
 ABasePlayer::ABasePlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -188,6 +189,11 @@ void ABasePlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	{
 		Cast<ARB_DungeonElevatorRoom1>(OtherActor)->GoUp();
 	}
+
+	if (OtherActor->ActorHasTag("InteractableCoin"))
+	{
+		OtherActor->Destroy();
+	}
 }
 
 void ABasePlayer::OnEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -201,4 +207,5 @@ void ABasePlayer::OnEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	{
 		Cast<ARB_DungeonElevatorRoom1>(OtherActor)->GoDown();
 	}
+
 }

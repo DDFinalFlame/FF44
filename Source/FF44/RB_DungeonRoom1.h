@@ -29,5 +29,24 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UArrowComponent* Exit_Arrow_3;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Spawn_Point_1;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Spawn_Point_2;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Spawn_Point_3;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Spawn_Point_4;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Spawn_Point_5;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Spawn_Point_6;
+
 	
 };

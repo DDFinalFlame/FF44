@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "RoomBase.h"
-#include "RB_DungeonElevatorRoom1.generated.h"
+#include "RB_NonSquareRoom1.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FF44_API ARB_DungeonElevatorRoom1 : public ARoomBase
+class FF44_API ARB_NonSquareRoom1 : public ARoomBase
 {
 	GENERATED_BODY()
 
-protected:
-	ARB_DungeonElevatorRoom1();
+public:
+	ARB_NonSquareRoom1();
 
 protected:
 	virtual void BeginPlay() override;
@@ -48,15 +48,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* Floor_4;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_5;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_6;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_7;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* SecondF_Wall_1;
@@ -96,19 +87,5 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UBoxComponent* PlatformBoxCollision;
-
-public:
-	FVector StartLocation;
-	FVector EndLocation;
-	FVector CurrentLocation;
-	
-	bool bSouldMove = false;
-
-	float MoveSpeed = 1.0f;
-
-public:
-	void GoUp();
-	void GoDown();
-
 	
 };

@@ -32,6 +32,9 @@ public:
 	USceneComponent* GeometryFolder;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
+	USceneComponent* FloorSpawnPoints;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* OverlapFolder;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
