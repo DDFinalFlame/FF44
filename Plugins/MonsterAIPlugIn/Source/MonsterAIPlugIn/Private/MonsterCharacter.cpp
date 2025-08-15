@@ -18,7 +18,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/SphereComponent.h"
-static FGameplayTag TAG_Event_Hit() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Hit")); }
+//static FGameplayTag TAG_Event_Hit() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Hit")); }
 // Sets default values
 AMonsterCharacter::AMonsterCharacter()
 {
@@ -376,11 +376,11 @@ void AMonsterCharacter::TriggerHitReact(AActor* InstigatorActor)
 {
 	// 1) Event.Hit 전송 → GA_HitReact 발동
 	FGameplayEventData Payload;
-	Payload.EventTag = TAG_Event_Hit();
+	Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
 	Payload.Instigator = InstigatorActor ? InstigatorActor : this;
 	Payload.Target = this;
 
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, TAG_Event_Hit(), Payload);
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, FGameplayTag::RequestGameplayTag(TEXT("Event.Hit")), Payload);
 
 	if (AbilitySystemComponent)
 	{
