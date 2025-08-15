@@ -26,6 +26,11 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	virtual void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+									  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+									  bool bFromSweep, const FHitResult& SweepResult);
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Components										///
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -48,20 +53,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> EquipWeaponAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	struct FGameplayTagContainer EquipWeaponTag;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> UnEquipWeaponAbility;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	struct FGameplayTagContainer UnEquipWeaponTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> ComboAttackAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	struct FGameplayTagContainer ComboAttackTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> HitAbility;
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }

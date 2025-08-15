@@ -16,6 +16,7 @@
 
 // Class
 #include "Weapon/BaseWeapon.h"
+#include "MonsterCharacter.h"
 
 ABasePlayer::ABasePlayer()
 {
@@ -23,6 +24,7 @@ ABasePlayer::ABasePlayer()
 
 	// Components Setup
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABasePlayer::OnCapsuleBeginOverlap);
 
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
@@ -81,7 +83,8 @@ void ABasePlayer::BeginPlay()
 	{
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));		
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));	
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
 	}	
 }
 
@@ -89,6 +92,20 @@ void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+										bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor != this)
+	{
+		auto Monster = Cast<AMonsterCharacter>(OtherActor);
+		if (Monster)
+		{
+			AbilitySystem->TryActivateAbilityByClass(HitAbility);
+		}
+	}
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
