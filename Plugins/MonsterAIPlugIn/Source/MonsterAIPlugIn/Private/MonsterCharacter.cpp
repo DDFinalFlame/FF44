@@ -81,12 +81,12 @@ void AMonsterCharacter::BeginPlay()
 				AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(GA, 1, AbilityIndex++));
 		}
 
-		// 데이터 에셋에 안 넣고 코드로 바로 붙이고 싶으면:
-		if (!AbilitySystemComponent->FindAbilitySpecFromClass(UGA_HitReact::StaticClass()))
-		{
-			AbilitySystemComponent->GiveAbility(
-				FGameplayAbilitySpec(UGA_HitReact::StaticClass(), 1, AbilityIndex++));
-		}
+		//// 데이터 에셋에 안 넣고 코드로 바로 붙이고 싶으면:
+		//if (!AbilitySystemComponent->FindAbilitySpecFromClass(UGA_HitReact::StaticClass()))
+		//{
+		//	AbilitySystemComponent->GiveAbility(
+		//		FGameplayAbilitySpec(UGA_HitReact::StaticClass(), 1, AbilityIndex++));
+		//}
 	}
 
 	//// Ability 부여
