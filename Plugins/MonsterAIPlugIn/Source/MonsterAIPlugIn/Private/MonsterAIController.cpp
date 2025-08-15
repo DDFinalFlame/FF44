@@ -6,19 +6,19 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/Character.h"
+//#include "Kismet/GameplayStatics.h"
+//#include "GameFramework/Pawn.h"
+//#include "GameFramework/Character.h"
 
 AMonsterAIController::AMonsterAIController()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	static ConstructorHelpers::FObjectFinder<UBehaviorTree> BTAsset(TEXT("/MonsterAIPlugIn/BT_MonsterAI.BT_MonsterAI"));
-	if (BTAsset.Succeeded())
-	{
-		BehaviorTreeAsset = BTAsset.Object;
-	}
+	//static ConstructorHelpers::FObjectFinder<UBehaviorTree> BTAsset(TEXT("/MonsterAIPlugIn/BT_MonsterAI.BT_MonsterAI"));
+	//if (BTAsset.Succeeded())
+	//{
+	//	BehaviorTreeAsset = BTAsset.Object;
+	//}
 }
 
 void AMonsterAIController::BeginPlay()
@@ -28,17 +28,15 @@ void AMonsterAIController::BeginPlay()
 
 }
 
-void AMonsterAIController::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	UpdateBlackboardKeys();
-}
+//void AMonsterAIController::Tick(float DeltaSeconds)
+//{
+//	Super::Tick(DeltaSeconds);
+//
+//	UpdateBlackboardKeys();
+//}
 
 void AMonsterAIController::OnPossess(APawn* InPawn)
 {
-	Super::OnPossess(InPawn);
-
 	Super::OnPossess(InPawn);
 
 	if (BehaviorTreeAsset)
@@ -56,33 +54,33 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
 	}
 }
 
-
-void AMonsterAIController::UpdateBlackboardKeys()
-{
-	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
-	if (!Player) return;
-
-	APawn* SelfPawn = GetPawn();
-	if (!SelfPawn) return;
-
-	if (UBlackboardComponent* BB = GetBlackboardComponent())
-	{
-		float Distance = FVector::Dist(Player->GetActorLocation(), SelfPawn->GetActorLocation());
-
-		const float DetectDistance = 1500.f;  // 추적 시작 거리
-		const float AttackDistance = 800.f;   // 공격 가능 거리
-
-		if (Distance < DetectDistance)
-		{
-			// 추적 범위 안이면 타겟 지정
-			BB->SetValueAsObject(TEXT("TargetActor"), Player);
-			BB->SetValueAsBool(TEXT("CanAttack"), Distance < AttackDistance);
-		}
-		else
-		{
-			// 범위 밖이면 타겟 초기화 (-> 순찰로 전환됨)
-			BB->ClearValue(TEXT("TargetActor"));
-			BB->SetValueAsBool(TEXT("CanAttack"), false);
-		}
-	}
-}
+//BB업데이트 작업 이양
+//void AMonsterAIController::UpdateBlackboardKeys()
+//{
+//	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+//	if (!Player) return;
+//
+//	APawn* SelfPawn = GetPawn();
+//	if (!SelfPawn) return;
+//
+//	if (UBlackboardComponent* BB = GetBlackboardComponent())
+//	{
+//		float Distance = FVector::Dist(Player->GetActorLocation(), SelfPawn->GetActorLocation());
+//
+//		const float DetectDistance = 1500.f;  // 추적 시작 거리
+//		const float AttackDistance = 800.f;   // 공격 가능 거리
+//
+//		if (Distance < DetectDistance)
+//		{
+//			// 추적 범위 안이면 타겟 지정
+//			BB->SetValueAsObject(TEXT("TargetActor"), Player);
+//			BB->SetValueAsBool(TEXT("CanAttack"), Distance < AttackDistance);
+//		}
+//		else
+//		{
+//			// 범위 밖이면 타겟 초기화 (-> 순찰로 전환됨)
+//			BB->ClearValue(TEXT("TargetActor"));
+//			BB->SetValueAsBool(TEXT("CanAttack"), false);
+//		}
+//	}
+//}
