@@ -14,6 +14,9 @@
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
 
+// Class
+#include "Weapon/BaseWeapon.h"
+
 ABasePlayer::ABasePlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -46,6 +49,8 @@ ABasePlayer::ABasePlayer()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
 void ABasePlayer::BeginPlay()
@@ -63,12 +68,68 @@ void ABasePlayer::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
 	}
+
+	// Weapon를 월드에 생성 후 바로 장착
+	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
+	EquipWeapon();
+
+	// 초기 Ability Tag 설정
+	AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
+
+	// Ability 등록
+	if (AbilitySystem)
+	{
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));		
+	}	
 }
 
 void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABasePlayer::AttachWeapon(FName _Socket)
+{
+	if (Weapon && GetMesh())
+	{
+		Weapon->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::KeepRelativeTransform,
+			_Socket);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to attach weapon: Invalid Weapon or Mesh"));
+	}
+}
+
+void ABasePlayer::DetachWeapon(FName _Socket)
+{
+	if (Weapon && GetMesh())
+	{
+		Weapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to detach weapon: Invalid Weapon or Mesh"));
+	}
+}
+
+void ABasePlayer::EquipWeapon()
+{
+	AttachWeapon(EquipSocket);
+
+	// Equip Animation 재생
+}
+
+void ABasePlayer::UnEquipWeapon()
+{
+	// UnEquip Animation 재생
+
+	AttachWeapon(UnEquipSocket);
 }
 
 void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -202,9 +263,9 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
-	// Change State
+	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);
 
-	// PlayMontage
+	// PlayMontage?
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
