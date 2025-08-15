@@ -69,18 +69,19 @@ void ABasePlayer::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
 	}
 
-	// Weapon를 월드에 생성
+	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
+	EquipWeapon();
 
-	FGameplayAbilitySpec EquipWeaponSpec(EquipWeaponAbility);	
-	FGameplayAbilitySpec UnEquipWeaponSpec(UnEquipWeaponAbility);
+	// 초기 Ability Tag 설정
+	AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
 
+	// Ability 등록
 	if (AbilitySystem)
 	{
-		auto handle = AbilitySystem->GiveAbility(EquipWeaponSpec);
-		AbilitySystem->GiveAbility(UnEquipWeaponSpec);
-
-		AbilitySystem->TryActivateAbility(handle);
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));		
 	}	
 }
 
@@ -262,9 +263,9 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
-	// Change State
+	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);
 
-	// PlayMontage
+	// PlayMontage?
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
