@@ -12,6 +12,7 @@ class USpringArmComponent;
 class UInputAction;
 class UGameplayAbility;
 class AActor;
+class UMotionWarpingComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -44,6 +45,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAbilitySystemComponent* AbilitySystem;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UMotionWarpingComponent* MotionWarpingComponent;
+
+public:
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Abilities										///
@@ -64,9 +71,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DodgeAbility;
-
-public:
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +141,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
+	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual int GetCurrentInputDirection() const { return CurrentInputDirection; }
+
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

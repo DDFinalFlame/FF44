@@ -23,6 +23,7 @@ public class FF44 : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"MonsterAIPlugIn",
+			"MotionWarping",
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

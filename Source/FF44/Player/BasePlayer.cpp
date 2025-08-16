@@ -10,6 +10,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "MotionWarpingComponent.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
@@ -53,6 +54,7 @@ ABasePlayer::ABasePlayer()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void ABasePlayer::BeginPlay()
@@ -93,6 +95,7 @@ void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	CurrentInputDirection = 0;
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -213,6 +216,23 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 
 	if (Controller)
 	{
+		if(MovementVector.X > 0.f)
+		{
+			CurrentInputDirection = 4; // Right
+		}
+		else if(MovementVector.X < 0.f)
+		{
+			CurrentInputDirection = 3; // Left
+		}
+		else if(MovementVector.Y > 0.f)
+		{
+			CurrentInputDirection = 1; // Forward
+		}
+		else if(MovementVector.Y < 0.f)
+		{
+			CurrentInputDirection = 2; // Backward
+		}
+
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
