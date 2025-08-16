@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class FF44 : ModuleRules
@@ -21,13 +22,18 @@ public class FF44 : ModuleRules
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
+			"MonsterAIPlugIn",
+			"MotionWarping",
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
+			
+        string MonsterAIPath = Path.Combine(ModuleDirectory, "../../Plugins/MonsterAIPlugIn/Source/MonsterAIPlugIn/Public");
 
-		PublicIncludePaths.AddRange(new string[] {
-			"FF44",
-		});
+        PublicIncludePaths.AddRange(new string[] {
+            ModuleDirectory,
+			MonsterAIPath
+        });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
