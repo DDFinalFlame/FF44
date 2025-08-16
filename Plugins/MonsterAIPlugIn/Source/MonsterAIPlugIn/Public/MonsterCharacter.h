@@ -12,10 +12,13 @@
 
 class UAbilitySystemComponent;
 class UMonsterAttributeSet;
+class USphereComponent;
+class UGameplayEffect;
 
 UENUM(BlueprintType)
 enum class EMonsterState : uint8
 {
+	AmbushReady,
 	Idle,
 	Patrol,
 	CombatReady,
@@ -38,6 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
 	UAnimMontage* AttackMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	UAnimMontage* HitReactMontage = nullptr;
+
 	// GAS 시스템용 함수들
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
@@ -53,6 +59,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "State")
 	EMonsterState GetMonsterState() const { return CurrentState; }
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	EMonsterState StartState = EMonsterState::Patrol;   // 기본은 일반 순찰
+
+	// (옵션) BT에서 호출하기 쉬운 헬퍼: 기습 종료 후 일반 루프로 전환
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	void FinishAmbush();  // AmbushReady -> CombatReady 로 전환
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -66,6 +79,21 @@ protected:
 	// SetByCaller 값 주입 헬퍼
 	void ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
 
+
+	// 기습 속도 제어(기본값/배율)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Ambush")
+	float DefaultWalkSpeed = 0.f;          // DT에서 받은 기본 이동속도 캐시
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Ambush")
+	float AmbushSpeedRate = 3.0f;          // DT 없을 때 사용할 기본 배율(예: 1.4배)
+
+	// 헬퍼
+	UFUNCTION(BlueprintCallable, Category = "AI|Ambush")
+	void BeginAmbushBoost();
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Ambush")
+	void EndAmbushBoost();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	EMonsterState CurrentState = EMonsterState::Idle;
@@ -76,5 +104,35 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UMonsterAttributeSet> AttributeSet;
 	
+	//BB와 상태동기화
+	void SyncStateToBlackboard();
 
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bDebugLOS = true;
+
+
+public:
+	// --- 디버그 피격 테스트용 ---
+
+	UPROPERTY(EditAnywhere, Category = "HitTest|Trigger")
+	TSubclassOf<class UGameplayEffect> TestDamageGE; // 에디터에서 GE_TestDamage 지정
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitTest|Trigger")
+	USphereComponent* HitTestTrigger = nullptr;
+
+	// 연속 트리거 방지용 쿨다운
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HitTest|Trigger")
+	float HitCooldown = 0.5f;
+
+	// 마지막 트리거 시각
+	double LastHitTime = -1000.0;
+
+	// 플레이어와 오버랩 시작 시 콜백
+	UFUNCTION()
+	void OnHitTestBegin(UPrimitiveComponent* _OverlappedComp, AActor* _OtherActor,
+		UPrimitiveComponent* _OtherComp, int32 _OtherBodyIndex,
+		bool _bFromSweep, const FHitResult& _SweepResult);
+
+	// 실제 피격 처리(이벤트 전송+데미지 적용)
+	void TriggerHitReact(AActor* _InstigatorActor);
 };

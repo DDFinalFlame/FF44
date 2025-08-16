@@ -9,8 +9,10 @@ UGA_MonsterAttack::UGA_MonsterAttack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	// 메인 태그 부여
-	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Monster.Attack")));
+
+    FGameplayTagContainer Tags;
+    Tags.AddTag(FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")));
+    SetAssetTags(Tags);
 
 }
 
