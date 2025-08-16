@@ -85,6 +85,7 @@ void ABasePlayer::BeginPlay()
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));	
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
 	}	
 }
 
@@ -240,7 +241,7 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 
 void ABasePlayer::Run(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
@@ -250,7 +251,7 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
 {
-	// Change State
+	AbilitySystem->TryActivateAbilityByClass(DodgeAbility);
 	
 	// PlayMontage
 }
@@ -280,9 +281,7 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
-	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);
-
-	// PlayMontage?
+	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);	
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
