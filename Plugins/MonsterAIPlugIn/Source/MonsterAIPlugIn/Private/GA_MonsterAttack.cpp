@@ -4,15 +4,13 @@
 #include "MonsterCharacter.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 
-
+static FGameplayTag TAG_Ability_Attack() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")); }
 UGA_MonsterAttack::UGA_MonsterAttack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
 
-    FGameplayTagContainer Tags;
-    Tags.AddTag(FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")));
-    SetAssetTags(Tags);
+    FGameplayTagContainer Tags; Tags.AddTag(TAG_Ability_Attack()); SetAssetTags(Tags);
 
 }
 
@@ -24,39 +22,39 @@ void UGA_MonsterAttack::ActivateAbility(
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-    AMonsterCharacter* Monster = Cast<AMonsterCharacter>(ActorInfo->AvatarActor.Get());
-    if (Monster && Monster->AttackMontage)
+    if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
     {
-        // 섹션 이름 배열 생성
-        TArray<FName> AttackSections = { FName("Attack1"), FName("Attack2"), FName("Attack3") };
-
-        // 랜덤으로 섹션 선택
-        int32 RandomIndex = FMath::RandRange(0, AttackSections.Num() - 1);
-        FName SelectedSection = AttackSections[RandomIndex];
-
-        // Task 생성 시 섹션 이름 지정
-        UAbilityTask_PlayMontageAndWait* Task =
-            UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-                this,
-                NAME_None,
-                Monster->AttackMontage,
-                1.f,
-                SelectedSection,  // 여기가 핵심
-                false
-            );
-
-        if (Task)
-        {
-            Task->OnCompleted.AddDynamic(this, &UGA_MonsterAttack::OnMontageCompleted);
-            Task->OnInterrupted.AddDynamic(this, &UGA_MonsterAttack::OnMontageCancelled);
-            Task->OnCancelled.AddDynamic(this, &UGA_MonsterAttack::OnMontageCancelled);
-            Task->Activate();
-        }
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+        return;
     }
-    else
+
+    const AMonsterCharacter* MC = Cast<AMonsterCharacter>(ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr);
+    if (!MC) { EndAbility(Handle, ActorInfo, ActivationInfo, true, true); return; }
+
+    UAnimMontage* AttackMontage = nullptr;
+
+    if (UMonsterDefinition* Def = MC->GetMonsterDef())
     {
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, false); // 몽타주 없으면 바로 종료
+        if (!Def->AttackMontage.IsValid()) Def->AttackMontage.LoadSynchronous();
+        AttackMontage = Def->AttackMontage.Get();
     }
+
+    if (!AttackMontage)
+    {
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+        return;
+    }
+
+    // 섹션이 필요 없으면 NAME_None 전달(몽타주 전체 재생)
+    auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+        this, NAME_None, AttackMontage, 1.f, NAME_None, false);
+
+    if (!Task) { EndAbility(Handle, ActorInfo, ActivationInfo, true, false); return; }
+
+    Task->OnCompleted.AddDynamic(this, &UGA_MonsterAttack::OnMontageCompleted);
+    Task->OnInterrupted.AddDynamic(this, &UGA_MonsterAttack::OnMontageCancelled);
+    Task->OnCancelled.AddDynamic(this, &UGA_MonsterAttack::OnMontageCancelled);
+    Task->ReadyForActivation();
 }
 
 void UGA_MonsterAttack::OnMontageCompleted()

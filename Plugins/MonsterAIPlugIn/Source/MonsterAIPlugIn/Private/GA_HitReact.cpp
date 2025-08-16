@@ -48,9 +48,15 @@ bool UGA_HitReact::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
 UAnimMontage* UGA_HitReact::GetMonsterHitMontage(const FGameplayAbilityActorInfo* Info) const
 {
     if (!Info || !Info->AvatarActor.IsValid()) return nullptr;
-    if (const AMonsterCharacter* MC = Cast<AMonsterCharacter>(Info->AvatarActor.Get()))
+
+    const AMonsterCharacter* MC = Cast<AMonsterCharacter>(Info->AvatarActor.Get());
+    if (!MC) return nullptr;
+
+    if (UMonsterDefinition* Def = MC->GetMonsterDef())
     {
-        return MC->HitReactMontage; // 몬스터가 들고 있는 개별 피격 몽타주
+        // 필요 시 동기 로드
+        if (!Def->HitReactMontage.IsValid()) Def->HitReactMontage.LoadSynchronous();
+        return Def->HitReactMontage.Get();
     }
     return nullptr;
 }

@@ -38,12 +38,6 @@ public:
 	AMonsterCharacter();
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	UAnimMontage* AttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	UAnimMontage* HitReactMontage = nullptr;
-
 	// GAS 시스템용 함수들
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
@@ -135,4 +129,14 @@ public:
 
 	// 실제 피격 처리(이벤트 전송+데미지 적용)
 	void TriggerHitReact(AActor* _InstigatorActor);
+
+	UFUNCTION(BlueprintPure, Category = "Monster|Data")
+	UMonsterDefinition* GetMonsterDef() const { return MonsterDefinition.Get(); }
+
+	// 죽음 처리
+	void OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	//protected:
+	//	UPROPERTY(EditAnywhere, Category = "Monster|Data")
+	//	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
 };

@@ -22,11 +22,17 @@ class MONSTERAIPLUGIN_API UMonsterAttributeSet : public UAttributeSet
 public:
 	UMonsterAttributeSet();
 
-	// 예: 체력
+	// 체력, 최대 체력
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Attributes")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, Health)
 
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Attributes")
+	FGameplayAttributeData MaxHealth;
+	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, MaxHealth)
+
+
+	// 공격력 이동속도
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AttackPower, Category = "Attributes")
 	FGameplayAttributeData AttackPower;
 	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, AttackPower)
@@ -38,12 +44,19 @@ public:
 	// OnRep 함수
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UFUNCTION()
-	void OnRep_Health(const FGameplayAttributeData& OldValue);
+	/** 어트리뷰트 값이 “설정되기 직전” 정규화(클램프 등) */
+	virtual void PreAttributeChange(const FGameplayAttribute& _attr, float& _newValue) override;
 
-	UFUNCTION()
-	void OnRep_AttackPower(const FGameplayAttributeData& OldValue);
+	/** GE가 적용된 “직후” 후처리(Health 0 감지 등) */
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& _data) override;
 
-	UFUNCTION()
-	void OnRep_MoveSpeed(const FGameplayAttributeData& OldValue);
+	/** OnRep */
+	UFUNCTION() void OnRep_Health(const FGameplayAttributeData& _old);
+	UFUNCTION() void OnRep_MaxHealth(const FGameplayAttributeData& _old);
+	UFUNCTION() void OnRep_AttackPower(const FGameplayAttributeData& _old);
+	UFUNCTION() void OnRep_MoveSpeed(const FGameplayAttributeData& _old);
+
+	/** 태그 헬퍼(프로젝트 네이밍 스타일 유지) */
+	static FGameplayTag TAG_Event_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Death")); }
+	static FGameplayTag TAG_State_Dead() { return FGameplayTag::RequestGameplayTag(TEXT("State.Dead")); }
 };
