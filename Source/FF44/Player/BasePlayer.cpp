@@ -102,14 +102,14 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 										bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor && OtherActor != this)
-	{
-		auto Monster = Cast<AMonsterCharacter>(OtherActor);
-		if (Monster)
-		{
-			AbilitySystem->TryActivateAbilityByClass(HitAbility);
-		}
-	}
+	//if (OtherActor && OtherActor != this)
+	//{
+	//	auto Monster = Cast<AMonsterCharacter>(OtherActor);
+	//	if (Monster)
+	//	{
+	//		AbilitySystem->TryActivateAbilityByClass(HitAbility);
+	//	}
+	//}
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
