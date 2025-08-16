@@ -19,6 +19,7 @@ ABaseWeapon::ABaseWeapon()
 	WeaponCollision->SetupAttachment(WeaponMesh);
 
 	WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &ABaseWeapon::OnSphereBeginOverlap);
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ABaseWeapon::BeginPlay()
