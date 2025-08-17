@@ -6,32 +6,33 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MonsterCharacter.h"
 #include "Components/SkeletalMeshComponent.h"
-
-static FGameplayTag TAG_Ability_HitReact() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.HitReact")); }
-static FGameplayTag TAG_Ability_Attack() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")); }
-static FGameplayTag TAG_State_HitReacting() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.State.HitReacting")); }
-static FGameplayTag TAG_Event_Hit() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Hit")); }
+#include "MonsterTags.h"
+#include "TimerManager.h" 
 
 UGA_HitReact::UGA_HitReact()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-    //5.6 방식: SetAssetTags 사용
+    // 정체성 태그(AssetTags)
     {
         FGameplayTagContainer Tags;
-        Tags.AddTag(TAG_Ability_HitReact());
+        Tags.AddTag(MonsterTags::Ability_HitReact);
         SetAssetTags(Tags);
     }
 
-    ActivationOwnedTags.AddTag(TAG_State_HitReacting());
+    ActivationOwnedTags.AddTag(MonsterTags::State_HitReacting);
 
-    CancelAbilitiesWithTag.AddTag(TAG_Ability_Attack());
-    BlockAbilitiesWithTag.AddTag(TAG_Ability_Attack());
+    CancelAbilitiesWithTag.AddTag(MonsterTags::Ability_Attack);
+    BlockAbilitiesWithTag.AddTag(MonsterTags::Ability_Attack);
 
     FAbilityTriggerData Trig;
-    Trig.TriggerTag = TAG_Event_Hit();
+    Trig.TriggerTag = MonsterTags::Event_Hit;
     Trig.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
     AbilityTriggers.Add(Trig);
+
+    // 기본 값(헤더에도 선언 필요)
+    RetryDelaySeconds = 0.02f;
+    MaxHitReactDuration = 1.5f;   
 }
 
 bool UGA_HitReact::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -41,8 +42,10 @@ bool UGA_HitReact::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
     if (!Super::CanActivateAbility(Handle, Info, nullptr, nullptr, nullptr)) return false;
     if (!Info || !Info->AbilitySystemComponent.IsValid()) return false;
 
-    // 이미 피격중이면 금지
-    return !Info->AbilitySystemComponent->HasMatchingGameplayTag(TAG_State_HitReacting());
+
+    const UAbilitySystemComponent* ASC = Info->AbilitySystemComponent.Get();
+    return !ASC->HasMatchingGameplayTag(MonsterTags::State_HitReacting)
+        && !ASC->HasMatchingGameplayTag(MonsterTags::State_Dead);
 }
 
 UAnimMontage* UGA_HitReact::GetMonsterHitMontage(const FGameplayAbilityActorInfo* Info) const
@@ -54,8 +57,8 @@ UAnimMontage* UGA_HitReact::GetMonsterHitMontage(const FGameplayAbilityActorInfo
 
     if (UMonsterDefinition* Def = MC->GetMonsterDef())
     {
-        // 필요 시 동기 로드
-        if (!Def->HitReactMontage.IsValid()) Def->HitReactMontage.LoadSynchronous();
+        if (!Def->HitReactMontage.IsValid())
+            Def->HitReactMontage.LoadSynchronous();
         return Def->HitReactMontage.Get();
     }
     return nullptr;
@@ -71,6 +74,13 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     {
         EndAbility(Handle, Info, ActivationInfo, true, true);
         return;
+    }
+
+    if (Info && Info->AbilitySystemComponent.IsValid())
+    {
+        DeadTagDelegateHandle = Info->AbilitySystemComponent
+            ->RegisterGameplayTagEvent(MonsterTags::State_Dead, EGameplayTagEventType::NewOrRemoved)
+            .AddUObject(this, &UGA_HitReact::OnDeadTagChanged);
     }
 
     if (ACharacter* C = Cast<ACharacter>(Info ? Info->AvatarActor.Get() : nullptr))
@@ -89,6 +99,19 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             Info->AbilitySystemComponent->MakeEffectContext());
     }
 
+
+    if (UWorld* W = GetWorld())
+    {
+        W->GetTimerManager().SetTimer(FailSafeHandle, this,
+            &UGA_HitReact::OnFailSafeTimeout, MaxHitReactDuration, false);
+    }
+
+    // 재생 시도(재시도 로직 포함)
+    TryPlayHitReactMontage(Info);
+}
+
+void UGA_HitReact::TryPlayHitReactMontage(const FGameplayAbilityActorInfo* Info)
+{
     UAnimInstance* AnimInst = Info ? Info->AnimInstance.Get() : nullptr;
     if (!AnimInst)
     {
@@ -97,71 +120,122 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         AnimInst = Skel ? Skel->GetAnimInstance() : nullptr;
     }
 
-    // 아직 없으면 1틱 뒤 재시도
-    if (!AnimInst)
-    {
-        FTimerHandle Tmp;
-        GetWorld()->GetTimerManager().SetTimer(Tmp, [this, Handle, Info, ActivationInfo]()
-            {
-                // 내부 재생
-                UAnimMontage* MontageToPlay = GetMonsterHitMontage(Info);
-                UAnimInstance* AnimInst2 = nullptr;
-                if (Info)
-                {
-                    AnimInst2 = Info->AnimInstance.Get();
-                    if (!AnimInst2)
-                    {
-                        USkeletalMeshComponent* Skel =
-                            (Info && Info->SkeletalMeshComponent.IsValid()) ? Info->SkeletalMeshComponent.Get() : nullptr;
-                        AnimInst2 = Skel ? Skel->GetAnimInstance() : nullptr;
-                    }
-                }
-
-                if (MontageToPlay && AnimInst2)
-                {
-                    auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-                        this, NAME_None, MontageToPlay, 1.f, NAME_None, false, 0.f, 0.f, false);
-                    Task->OnCompleted.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
-                    Task->OnInterrupted.AddDynamic(this, &UGA_HitReact::OnMontageInterrupted);
-                    Task->OnCancelled.AddDynamic(this, &UGA_HitReact::OnMontageCancelled);
-                    Task->ReadyForActivation();
-                }
-                else
-                {
-                    EndAbility(Handle, Info, ActivationInfo, false, false);
-                }
-            }, 0.02f, false);
-
-        return;
-    }
-
-    // 즉시 재생 경로
     UAnimMontage* MontageToPlay = GetMonsterHitMontage(Info);
-    if (MontageToPlay)
+
+    if (AnimInst && MontageToPlay)
     {
-        auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-            this, NAME_None, MontageToPlay, 1.f, NAME_None, false, 0.f, 0.f, false);
-        Task->OnCompleted.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
-        Task->OnInterrupted.AddDynamic(this, &UGA_HitReact::OnMontageInterrupted);
-        Task->OnCancelled.AddDynamic(this, &UGA_HitReact::OnMontageCancelled);
-        Task->ReadyForActivation();
-        return;
+        UAbilityTask_PlayMontageAndWait* Task =
+            UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+                this, NAME_None, MontageToPlay, 1.f, NAME_None, /*bStopWhenAbilityEnds*/ false, 0.f, 0.f, false);
+
+        if (Task)
+        {
+            // ★ 변경: BlendOut도 잡아주면 더 안전
+            Task->OnBlendOut.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
+            Task->OnCompleted.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
+            Task->OnInterrupted.AddDynamic(this, &UGA_HitReact::OnMontageInterrupted);
+            Task->OnCancelled.AddDynamic(this, &UGA_HitReact::OnMontageCancelled);
+            Task->ReadyForActivation();
+            return;
+        }
     }
 
-    // 몽타주가 없으면(또는 Task 실패) 즉시 종료
-    EndAbility(Handle, Info, ActivationInfo, false, false);
+    // AnimInst/몽타주가 준비 안 되면 1틱 뒤 재시도
+    if (UWorld* World = GetWorld())
+    {
+        FTimerDelegate RetryDel;
+        RetryDel.BindUObject(this, &UGA_HitReact::OnRetryTimerElapsed);
+        World->GetTimerManager().SetTimer(RetryTimerHandle, RetryDel, RetryDelaySeconds, false);
+    }
+    else
+    {
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+    }
 }
 
+void UGA_HitReact::OnRetryTimerElapsed()
+{
+    const FGameplayAbilityActorInfo* Info = CurrentActorInfo;
+    if (!Info)
+    {
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+        return;
+    }
+
+    UAnimInstance* AnimInst = Info ? Info->AnimInstance.Get() : nullptr;
+    if (!AnimInst)
+    {
+        USkeletalMeshComponent* Skel =
+            (Info && Info->SkeletalMeshComponent.IsValid()) ? Info->SkeletalMeshComponent.Get() : nullptr;
+        AnimInst = Skel ? Skel->GetAnimInstance() : nullptr;
+    }
+
+    UAnimMontage* MontageToPlay = GetMonsterHitMontage(Info);
+
+    if (AnimInst && MontageToPlay)
+    {
+        UAbilityTask_PlayMontageAndWait* Task =
+            UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+                this, NAME_None, MontageToPlay, 1.f, NAME_None, false, 0.f, 0.f, false);
+
+        if (Task)
+        {
+            Task->OnBlendOut.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
+            Task->OnCompleted.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
+            Task->OnInterrupted.AddDynamic(this, &UGA_HitReact::OnMontageInterrupted);
+            Task->OnCancelled.AddDynamic(this, &UGA_HitReact::OnMontageCancelled);
+            Task->ReadyForActivation();
+            return;
+        }
+    }
+
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+}
+
+void UGA_HitReact::OnFailSafeTimeout() 
+{
+    UE_LOG(LogTemp, Warning, TEXT("HitReact FailSafeTimeout -> Force EndAbility"));
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+}
+
+void UGA_HitReact::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount) // 추가: Dead 반응
+{
+    if (NewCount > 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("HitReact cancelled due to Dead tag"));
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+    }
+}
 
 void UGA_HitReact::EndAbility(const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActorInfo* Info, const FGameplayAbilityActivationInfo ActivationInfo,
-    bool Replicate, bool WasCancelled)
+    bool bReplicateEndAbility, bool bWasCancelled)
 {
-    if (Info && Info->AbilitySystemComponent.IsValid() && ActiveGE.IsValid())
+    if (UWorld* World = GetWorld())
     {
-        Info->AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveGE);
+        World->GetTimerManager().ClearTimer(RetryTimerHandle);
+        World->GetTimerManager().ClearTimer(FailSafeHandle); // 변경
     }
-    Super::EndAbility(Handle, Info, ActivationInfo, Replicate, WasCancelled);
+
+    if (Info && Info->AbilitySystemComponent.IsValid())
+    {
+        // Dead 태그 델리게이트 해제 변경
+        if (DeadTagDelegateHandle.IsValid())
+        {
+            Info->AbilitySystemComponent
+                ->RegisterGameplayTagEvent(MonsterTags::State_Dead, EGameplayTagEventType::NewOrRemoved)
+                .Remove(DeadTagDelegateHandle);
+            DeadTagDelegateHandle.Reset();
+        }
+
+        if (ActiveGE.IsValid())
+        {
+            Info->AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveGE);
+            ActiveGE.Invalidate();
+        }
+    }
+
+    Super::EndAbility(Handle, Info, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGA_HitReact::OnMontageCompleted()

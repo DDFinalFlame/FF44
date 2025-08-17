@@ -8,7 +8,7 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "MonsterCharacter.generated.h"
-    
+
 
 class UAbilitySystemComponent;
 class UMonsterAttributeSet;
@@ -97,7 +97,7 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UMonsterAttributeSet> AttributeSet;
-	
+
 	//BB와 상태동기화
 	void SyncStateToBlackboard();
 
@@ -139,4 +139,13 @@ public:
 	//protected:
 	//	UPROPERTY(EditAnywhere, Category = "Monster|Data")
 	//	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
+
+protected:
+	void UpdateTransition_PatrolToCombatReady();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State")
+	float DetectDistanceCache = 0.f; // DT에서 채움
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State")
+	float FallbackDetectDistance = 800.f; // 안전 기본값
 };

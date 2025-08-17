@@ -200,6 +200,10 @@ void AMonsterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (HasAuthority())
+	{
+		UpdateTransition_PatrolToCombatReady();
+	}
 
 #if WITH_EDITOR
 
@@ -226,6 +230,50 @@ void AMonsterCharacter::Tick(float DeltaTime)
 #endif
 }
 
+
+void AMonsterCharacter::UpdateTransition_PatrolToCombatReady()
+{
+	if (CurrentState != EMonsterState::Patrol) return;
+
+	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	if (!Player) return;
+
+	float Detect = 0.f;
+
+	AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController());
+	if (AIC)
+	{
+		UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+		if (BB)
+		{
+			Detect = BB->GetValueAsFloat(TEXT("DetectDistance"));
+		}
+	}
+
+	// 폴백: 캐시 → 기본값
+	if (Detect <= 0.f && DetectDistanceCache > 0.f)
+	{
+		Detect = DetectDistanceCache;
+	}
+	if (Detect <= 0.f)
+	{
+		Detect = FallbackDetectDistance;
+	}
+
+	const float Dist = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
+	if (Dist > Detect) return;
+
+	SetMonsterState(EMonsterState::CombatReady);
+
+	if (AIC)
+	{
+		UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+		if (BB)
+		{
+			BB->SetValueAsObject(TEXT("TargetActor"), Player);
+		}
+	}
+}
 
 UAbilitySystemComponent* AMonsterCharacter::GetAbilitySystemComponent() const
 {

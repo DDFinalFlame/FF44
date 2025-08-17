@@ -3,14 +3,14 @@
 #include "AbilitySystemComponent.h"
 #include "MonsterCharacter.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
-
-static FGameplayTag TAG_Ability_Attack() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")); }
+#include "MonsterTags.h"
+//static FGameplayTag TAG_Ability_Attack() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")); }
 UGA_MonsterAttack::UGA_MonsterAttack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
 
-    FGameplayTagContainer Tags; Tags.AddTag(TAG_Ability_Attack()); SetAssetTags(Tags);
+    FGameplayTagContainer Tags; Tags.AddTag(MonsterTags::Ability_Attack); SetAssetTags(Tags);
 
 }
 

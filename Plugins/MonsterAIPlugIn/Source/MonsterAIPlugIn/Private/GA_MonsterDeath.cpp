@@ -7,10 +7,11 @@
 #include "BrainComponent.h"
 #include "MonsterCharacter.h"
 #include "Components/CapsuleComponent.h"
-
-static FGameplayTag TAG_Ability_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Dead")); }
-static FGameplayTag TAG_State_Dead() { return FGameplayTag::RequestGameplayTag(TEXT("State.Dead")); }
-static FGameplayTag TAG_Event_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Death")); }
+#include "MonsterTags.h" 
+//
+//static FGameplayTag TAG_Ability_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Dead")); }
+//static FGameplayTag TAG_State_Dead() { return FGameplayTag::RequestGameplayTag(TEXT("State.Dead")); }
+//static FGameplayTag TAG_Event_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Death")); }
 
 
 UGA_MonsterDeath::UGA_MonsterDeath()
@@ -18,17 +19,17 @@ UGA_MonsterDeath::UGA_MonsterDeath()
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
     // Ability 정체성
-    AbilityTags.AddTag(TAG_Ability_Death());
+    AbilityTags.AddTag(MonsterTags::Ability_Death);
 
     // 이 Ability가 켜져있는 동안 부여되는 상태
-    ActivationOwnedTags.AddTag(TAG_State_Dead());
+    ActivationOwnedTags.AddTag(MonsterTags::State_Dead);
 
     // Dead 상태면 다른 Ability는 켜지지 않게
-    ActivationBlockedTags.AddTag(TAG_State_Dead());
+    ActivationBlockedTags.AddTag(MonsterTags::State_Dead);
 
     // 트리거(순수 C++로 설정)
     FAbilityTriggerData Trig;
-    Trig.TriggerTag = TAG_Event_Death();
+    Trig.TriggerTag = MonsterTags::Event_Death;
     Trig.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
     AbilityTriggers.Add(Trig);
 
@@ -60,7 +61,7 @@ void UGA_MonsterDeath::HardStopEverything(ACharacter* Chr, const FGameplayAbilit
     // Dead 태그를 즉시 올려, 이후 Ability들이 차단되도록 (Commit 이후라 안전)
     if (UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr)
     {
-        ASC->AddLooseGameplayTag(TAG_State_Dead());
+        ASC->AddLooseGameplayTag(MonsterTags::State_Dead);
 
         // 진행 중인 다른 능력 모두 중단(자기 자신 제외)
         ASC->CancelAllAbilities(this);
@@ -76,8 +77,10 @@ void UGA_MonsterDeath::HardStopEverything(ACharacter* Chr, const FGameplayAbilit
         }
         if (AAIController* AIC = Cast<AAIController>(Chr->GetController()))
         {
-            if (AIC->BrainComponent)
+            if (AIC && AIC->BrainComponent)
+            {
                 AIC->BrainComponent->StopLogic(TEXT("Death"));
+            }
         }
         if (UCapsuleComponent* Cap = Chr->GetCapsuleComponent())
         {
@@ -87,7 +90,8 @@ void UGA_MonsterDeath::HardStopEverything(ACharacter* Chr, const FGameplayAbilit
         // 재생 중인 모든 몽타주 즉시 정지
         if (USkeletalMeshComponent* Sk = ResolveSkeletalMesh(Chr))
         {
-            if (UAnimInstance* Anim = Sk->GetAnimInstance())
+            UAnimInstance* Anim = Sk->GetAnimInstance();
+            if (Anim)
             {
                 Anim->StopAllMontages(0.f);
             }
