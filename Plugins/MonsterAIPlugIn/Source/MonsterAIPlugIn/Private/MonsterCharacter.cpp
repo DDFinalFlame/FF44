@@ -19,11 +19,9 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
-//static FGameplayTag TAG_Event_Hit() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Hit")); }
-// Sets default values
+
 AMonsterCharacter::AMonsterCharacter()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
@@ -32,24 +30,12 @@ AMonsterCharacter::AMonsterCharacter()
 	AIControllerClass = AMonsterAIController::StaticClass();
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
-	////피격전용 트리거 설정.
-	//HitTestTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("HitTestTrigger"));
-	//HitTestTrigger->SetupAttachment(GetRootComponent());
-	//HitTestTrigger->InitSphereRadius(120.f);               
-	//HitTestTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	//HitTestTrigger->SetCollisionObjectType(ECC_WorldDynamic);
-	//HitTestTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
-	//HitTestTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 Overlap
-	//HitTestTrigger->SetGenerateOverlapEvents(true);
 }
 
-// Called when the game starts or when spawned
+
 void AMonsterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	
 
 	// Definition 로드
 	if (!MonsterDefinition.IsValid())		MonsterDefinition.LoadSynchronous();
@@ -80,28 +66,7 @@ void AMonsterCharacter::BeginPlay()
 			if (GA)
 				AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(GA, 1, AbilityIndex++));
 		}
-
-		//// 데이터 에셋에 안 넣고 코드로 바로 붙이고 싶으면:
-		//if (!AbilitySystemComponent->FindAbilitySpecFromClass(UGA_HitReact::StaticClass()))
-		//{
-		//	AbilitySystemComponent->GiveAbility(
-		//		FGameplayAbilitySpec(UGA_HitReact::StaticClass(), 1, AbilityIndex++));
-		//}
 	}
-
-	//// Ability 부여
-	//if (AbilitySystemComponent)
-	//{
-	//	int32 AbilityIndex = 0;
-	//	for (int32 i = 0; i < Def->AbilitiesToGrant.Num(); ++i)
-	//	{
-	//		TSubclassOf<UGameplayAbility> GA = Def->AbilitiesToGrant[i];
-	//		if (GA)
-	//		{
-	//			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(GA, 1, AbilityIndex++));
-	//		}
-	//	}
-	//}
 
 	// DT에서 스탯 읽어 SetByCaller GE 적용
 	if (MonsterStatTable && Def->StatRowName.IsValid())
@@ -131,10 +96,6 @@ void AMonsterCharacter::BeginPlay()
 		const bool bBBInited = AIC->UseBlackboard(Def->BlackboardAsset.Get(), BBComp);
 		if (bBBInited && BBComp)
 		{
-			// BT 실행
-
-
-			// 필요 시 초기 BB 값 주입
 			if (MonsterStatTable && Def->StatRowName.IsValid())
 			{
 				if (FMonsterStatRow* Row2 = MonsterStatTable->FindRow<FMonsterStatRow>(Def->StatRowName, TEXT("MonsterInit")))
@@ -155,24 +116,6 @@ void AMonsterCharacter::BeginPlay()
 	}
 
 
-	// 고정형 GE 적용 로직
-	//if (HasAuthority() && AbilitySystemComponent)
-	//{
-	//	// C++로 만든 GameplayEffect를 생성
-	//	UGE_MonsterDefaultStat* DefaultStatEffect = NewObject<UGE_MonsterDefaultStat>();
-	//	if (DefaultStatEffect)
-	//	{
-	//		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
-	//		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultStatEffect->GetClass(), 1.f, Context);
-
-	//		if (SpecHandle.IsValid())
-	//		{
-	//			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	//		}
-	//	}
-	//	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UGA_MonsterAttack::StaticClass(), 1, 0));
-
-	//}
 	if (AbilitySystemComponent)
 	{
 		const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("State.Dead"));
@@ -181,17 +124,8 @@ void AMonsterCharacter::BeginPlay()
 			.AddUObject(this, &AMonsterCharacter::OnDeadTagChanged);
 	}
 
-	/*if (HitTestTrigger)
-	{
-		FTimerHandle Tmp;
-		GetWorld()->GetTimerManager().SetTimer(Tmp, [this]()
-			{
-				if (HitTestTrigger)
-				{
-					HitTestTrigger->OnComponentBeginOverlap.AddDynamic(this, &AMonsterCharacter::OnHitTestBegin);
-				}
-			}, 0.02f, false);
-	}*/
+
+	SetupAttackCollision();
 }
 
 
@@ -492,4 +426,109 @@ void AMonsterCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount)
 			Cap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
+}
+
+
+void AMonsterCharacter::RegisterHitbox(UPrimitiveComponent* Comp)
+{
+	if (!Comp) return;
+	AttackHitboxes.Add(Comp);
+
+	Comp->SetGenerateOverlapEvents(false); // 기본은 Off (창/검이 켜질 때만 On)
+	Comp->OnComponentBeginOverlap.AddDynamic(this, &AMonsterCharacter::OnAttackHitboxBeginOverlap);
+
+	// 충돌 설정 예시(원하시는 프로필로 교체 가능)
+	Comp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Comp->SetCollisionObjectType(ECC_WorldDynamic);
+	Comp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	Comp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 맞추려면 여기에
+}
+
+void AMonsterCharacter::ActivateAttackHitbox(bool bEnable)
+{
+	// 파생에서 특정 박스만 On/Off 하려면 오버라이드하세요.
+	for (UPrimitiveComponent* Comp : AttackHitboxes)
+	{
+		if (!Comp) continue;
+		Comp->SetGenerateOverlapEvents(bEnable);
+	}
+}
+
+void AMonsterCharacter::BeginAttackWindow()
+{
+	bAttackActive = true;
+	HitActorsThisSwing.Reset();
+	ActivateAttackHitbox(true);
+}
+
+void AMonsterCharacter::EndAttackWindow()
+{
+	ActivateAttackHitbox(false);
+	bAttackActive = false;
+	HitActorsThisSwing.Reset();
+}
+
+void AMonsterCharacter::OnAttackHitboxBeginOverlap(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (!bAttackActive) return;
+	if (!OtherActor || OtherActor == this) return;
+
+	// 팀/플레이어 필터링 필요 시 여기에서 태그/인터페이스 체크
+	if (HitActorsThisSwing.Contains(OtherActor)) return; // 중복 타격 방지
+
+	HitActorsThisSwing.Add(OtherActor);
+	ApplyMeleeHitTo(OtherActor, SweepResult);
+}
+
+void AMonsterCharacter::ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit)
+{
+	// 1) Hit 이벤트 트리거 → GA_HitReact 발동(현재 구조 활용)
+	{
+		FGameplayEventData Payload;
+		Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
+		Payload.Instigator = this;
+		Payload.Target = Victim;
+		// 필요 시 ByCaller 데미지 전달도 가능 (Payload에 Magnitude 등 확장)
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+			Victim, Payload.EventTag, Payload);
+	}
+
+	// 2) 데미지 적용 (예: TestDamageGE 사용 or 데미지 전용 GE)
+	if (AbilitySystemComponent)
+	{
+		// ByCaller로 데미지 수치 전달을 추천합니다.
+		// 지금은 간단하게 TestDamageGE 적용 + GetAttackDamage 반영 예시:
+		if (TestDamageGE)
+		{
+			FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
+			Ctx.AddInstigator(this, GetController());
+
+			FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(
+				TestDamageGE, 1.f, Ctx);
+
+			if (Spec.IsValid())
+			{
+				// ByCaller 태그 예시: "Data.Damage" 가 있다고 가정
+				const FGameplayTag Tag_Damage = FGameplayTag::RequestGameplayTag(FName("Data.Damage"));
+				Spec.Data->SetSetByCallerMagnitude(Tag_Damage, GetAttackDamage());
+
+				// 타겟의 ASC에 적용
+				UAbilitySystemComponent* TargetASC =
+					UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
+				if (TargetASC)
+				{
+					TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+				}
+			}
+		}
+	}
+
+	// 3) 후처리 훅(파생에서 이펙트/사운드 등)
+	OnAttackHit(Victim);
 }
