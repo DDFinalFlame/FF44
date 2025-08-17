@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "MonsterCharacter.h"
+#include "MonsterDefinition.h"
 #include "Animation/AnimInstance.h"
 
 UBTTask_AttackPlayer::UBTTask_AttackPlayer()
@@ -19,27 +20,28 @@ UBTTask_AttackPlayer::UBTTask_AttackPlayer()
 
 EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController) return EBTNodeResult::Failed;
+    AAIController* AI = OwnerComp.GetAIOwner();
+    if (!AI) return EBTNodeResult::Failed;
 
-	AMonsterCharacter* EnemyCharacter = Cast<AMonsterCharacter>(AIController->GetPawn());
-	if (!EnemyCharacter) return EBTNodeResult::Failed;
+    AMonsterCharacter* MC = Cast<AMonsterCharacter>(AI->GetPawn());
+    if (!MC) return EBTNodeResult::Failed;
 
-	UAnimInstance* AnimInstance = EnemyCharacter->GetMesh()->GetAnimInstance();
-	if (!AnimInstance) return EBTNodeResult::Failed;
+    UAnimInstance* Anim = MC->GetMesh() ? MC->GetMesh()->GetAnimInstance() : nullptr;
+    if (!Anim) return EBTNodeResult::Failed;
 
-	if (EnemyCharacter->AttackMontage)
-	{
-		float PlayedLen = AnimInstance->Montage_Play(EnemyCharacter->AttackMontage, 1.0f);
-		if (PlayedLen > 0.f)
-		{
-			MontageDuration = EnemyCharacter->AttackMontage->GetPlayLength();
-			ElapsedTime = 0.0f;
-			return EBTNodeResult::InProgress;
-		}
-	}
+    UMonsterDefinition* Def = MC->GetMonsterDef();     // ← 캐릭터에서 DA 꺼내오기
+    if (!Def) return EBTNodeResult::Failed;
 
-	return EBTNodeResult::Failed;
+    if (!Def->AttackMontage.IsValid()) Def->AttackMontage.LoadSynchronous();
+    UAnimMontage* AttackMontage = Def->AttackMontage.Get();
+    if (!AttackMontage) return EBTNodeResult::Failed;
+
+    const float PlayedLen = Anim->Montage_Play(AttackMontage, 1.f);
+    if (PlayedLen <= 0.f) return EBTNodeResult::Failed;
+
+    MontageDuration = AttackMontage->GetPlayLength();  // 섹션 안 쓸 경우
+    ElapsedTime = 0.f;
+    return EBTNodeResult::InProgress;
 }
 
 void UBTTask_AttackPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)

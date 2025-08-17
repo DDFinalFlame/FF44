@@ -18,6 +18,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 //static FGameplayTag TAG_Event_Hit() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Hit")); }
 // Sets default values
 AMonsterCharacter::AMonsterCharacter()
@@ -32,15 +33,15 @@ AMonsterCharacter::AMonsterCharacter()
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	//피격전용 트리거 설정.
-	HitTestTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("HitTestTrigger"));
-	HitTestTrigger->SetupAttachment(GetRootComponent());
-	HitTestTrigger->InitSphereRadius(120.f);               
-	HitTestTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	HitTestTrigger->SetCollisionObjectType(ECC_WorldDynamic);
-	HitTestTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
-	HitTestTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 Overlap
-	HitTestTrigger->SetGenerateOverlapEvents(true);
+	////피격전용 트리거 설정.
+	//HitTestTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("HitTestTrigger"));
+	//HitTestTrigger->SetupAttachment(GetRootComponent());
+	//HitTestTrigger->InitSphereRadius(120.f);               
+	//HitTestTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	//HitTestTrigger->SetCollisionObjectType(ECC_WorldDynamic);
+	//HitTestTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
+	//HitTestTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 Overlap
+	//HitTestTrigger->SetGenerateOverlapEvents(true);
 }
 
 // Called when the game starts or when spawned
@@ -51,8 +52,7 @@ void AMonsterCharacter::BeginPlay()
 	
 
 	// Definition 로드
-	if (!MonsterDefinition.IsValid())
-		MonsterDefinition.LoadSynchronous();
+	if (!MonsterDefinition.IsValid())		MonsterDefinition.LoadSynchronous();
 	UMonsterDefinition* Def = MonsterDefinition.Get();
 	if (!Def) { UE_LOG(LogTemp, Warning, TEXT("MonsterDefinition not set.")); return; }
 
@@ -173,8 +173,15 @@ void AMonsterCharacter::BeginPlay()
 	//	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UGA_MonsterAttack::StaticClass(), 1, 0));
 
 	//}
+	if (AbilitySystemComponent)
+	{
+		const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("State.Dead"));
+		AbilitySystemComponent
+			->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &AMonsterCharacter::OnDeadTagChanged);
+	}
 
-	if (HitTestTrigger)
+	/*if (HitTestTrigger)
 	{
 		FTimerHandle Tmp;
 		GetWorld()->GetTimerManager().SetTimer(Tmp, [this]()
@@ -184,7 +191,7 @@ void AMonsterCharacter::BeginPlay()
 					HitTestTrigger->OnComponentBeginOverlap.AddDynamic(this, &AMonsterCharacter::OnHitTestBegin);
 				}
 			}, 0.02f, false);
-	}
+	}*/
 }
 
 
@@ -193,6 +200,10 @@ void AMonsterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (HasAuthority())
+	{
+		UpdateTransition_PatrolToCombatReady();
+	}
 
 #if WITH_EDITOR
 
@@ -219,6 +230,50 @@ void AMonsterCharacter::Tick(float DeltaTime)
 #endif
 }
 
+
+void AMonsterCharacter::UpdateTransition_PatrolToCombatReady()
+{
+	if (CurrentState != EMonsterState::Patrol) return;
+
+	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	if (!Player) return;
+
+	float Detect = 0.f;
+
+	AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController());
+	if (AIC)
+	{
+		UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+		if (BB)
+		{
+			Detect = BB->GetValueAsFloat(TEXT("DetectDistance"));
+		}
+	}
+
+	// 폴백: 캐시 → 기본값
+	if (Detect <= 0.f && DetectDistanceCache > 0.f)
+	{
+		Detect = DetectDistanceCache;
+	}
+	if (Detect <= 0.f)
+	{
+		Detect = FallbackDetectDistance;
+	}
+
+	const float Dist = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
+	if (Dist > Detect) return;
+
+	SetMonsterState(EMonsterState::CombatReady);
+
+	if (AIC)
+	{
+		UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+		if (BB)
+		{
+			BB->SetValueAsObject(TEXT("TargetActor"), Player);
+		}
+	}
+}
 
 UAbilitySystemComponent* AMonsterCharacter::GetAbilitySystemComponent() const
 {
@@ -285,10 +340,12 @@ void AMonsterCharacter::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<c
 	FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(InitGE, 1.f, Ctx);
 	if (!Spec.IsValid()) return;
 
+	const FGameplayTag Tag_MaxHealth = FGameplayTag::RequestGameplayTag(FName("Data.MaxHealth"));
 	const FGameplayTag Tag_Health = FGameplayTag::RequestGameplayTag(FName("Data.Health"));
 	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Data.AttackPower"));
 	const FGameplayTag Tag_Move = FGameplayTag::RequestGameplayTag(FName("Data.MoveSpeed"));
 
+	Spec.Data->SetSetByCallerMagnitude(Tag_MaxHealth, Row.MaxHealth);
 	Spec.Data->SetSetByCallerMagnitude(Tag_Health, Row.MaxHealth);
 	Spec.Data->SetSetByCallerMagnitude(Tag_Attack, Row.AttackPower);
 	Spec.Data->SetSetByCallerMagnitude(Tag_Move, Row.MoveSpeed);
@@ -297,9 +354,11 @@ void AMonsterCharacter::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<c
 
 	if (GEngine && AttributeSet)
 	{
-		FString Msg = FString::Printf(TEXT("HP=%.1f  ATK=%.1f"),
+		FString Msg = FString::Printf(TEXT("HP=%.1f / Max=%.1f  ATK=%.1f  Move=%.1f"),
 			AttributeSet->GetHealth(),
-			AttributeSet->GetAttackPower());
+			AttributeSet->GetMaxHealth(),
+			AttributeSet->GetAttackPower(),
+			AttributeSet->GetMoveSpeed());
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, Msg);
 	}
 
@@ -395,5 +454,42 @@ void AMonsterCharacter::TriggerHitReact(AActor* InstigatorActor)
 		Ctx.AddInstigator(InstigatorActor ? InstigatorActor : this, GetController());
 		AbilitySystemComponent->ApplyGameplayEffectToSelf(
 			TestDamageGE->GetDefaultObject<UGameplayEffect>(), 1.f, Ctx);
+	}
+}
+
+
+void AMonsterCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	const bool bDead = (NewCount > 0);
+
+	// 내부 상태 갱신
+	if (bDead) CurrentState = EMonsterState::Dead;
+
+	// BB에 반영
+	if (AMonsterAIController* AIC = Cast<AMonsterAIController>(GetController()))
+	{
+		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+		{
+			BB->SetValueAsBool(TEXT("IsDead"), bDead);
+			BB->SetValueAsInt(TEXT("State"), static_cast<int32>(CurrentState));
+		}
+		// 죽으면 즉시 AI/이동 정지
+		if (bDead)
+		{
+			if (AIC->BrainComponent) AIC->BrainComponent->StopLogic(TEXT("Dead"));
+		}
+	}
+
+	if (bDead)
+	{
+		if (UCharacterMovementComponent* Mv = GetCharacterMovement())
+		{
+			Mv->StopMovementImmediately();
+			Mv->DisableMovement();
+		}
+		if (UCapsuleComponent* Cap = GetCapsuleComponent())
+		{
+			Cap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
 	}
 }
