@@ -10,12 +10,14 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "MotionWarpingComponent.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
 
 // Class
 #include "Weapon/BaseWeapon.h"
+#include "MonsterCharacter.h"
 
 ABasePlayer::ABasePlayer()
 {
@@ -23,6 +25,7 @@ ABasePlayer::ABasePlayer()
 
 	// Components Setup
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABasePlayer::OnCapsuleBeginOverlap);
 
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
@@ -51,6 +54,7 @@ ABasePlayer::ABasePlayer()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void ABasePlayer::BeginPlay()
@@ -81,7 +85,9 @@ void ABasePlayer::BeginPlay()
 	{
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));		
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));	
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
 	}	
 }
 
@@ -89,6 +95,21 @@ void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	CurrentInputDirection = 0;
+}
+
+void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+										bool bFromSweep, const FHitResult& SweepResult)
+{
+	//if (OtherActor && OtherActor != this)
+	//{
+	//	auto Monster = Cast<AMonsterCharacter>(OtherActor);
+	//	if (Monster)
+	//	{
+	//		AbilitySystem->TryActivateAbilityByClass(HitAbility);
+	//	}
+	//}
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
@@ -195,6 +216,23 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 
 	if (Controller)
 	{
+		if(MovementVector.X > 0.f)
+		{
+			CurrentInputDirection = 4; // Right
+		}
+		else if(MovementVector.X < 0.f)
+		{
+			CurrentInputDirection = 3; // Left
+		}
+		else if(MovementVector.Y > 0.f)
+		{
+			CurrentInputDirection = 1; // Forward
+		}
+		else if(MovementVector.Y < 0.f)
+		{
+			CurrentInputDirection = 2; // Backward
+		}
+
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
@@ -223,7 +261,7 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 
 void ABasePlayer::Run(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
@@ -233,7 +271,7 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
 {
-	// Change State
+	AbilitySystem->TryActivateAbilityByClass(DodgeAbility);
 	
 	// PlayMontage
 }
@@ -263,9 +301,7 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
-	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);
-
-	// PlayMontage?
+	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);	
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)

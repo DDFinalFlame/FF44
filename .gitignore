@@ -417,3 +417,5 @@ UpgradeLog.htm
 *.xcworkspace/*
 .vscode/
 
+# Ignore Solution
+FF44.sln
