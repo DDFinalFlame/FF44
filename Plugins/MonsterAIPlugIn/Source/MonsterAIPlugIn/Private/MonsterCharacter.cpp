@@ -33,15 +33,15 @@ AMonsterCharacter::AMonsterCharacter()
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	//피격전용 트리거 설정.
-	HitTestTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("HitTestTrigger"));
-	HitTestTrigger->SetupAttachment(GetRootComponent());
-	HitTestTrigger->InitSphereRadius(120.f);               
-	HitTestTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	HitTestTrigger->SetCollisionObjectType(ECC_WorldDynamic);
-	HitTestTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
-	HitTestTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 Overlap
-	HitTestTrigger->SetGenerateOverlapEvents(true);
+	////피격전용 트리거 설정.
+	//HitTestTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("HitTestTrigger"));
+	//HitTestTrigger->SetupAttachment(GetRootComponent());
+	//HitTestTrigger->InitSphereRadius(120.f);               
+	//HitTestTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	//HitTestTrigger->SetCollisionObjectType(ECC_WorldDynamic);
+	//HitTestTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
+	//HitTestTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 Overlap
+	//HitTestTrigger->SetGenerateOverlapEvents(true);
 }
 
 // Called when the game starts or when spawned
@@ -181,7 +181,7 @@ void AMonsterCharacter::BeginPlay()
 			.AddUObject(this, &AMonsterCharacter::OnDeadTagChanged);
 	}
 
-	if (HitTestTrigger)
+	/*if (HitTestTrigger)
 	{
 		FTimerHandle Tmp;
 		GetWorld()->GetTimerManager().SetTimer(Tmp, [this]()
@@ -191,7 +191,7 @@ void AMonsterCharacter::BeginPlay()
 					HitTestTrigger->OnComponentBeginOverlap.AddDynamic(this, &AMonsterCharacter::OnHitTestBegin);
 				}
 			}, 0.02f, false);
-	}
+	}*/
 }
 
 
