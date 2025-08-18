@@ -60,4 +60,7 @@ protected:
     // 서버 전용 활성화
     virtual void SetHitboxEnable(bool bEnable);
 
+    UFUNCTION()
+    void OnOwnerDestroyed(AActor* DestroyedActor);
+
 };

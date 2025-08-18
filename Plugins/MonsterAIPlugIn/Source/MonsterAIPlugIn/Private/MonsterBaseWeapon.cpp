@@ -27,6 +27,17 @@ void AMonsterBaseWeapon::Init(AMonsterCharacter* InOwner, USkeletalMeshComponent
         FAttachmentTransformRules Rules(EAttachmentRule::SnapToTarget, true);
         AttachToComponent(AttachTo, Rules, Socket);
     }
+
+    if (InOwner)
+    {
+        // 몬스터 Actor가 Destroy될 때 같이 정리
+        InOwner->OnDestroyed.AddDynamic(this, &AMonsterBaseWeapon::OnOwnerDestroyed);
+    }
+}
+
+void AMonsterBaseWeapon::OnOwnerDestroyed(AActor* DestroyedActor)
+{
+    Destroy();
 }
 
 void AMonsterBaseWeapon::RegisterHitbox(UPrimitiveComponent* Comp)

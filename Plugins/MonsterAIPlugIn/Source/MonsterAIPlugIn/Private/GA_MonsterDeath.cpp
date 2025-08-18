@@ -183,6 +183,7 @@ void UGA_MonsterDeath::OnMontageEnded()
     const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo();
     ACharacter* Chr = Info ? Cast<ACharacter>(Info->AvatarActor.Get()) : nullptr;
 
+
     if (Chr)
     {
         // 몽타주 끝난 후 래그돌 진입(연출 → 물리)
