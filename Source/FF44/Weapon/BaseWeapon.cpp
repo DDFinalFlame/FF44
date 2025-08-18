@@ -7,6 +7,7 @@
 
 // Includes
 #include "MonsterCharacter.h"
+#include "Player/BasePlayer.h"
 
 ABaseWeapon::ABaseWeapon()
 {
@@ -19,6 +20,7 @@ ABaseWeapon::ABaseWeapon()
 	WeaponCollision->SetupAttachment(WeaponMesh);
 
 	WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &ABaseWeapon::OnSphereBeginOverlap);
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ABaseWeapon::BeginPlay()
@@ -42,8 +44,6 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 		if (Monster)
 		{
 			Monster->TriggerHitReact(GetOwner());
-
-			UKismetSystemLibrary::PrintString(this);
 		}
 	}
 

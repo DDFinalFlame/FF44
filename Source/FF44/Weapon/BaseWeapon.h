@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "BaseWeapon.generated.h"
 
+class ABasePlayer;
 class UStaticMeshComponent;
 class USphereComponent;
 
@@ -30,15 +31,17 @@ public:
 ///										Components										///
 ///////////////////////////////////////////////////////////////////////////////////////////
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
+	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Mesh")
 	UStaticMeshComponent* WeaponMesh;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Collision")
 	USphereComponent* WeaponCollision;
 
+protected:
+	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Player")
+	ABasePlayer* OwnerPlayer;
 
-	// 공격력, 공격 속도 등의 스탯을 DB로 관리할 수 있도록 설정
-
-
-
+public:
+	void SetPlayer(ABasePlayer* _OwnerPlayer) { _OwnerPlayer = OwnerPlayer; }
+	ABasePlayer* GetPlayer() { return OwnerPlayer; }
 };

@@ -10,14 +10,13 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "MotionWarpingComponent.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
 
 // Class
 #include "Weapon/BaseWeapon.h"
-#include "MonsterCharacter.h"
+#include "BasePlayerAttributeSet.h"
 
 ABasePlayer::ABasePlayer()
 {
@@ -54,13 +53,44 @@ ABasePlayer::ABasePlayer()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
-	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+	if(AbilitySystem)
+	{		
+		AttributeSet = CreateDefaultSubobject<UBasePlayerAttributeSet>(TEXT("AttributeSet"));
+	}
 }
 
 void ABasePlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Definition Load
+	if (!PlayerDefinition.IsValid())
+		PlayerDefinition.LoadSynchronous();
+
+	UPlayerDefinition* def = PlayerDefinition.Get();
+
+	if(!def)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
+		return;
+	}
+
+	// Data Load
+	if (PlayerStatTable)
+	{
+		if(FPlayerStatRow* row = PlayerStatTable->FindRow<FPlayerStatRow>(def->StatRowName, TEXT("Player Stat Row")))
+		{
+			// 초기 Stats 적용
+			ApplyInitStats(*row, def->InitStatGE_SetByCaller);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Player Stat Row not found in DataTable."));
+			return;
+		}
+	}
 	
+	// Player Controller Set
 	AController* PlayerController = GetController();
 	if(!PlayerController)
 	{
@@ -75,6 +105,16 @@ void ABasePlayer::BeginPlay()
 
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
+	auto WeaponActor = Cast<ABaseWeapon>(Weapon);
+
+	if (WeaponActor)
+		WeaponActor->SetOwner(this);
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon is not a valid ABaseWeapon instance."));
+		return;
+	}
+
 	EquipWeapon();
 
 	// 초기 Ability Tag 설정
@@ -88,6 +128,9 @@ void ABasePlayer::BeginPlay()
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));	
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+
+		if (AttributeSetClass)
+			AttributeSet = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);
 	}	
 }
 
@@ -110,6 +153,32 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 	//		AbilitySystem->TryActivateAbilityByClass(HitAbility);
 	//	}
 	//}
+}
+
+void ABasePlayer::ApplyInitStats(const FPlayerStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE)
+{
+	if (!AbilitySystem || !InitGE) return;
+
+	FGameplayEffectContextHandle Ech = AbilitySystem->MakeEffectContext();
+	FGameplayEffectSpecHandle Esh = AbilitySystem->MakeOutgoingSpec(InitGE, 1.f, Ech);
+
+	if (!Esh.IsValid()) return;
+
+	const FGameplayTag Tag_Health = FGameplayTag::RequestGameplayTag(FName("Player.Stat.Health"));
+	const FGameplayTag Tag_Stamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.Stamina"));
+	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Player.Stat.AttackPower"));
+
+	Esh.Data->SetSetByCallerMagnitude(Tag_Health, Row.MaxHealth);
+	Esh.Data->SetSetByCallerMagnitude(Tag_Stamina, Row.MaxStamina);
+	Esh.Data->SetSetByCallerMagnitude(Tag_Attack, Row.AttackPower);
+
+	AbilitySystem->ApplyGameplayEffectSpecToSelf(*Esh.Data.Get());
+
+	UKismetSystemLibrary::PrintString(this, 
+		FString::Printf(TEXT("Health : %f, Stamina : %f, Attack : %f"), 
+			Row.MaxHealth, 
+			Row.MaxStamina,
+			Row.AttackPower));
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
