@@ -225,10 +225,10 @@ protected:
 		AMonsterBaseWeapon* Weapon = nullptr;
 
 public:
-	// 필요하면 접근자
-	FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }
-	void PushAttackCollision();
-	void PopAttackCollision();
+		// 필요하면 접근자
+		FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }
+		void PushAttackCollision();
+		void PopAttackCollision();
 
 private:
 		int32 AttackCollisionDepth = 0;
