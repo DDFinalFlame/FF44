@@ -17,8 +17,7 @@ void ABaseEnemy::BeginPlay()
 
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(PerformAttackAbility, 1, 0));
+		GiveDefaultAbilities();
 	}
 	
 }
@@ -40,19 +39,29 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 }
 
-bool ABaseEnemy::RequestAttack()
+void ABaseEnemy::GiveDefaultAbilities()
 {
-	if (!AbilitySystemComponent || !PerformAttackAbility)
+	if (!AbilitySystemComponent) return;
+
+	for (TSubclassOf<UGameplayAbility> AbilityClass : DefaultAbilities)
+	{
+		if (AbilityClass)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(INDEX_NONE), this));
+		}
+	}
+
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+}
+
+bool ABaseEnemy::RequestAbilityByTag(FGameplayTag AbilityTag)
+{
+	if (!AbilitySystemComponent)
 	{
 		return false;
 	}
 
-	FGameplayAbilitySpec* AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(PerformAttackAbility);
-	if (!AbilitySpec)
-	{
-		return false; // Ability가 부여되지 않은 경우
-	}
-
-	return AbilitySystemComponent->TryActivateAbility(AbilitySpec->Handle);
+	FGameplayTagContainer TagContainer(AbilityTag);
+	return AbilitySystemComponent->TryActivateAbilitiesByTag(TagContainer);
 }
 

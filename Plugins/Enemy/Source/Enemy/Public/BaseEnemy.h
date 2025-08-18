@@ -21,7 +21,7 @@ protected:
 	UAbilitySystemComponent* AbilitySystemComponent;
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
-	TSubclassOf<UGameplayAbility> PerformAttackAbility;
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
 // AI - Patrol
 protected:
@@ -56,6 +56,8 @@ public:
 		PatrolIndex = (PatrolIndex + 1) % PatrolPoints.Num();
 	}
 
+// GAS Section
 public:
-	bool RequestAttack();
+	void GiveDefaultAbilities();
+	bool RequestAbilityByTag(FGameplayTag AbilityTag);
 };

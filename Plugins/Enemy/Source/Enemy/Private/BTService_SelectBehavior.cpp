@@ -52,9 +52,13 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 		const float Distance = TargetActor->GetDistanceTo(ControlledEnemy);
 
 		/* 공격 범위 안쪽이면 **/
-		if (Distance <= AttackRangeDistance)
+		if (Distance <= MeleeAttackRangeDistance)
 		{
 			SetBehaviorKey(BlackboardComponent, EAIBehavior::MeleeAttack);
+		}
+		else if (Distance <= AttackRangeDistance)
+		{
+			SetBehaviorKey(BlackboardComponent, EAIBehavior::RangeAttack);
 		}
 		/* 아직 멀다 **/
 		else

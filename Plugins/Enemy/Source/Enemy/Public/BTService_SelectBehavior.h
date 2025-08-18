@@ -30,7 +30,11 @@ protected:
 	FBlackboardKeySelector BehaviorKey;
 
 	UPROPERTY(EditAnywhere)
-	float AttackRangeDistance = 500.0f;
+	float AttackRangeDistance = 450.0f;
+
+	UPROPERTY(EditAnywhere)
+	float MeleeAttackRangeDistance = 300.0f;
+
 public:
 	UBTService_SelectBehavior();
 
