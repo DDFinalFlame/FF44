@@ -422,3 +422,9 @@ Config/DefaultEditor.ini
 Config/DefaultEditorPerProjectUserSettings.ini
 Config/EditorPerProjectUserSettings.ini
 /Content/Demo
+/Content/Characters/Mannequins
+/Content/Input
+/Content/LevelPrototyping
+/Content/ThirdPerson
+/Content/__ExternalActors__/ThirdPerson/Lvl_ThirdPerson
+/Content/__ExternalObjects__/ThirdPerson/Lvl_ThirdPerson
