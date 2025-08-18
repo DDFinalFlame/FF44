@@ -9,6 +9,11 @@ namespace MonsterTags
 
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_HitReacting);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Attacking);      
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_AttackRecover);  
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_NoPawnCollision);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Stunned);
+
 
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Hit);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Death);

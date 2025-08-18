@@ -60,6 +60,8 @@ void AMonsterBaseWeapon::BeginAttackWindow()
     bActive = true;
     HitActorsThisSwing.Reset();
     SetHitboxEnable(true);
+
+    UE_LOG(LogTemp, Warning, TEXT("Hitbox enable"));
 }
 
 void AMonsterBaseWeapon::EndAttackWindow()
@@ -68,6 +70,8 @@ void AMonsterBaseWeapon::EndAttackWindow()
     SetHitboxEnable(false);
     bActive = false;
     HitActorsThisSwing.Reset();
+
+    UE_LOG(LogTemp, Warning, TEXT("Hitbox disable"));
 }
 
 void AMonsterBaseWeapon::SetHitboxEnable(bool bEnable)
@@ -83,6 +87,7 @@ void AMonsterBaseWeapon::OnHitboxBeginOverlap(UPrimitiveComponent* OverlappedCom
     if (!bActive || !HasAuthority()) return;
     if (!OtherActor || OtherActor == OwnerMonster) return;
     if (HitActorsThisSwing.Contains(OtherActor)) return;
+    if (OtherActor->IsA<AMonsterCharacter>()) return;
 
     HitActorsThisSwing.Add(OtherActor);
     ApplyHit(OtherActor, SweepResult);
@@ -90,10 +95,28 @@ void AMonsterBaseWeapon::OnHitboxBeginOverlap(UPrimitiveComponent* OverlappedCom
 
 void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
 {
+    //로그 확인
+    if (Victim)
+    {
+        FString Msg = FString::Printf(TEXT("[Weapon] %s hit %s"),
+            *GetName(), *Victim->GetName());
+
+        // 화면 디버그 출력 (빨간 글씨, 2초 유지)
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(
+                -1,                 // Key (-1 = 새로운 메시지)
+                2.f,                // Duration (초)
+                FColor::Red,        // Color
+                Msg
+            );
+        }
+    }
     // 1) 이벤트로 HitReact 유도
     {
         FGameplayEventData Payload;
         Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
+        Payload.Instigator = OwnerMonster; //몬스터끼리 공격 X
         OwnerMonster ? static_cast<AActor*>(OwnerMonster) : static_cast<AActor*>(this);
         Payload.Target = Victim;
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
