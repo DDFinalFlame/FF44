@@ -1,14 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "RB_NonSquareRoom1.h"
+#include "DungeonGenerator/Rooms/RB_DungeonStairsRoom1.h"
 #include "Components/ArrowComponent.h"
-#include "Components/BoxComponent.h"
 
-ARB_NonSquareRoom1::ARB_NonSquareRoom1()
+ARB_DungeonStairsRoom1::ARB_DungeonStairsRoom1()
 {
-	PrimaryActorTick.bCanEverTick = true;
-
 	Exit_Arrow_1 = CreateDefaultSubobject<UArrowComponent>(TEXT("Exit_Arrow_1"));
 	Exit_Arrow_1->SetupAttachment(ExitPointsFolder);
 	Exit_Arrow_2 = CreateDefaultSubobject<UArrowComponent>(TEXT("Exit_Arrow_2"));
@@ -18,14 +15,8 @@ ARB_NonSquareRoom1::ARB_NonSquareRoom1()
 	Exit_Arrow_4 = CreateDefaultSubobject<UArrowComponent>(TEXT("Exit_Arrow_4"));
 	Exit_Arrow_4->SetupAttachment(ExitPointsFolder);
 
-	Floor_1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_1"));
-	Floor_1->SetupAttachment(GeometryFolder);
-	Floor_2 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_2"));
-	Floor_2->SetupAttachment(GeometryFolder);
-	Floor_3 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_3"));
-	Floor_3->SetupAttachment(GeometryFolder);
-	Floor_4 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_4"));
-	Floor_4->SetupAttachment(GeometryFolder);
+	SecondF_Floor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SecondF_Floor"));
+	SecondF_Floor->SetupAttachment(GeometryFolder);
 
 	SecondF_Wall_1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SecondF_Wall_1"));
 	SecondF_Wall_1->SetupAttachment(GeometryFolder);
@@ -51,19 +42,7 @@ ARB_NonSquareRoom1::ARB_NonSquareRoom1()
 	Closing_Wall_3 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Closing_Wall_3"));
 	Closing_Wall_3->SetupAttachment(GeometryFolder);
 
-	Platform = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Platform"));
-	Platform->SetupAttachment(GeometryFolder);
+	Stairs = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Stairs"));
+	Stairs->SetupAttachment(GeometryFolder);
 
-	PlatformBoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Platform_BoxCollision"));
-	PlatformBoxCollision->SetupAttachment(Platform);
-}
-
-void ARB_NonSquareRoom1::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-void ARB_NonSquareRoom1::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }

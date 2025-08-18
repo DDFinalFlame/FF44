@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ClosingWall.h"
+#include "DungeonGenerator/DungeonBase/ClosingWall.h"
 
 AClosingWall::AClosingWall()
 {

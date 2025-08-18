@@ -2,14 +2,16 @@
 
 
 #include "DungeonGenerator.h"
-#include "RB_DungeonRoom1.h"
-#include "RoomBase.h"
 #include "Components/BoxComponent.h"
-#include "ClosingWall.h"
-#include "Door.h"
-#include "CoinBase.h"
-#include "TreasureChestBase.h"
-#include "RB_BossRoom.h"
+
+#include "DungeonGenerator/DungeonBase/RoomBase.h"
+#include "DungeonGenerator/DungeonBase/ClosingWall.h"
+#include "DungeonGenerator/DungeonBase/Door.h"
+#include "DungeonGenerator/DungeonBase/CoinBase.h"
+#include "DungeonGenerator/DungeonBase/TreasureChestBase.h"
+
+#include "DungeonGenerator/Rooms/RB_DungeonRoom1.h"
+#include "DungeonGenerator/Rooms/RB_BossRoom.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {

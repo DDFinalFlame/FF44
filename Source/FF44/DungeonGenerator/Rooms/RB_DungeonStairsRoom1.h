@@ -3,25 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RoomBase.h"
-#include "RB_NonSquareRoom1.generated.h"
+#include "DungeonGenerator/DungeonBase/RoomBase.h"
+#include "RB_DungeonStairsRoom1.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FF44_API ARB_NonSquareRoom1 : public ARoomBase
+class FF44_API ARB_DungeonStairsRoom1 : public ARoomBase
 {
 	GENERATED_BODY()
-
-public:
-	ARB_NonSquareRoom1();
-
+	
 protected:
-	virtual void BeginPlay() override;
-
-public:
-	virtual void Tick(float DeltaTime) override;
+	ARB_DungeonStairsRoom1();
 
 public:
 
@@ -38,16 +32,7 @@ public:
 	UArrowComponent* Exit_Arrow_4;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_1;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_2;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_3;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_4;
+	UStaticMeshComponent* SecondF_Floor;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* SecondF_Wall_1;
@@ -83,9 +68,5 @@ public:
 	UStaticMeshComponent* Closing_Wall_3;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Platform;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UBoxComponent* PlatformBoxCollision;
-	
+	UStaticMeshComponent* Stairs;
 };

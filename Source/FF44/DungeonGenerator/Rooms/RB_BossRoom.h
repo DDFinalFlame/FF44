@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RoomBase.h"
+#include "DungeonGenerator/DungeonBase/RoomBase.h"
 #include "RB_BossRoom.generated.h"
 
 /**

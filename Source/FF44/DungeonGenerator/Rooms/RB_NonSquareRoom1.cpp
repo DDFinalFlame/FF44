@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "RB_DungeonElevatorRoom1.h"
+#include "DungeonGenerator/Rooms/RB_NonSquareRoom1.h"
 #include "Components/ArrowComponent.h"
 #include "Components/BoxComponent.h"
 
-ARB_DungeonElevatorRoom1::ARB_DungeonElevatorRoom1()
+ARB_NonSquareRoom1::ARB_NonSquareRoom1()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -26,12 +26,6 @@ ARB_DungeonElevatorRoom1::ARB_DungeonElevatorRoom1()
 	Floor_3->SetupAttachment(GeometryFolder);
 	Floor_4 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_4"));
 	Floor_4->SetupAttachment(GeometryFolder);
-	Floor_5 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_5"));
-	Floor_5->SetupAttachment(GeometryFolder);
-	Floor_6 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_6"));
-	Floor_6->SetupAttachment(GeometryFolder);
-	Floor_7 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor_7"));
-	Floor_7->SetupAttachment(GeometryFolder);
 
 	SecondF_Wall_1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SecondF_Wall_1"));
 	SecondF_Wall_1->SetupAttachment(GeometryFolder);
@@ -62,37 +56,14 @@ ARB_DungeonElevatorRoom1::ARB_DungeonElevatorRoom1()
 
 	PlatformBoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Platform_BoxCollision"));
 	PlatformBoxCollision->SetupAttachment(Platform);
-
 }
 
-void ARB_DungeonElevatorRoom1::BeginPlay()
+void ARB_NonSquareRoom1::BeginPlay()
 {
 	Super::BeginPlay();
-
-	StartLocation = Platform->GetRelativeLocation();
 }
 
-void ARB_DungeonElevatorRoom1::Tick(float DeltaTime)
+void ARB_NonSquareRoom1::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	CurrentLocation = Platform->GetRelativeLocation();
-
-	if (bSouldMove)
-	{
-		FVector NewLocation = FMath::VInterpTo(CurrentLocation, EndLocation, DeltaTime, MoveSpeed);
-		Platform->SetRelativeLocation(NewLocation);
-	}
-}
-
-void ARB_DungeonElevatorRoom1::GoUp()
-{
-	EndLocation = CurrentLocation + FVector(0.f, 0.f, 1500.f);
-	bSouldMove = true;
-}
-
-void ARB_DungeonElevatorRoom1::GoDown()
-{
-	EndLocation = StartLocation;
-	bSouldMove = true;
 }

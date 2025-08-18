@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "RB_BossRoom.h"
+#include "DungeonGenerator/Rooms/RB_BossRoom.h"
 
 ARB_BossRoom::ARB_BossRoom()
 {

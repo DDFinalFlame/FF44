@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "RB_DungeonRoom3.h"
+#include "DungeonGenerator/Rooms/RB_DungeonRoom4.h"
 #include "Components/ArrowComponent.h"
 
 
-ARB_DungeonRoom3::ARB_DungeonRoom3()
+ARB_DungeonRoom4::ARB_DungeonRoom4()
 {
 	Exit_Arrow_1 = CreateDefaultSubobject<UArrowComponent>(TEXT("Exit_Arrow_1"));
 	Exit_Arrow_1->SetupAttachment(ExitPointsFolder);

@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RoomBase.h"
-#include "RB_DungeonRoom2.generated.h"
+#include "DungeonGenerator/DungeonBase/RoomBase.h"
+#include "RB_DungeonRoom5.generated.h"
 
 
 class UArrowComponent;
@@ -13,21 +13,21 @@ class UArrowComponent;
  * 
  */
 UCLASS()
-class FF44_API ARB_DungeonRoom2 : public ARoomBase
+class FF44_API ARB_DungeonRoom5 : public ARoomBase
 {
 	GENERATED_BODY()
 
 public:
-	ARB_DungeonRoom2();
+	ARB_DungeonRoom5();
 
 public:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UArrowComponent* Exit_Arrow_1;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UArrowComponent* Exit_Arrow_2;
+	UStaticMeshComponent* ClosingWall_1;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* ClosingWall_1;
+	UStaticMeshComponent* ClosingWall_2;
 	
 };

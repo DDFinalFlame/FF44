@@ -15,8 +15,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // Temp
-#include "Door.h"
-#include "RB_DungeonElevatorRoom1.h"
+#include "DungeonGenerator/DungeonBase/Door.h"
+#include "DungeonGenerator/Rooms/RB_DungeonElevatorRoom1.h"
 
 
 ABasePlayer::ABasePlayer()

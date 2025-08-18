@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "RoomBase.h"
+#include "DungeonGenerator/DungeonBase/RoomBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
 
