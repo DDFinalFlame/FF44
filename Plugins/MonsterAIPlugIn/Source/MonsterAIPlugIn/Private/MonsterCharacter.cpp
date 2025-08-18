@@ -535,3 +535,24 @@ void AMonsterCharacter::ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit)
 	// 3) 후처리 훅(파생에서 이펙트/사운드 등)
 	OnAttackHit(Victim);
 }
+
+void AMonsterCharacter::PushAttackCollision()
+{
+	AttackCollisionDepth++;
+	ApplyCollisionProfile();
+}
+
+void AMonsterCharacter::PopAttackCollision()
+{
+	AttackCollisionDepth = FMath::Max(0, AttackCollisionDepth - 1);
+	ApplyCollisionProfile();
+}
+
+void AMonsterCharacter::ApplyCollisionProfile()
+{
+	const FName Profile = (AttackCollisionDepth > 0) ? AttackingProfile : DefaultProfile;
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionProfileName(Profile,  true);
+	}
+}

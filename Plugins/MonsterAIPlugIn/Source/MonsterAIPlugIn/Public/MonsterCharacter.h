@@ -227,4 +227,15 @@ protected:
 public:
 	// 필요하면 접근자
 	FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }
+	void PushAttackCollision();
+	void PopAttackCollision();
+
+private:
+		int32 AttackCollisionDepth = 0;
+		UPROPERTY(EditDefaultsOnly, Category = "Collision")
+		FName DefaultProfile = TEXT("Monster_Default");
+		UPROPERTY(EditDefaultsOnly, Category = "Collision")
+		FName AttackingProfile = TEXT("Monster_Attacking");
+
+		void ApplyCollisionProfile();
 };
