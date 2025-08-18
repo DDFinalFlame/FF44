@@ -19,7 +19,9 @@ public class FF44 : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"GameplayAbilities",
+			"Slate",
+            "SlateCore",
+            "GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
 			"MonsterAIPlugIn",
@@ -34,13 +36,5 @@ public class FF44 : ModuleRules
             ModuleDirectory,
 			MonsterAIPath
         });
-
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
 }
