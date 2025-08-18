@@ -389,6 +389,9 @@ void AMonsterCharacter::TriggerHitReact(AActor* InstigatorActor)
 		AbilitySystemComponent->ApplyGameplayEffectToSelf(
 			TestDamageGE->GetDefaultObject<UGameplayEffect>(), 1.f, Ctx);
 	}
+
+	// 상태를 Hit으로 전환
+	SetMonsterState(EMonsterState::Hit);
 }
 
 
