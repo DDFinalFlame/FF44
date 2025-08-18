@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 
+
 UBTService_UpdateTarget::UBTService_UpdateTarget()
 {
 	NodeName = TEXT("Update Target & CanAttack");
@@ -12,7 +13,7 @@ UBTService_UpdateTarget::UBTService_UpdateTarget()
 	Interval = 0.2f;
 	RandomDeviation = 0.0f;
 
-	DetectDistance = 1500.f;
+	DetectDistance = 800.f;
 	AttackDistance = 200.f;
 	PlayerIndex = 0;
 
@@ -34,6 +35,8 @@ void UBTService_UpdateTarget::InitializeFromAsset(UBehaviorTree& Asset)
 	LastKnownLocationKey.AddVectorFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, LastKnownLocationKey));
 	DistanceToTargetKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, DistanceToTargetKey));
 	NextAttackTimeKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, NextAttackTimeKey));
+	DetectDistanceKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, DetectDistanceKey));
+	AttackDistanceKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, AttackDistanceKey));
 
 	TargetActorKey.ResolveSelectedKey(*BBAsset);
 	CanAttackKey.ResolveSelectedKey(*BBAsset);
@@ -41,6 +44,8 @@ void UBTService_UpdateTarget::InitializeFromAsset(UBehaviorTree& Asset)
 	LastKnownLocationKey.ResolveSelectedKey(*BBAsset);
 	DistanceToTargetKey.ResolveSelectedKey(*BBAsset);
 	NextAttackTimeKey.ResolveSelectedKey(*BBAsset);
+	DetectDistanceKey.ResolveSelectedKey(*BBAsset);
+	AttackDistanceKey.ResolveSelectedKey(*BBAsset);
 }
 
 void UBTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -69,11 +74,26 @@ void UBTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 		BB->SetValueAsFloat(DistanceToTargetKey.SelectedKeyName, Distance);
 	}
 
+	// BB 값 읽기 (없으면 폴백)
+	float Detect = DefaultDetectDistance;
+	if (DetectDistanceKey.SelectedKeyType)
+	{
+		const float FromBB = BB->GetValueAsFloat(DetectDistanceKey.SelectedKeyName);
+		if (FromBB > 0.f) Detect = FromBB;
+	}
+
+	float Attack = DefaultAttackDistance;
+	if (AttackDistanceKey.SelectedKeyType)
+	{
+		const float FromBB = BB->GetValueAsFloat(AttackDistanceKey.SelectedKeyName);
+		if (FromBB > 0.f) Attack = FromBB;
+	}
+
 	// 타겟/공격 가능 갱신
 	if (Distance < DetectDistance)
 	{
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, Player);
-		BB->SetValueAsBool(CanAttackKey.SelectedKeyName, Distance < AttackDistance);
+		BB->SetValueAsBool(CanAttackKey.SelectedKeyName, Distance < Attack);
 	}
 	else
 	{

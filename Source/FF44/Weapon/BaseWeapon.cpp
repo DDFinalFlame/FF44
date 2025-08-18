@@ -42,8 +42,12 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 		auto Monster = Cast<AMonsterCharacter>(OtherActor);
 		if (Monster)
 		{
+			Monster->TriggerHitReact(GetOwner());
+
 			UKismetSystemLibrary::PrintString(this);
 		}
 	}
+
+
 }
 
