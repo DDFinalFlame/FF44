@@ -105,6 +105,16 @@ void ABasePlayer::BeginPlay()
 
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
+	auto WeaponActor = Cast<ABaseWeapon>(Weapon);
+
+	if (WeaponActor)
+		WeaponActor->SetOwner(this);
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon is not a valid ABaseWeapon instance."));
+		return;
+	}
+
 	EquipWeapon();
 
 	// 초기 Ability Tag 설정

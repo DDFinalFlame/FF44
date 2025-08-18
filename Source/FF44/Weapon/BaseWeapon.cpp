@@ -7,6 +7,7 @@
 
 // Includes
 #include "MonsterCharacter.h"
+#include "Player/BasePlayer.h"
 
 ABaseWeapon::ABaseWeapon()
 {
@@ -43,8 +44,6 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 		if (Monster)
 		{
 			Monster->TriggerHitReact(GetOwner());
-
-			UKismetSystemLibrary::PrintString(this);
 		}
 	}
 
