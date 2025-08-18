@@ -5,14 +5,19 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 
+#include "Data/PlayerStatRow.h"
+#include "Data/PlayerDefinition.h"
+
 #include "BasePlayer.generated.h"
 
+class AActor;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
 class UGameplayAbility;
-class AActor;
-class UMotionWarpingComponent;
+
+class UBasePlayerAttributeSet;
+
 struct FInputActionValue;
 
 UCLASS()
@@ -45,12 +50,26 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAbilitySystemComponent* AbilitySystem;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UMotionWarpingComponent* MotionWarpingComponent;
-
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
 
+///////////////////////////////////////////////////////////////////////////////////////
+///										Data										///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	UBasePlayerAttributeSet* AttributeSet;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attribute")
+	TSubclassOf<UBasePlayerAttributeSet> AttributeSetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TSoftObjectPtr<UPlayerDefinition> PlayerDefinition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	UDataTable* PlayerStatTable = nullptr;
+
+	void ApplyInitStats(const FPlayerStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Abilities										///
