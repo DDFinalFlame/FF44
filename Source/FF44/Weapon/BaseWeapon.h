@@ -44,4 +44,6 @@ protected:
 public:
 	void SetPlayer(ABasePlayer* _OwnerPlayer) { _OwnerPlayer = OwnerPlayer; }
 	ABasePlayer* GetPlayer() { return OwnerPlayer; }
+
+	USphereComponent* GetWeaponCollision() const { return WeaponCollision; }
 };
