@@ -381,13 +381,11 @@ void AMonsterCharacter::TriggerHitReact(AActor* InstigatorActor)
 		UE_LOG(LogTemp, Warning, TEXT("TryActivateAbilityByClass HitReact: %s"), bOk ? TEXT("OK") : TEXT("FAIL"));
 	}
 
-	// 2) (선택) 데미지 적용
 	if (TestDamageGE && AbilitySystemComponent)
 	{
 		FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
 		Ctx.AddInstigator(InstigatorActor ? InstigatorActor : this, GetController());
 
-		// 클래스 직접 적용도 OK (Spec 핸들 없어도 GE 내부 Modifiers(MMC)가 수행됨)
 		AbilitySystemComponent->ApplyGameplayEffectToSelf(
 			TestDamageGE->GetDefaultObject<UGameplayEffect>(), 1.f, Ctx);
 	}
@@ -557,4 +555,27 @@ void AMonsterCharacter::ApplyCollisionProfile()
 	{
 		Capsule->SetCollisionProfileName(Profile,  true);
 	}
+}
+
+float AMonsterCharacter::GetAttackPower_Implementation() const
+{
+	// 1) ASC에 등록된 AttributeSet에서 우선 조회
+	if (AbilitySystemComponent)
+	{
+		const UMonsterAttributeSet* FromASC = AbilitySystemComponent->GetSet<UMonsterAttributeSet>();
+		if (FromASC)
+		{
+			const float AP = FromASC->GetAttackPower();
+			return FMath::IsFinite(AP) ? AP : 0.f;
+		}
+	}
+
+	// 2) 폴백: 멤버 보관용 AttributeSet에서 조회
+	if (AttributeSet)
+	{
+		const float AP = AttributeSet->GetAttackPower();
+		return FMath::IsFinite(AP) ? AP : 0.f;
+	}
+
+	return 0.f;
 }

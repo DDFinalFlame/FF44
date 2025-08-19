@@ -4,12 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameplayEffectTypes.h"
 #include "MonsterBaseWeapon.generated.h"
 
 class UPrimitiveComponent;
 class UBoxComponent;
 class USkeletalMeshComponent;
 class UAbilitySystemComponent;
+class UGameplayEffect;
 class AMonsterCharacter;
 
 UCLASS()
@@ -28,10 +30,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void EndAttackWindow();
 
-	// 외부에서 데미지 조정 가능(Def/DT로)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	float Damage = 10.f;
-
 protected:
     UPROPERTY()
     AMonsterCharacter* OwnerMonster = nullptr;
@@ -44,6 +42,10 @@ protected:
     TSet<TWeakObjectPtr<AActor>> HitActorsThisSwing;
 
     bool bActive = false;
+
+    // MMC_AttackToDamage가 연결된 GE를 에디터에서 지정하세요.
+    UPROPERTY(EditDefaultsOnly, Category = "Combat|GE")
+    TSubclassOf<UGameplayEffect> DamageGE;
 
     // 파생에서 박스 생성 후 여기로 등록
     void RegisterHitbox(UPrimitiveComponent* Comp);
