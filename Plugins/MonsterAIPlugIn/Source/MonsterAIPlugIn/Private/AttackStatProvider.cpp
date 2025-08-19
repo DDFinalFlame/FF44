@@ -1,0 +1,6 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "AttackStatProvider.h"
+
+// Add default functionality here for any IAttackStatProvider functions that are not pure virtual.

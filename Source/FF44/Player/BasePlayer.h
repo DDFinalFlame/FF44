@@ -7,7 +7,7 @@
 
 #include "Data/PlayerStatRow.h"
 #include "Data/PlayerDefinition.h"
-
+#include "AttackStatProvider.h"
 #include "BasePlayer.generated.h"
 
 class AActor;
@@ -22,7 +22,7 @@ class UBasePlayerAttributeSet;
 struct FInputActionValue;
 
 UCLASS()
-class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface
+class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider
 {
 	GENERATED_BODY()
 
@@ -189,4 +189,7 @@ protected:
 	virtual void Attack(const FInputActionValue& Value);
 	virtual void SpecialAct(const FInputActionValue& Value);
 	virtual void Skill(const FInputActionValue& Value);
+
+public:
+	virtual float GetAttackPower_Implementation() const override;
 };

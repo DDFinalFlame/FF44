@@ -7,6 +7,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "AttackStatProvider.h"
+#include "MonsterAttributeSet.h"
 #include "MonsterCharacter.generated.h"
 
 
@@ -14,6 +16,7 @@ class UAbilitySystemComponent;
 class UMonsterAttributeSet;
 class USphereComponent;
 class UGameplayEffect;
+class AMonsterBaseWeapon;
 
 UENUM(BlueprintType)
 enum class EMonsterState : uint8
@@ -30,7 +33,8 @@ enum class EMonsterState : uint8
 
 
 UCLASS()
-class MONSTERAIPLUGIN_API AMonsterCharacter : public ACharacter, public IAbilitySystemInterface
+class MONSTERAIPLUGIN_API AMonsterCharacter : public ACharacter, 
+	public IAbilitySystemInterface, public IAttackStatProvider
 {
 	GENERATED_BODY()
 
@@ -38,10 +42,13 @@ public:
 	AMonsterCharacter();
 	virtual void Tick(float DeltaTime) override;
 
-	// GAS 시스템용 함수들
+	// GAS 시스템용 함수들 : 몬스터의 ASC 제공
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	virtual void PossessedBy(AController* NewController) override;
+	/** 서버 소유권 획득 시 ASC 재초기화 */
+	virtual void PossessedBy(AController* _NewController) override;
+
+	/** 클라 재소유(레플리케이션) 시 ASC 재초기화 */
 	virtual void OnRep_PlayerState() override;
 
 	virtual void Attack();
@@ -54,9 +61,9 @@ public:
 	EMonsterState GetMonsterState() const { return CurrentState; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	EMonsterState StartState = EMonsterState::Patrol;   // 기본은 일반 순찰
+	EMonsterState StartState = EMonsterState::Patrol; 
 
-	// (옵션) BT에서 호출하기 쉬운 헬퍼: 기습 종료 후 일반 루프로 전환
+	// 기습 종료 후 일반 루프로 전환
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void FinishAmbush();  // AmbushReady -> CombatReady 로 전환
 
@@ -64,11 +71,18 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	
+	// =========================
+    //  1) 데이터/스탯/정의 로딩
+    // =========================
+
+    /** 몬스터 정의(Definition에 따라서 사용) */
 	UPROPERTY(EditAnywhere, Category = "Monster|Data")
 	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
 
+	/** 스탯 데이터 테이블 */
 	UPROPERTY(EditDefaultsOnly, Category = "Monster|Data")
-	UDataTable* MonsterStatTable = nullptr;   // DT_MonsterStats 지정
+	UDataTable* MonsterStatTable = nullptr;
 
 	// SetByCaller 값 주입 헬퍼
 	void ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
@@ -79,7 +93,10 @@ protected:
 	float DefaultWalkSpeed = 0.f;          // DT에서 받은 기본 이동속도 캐시
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Ambush")
-	float AmbushSpeedRate = 3.0f;          // DT 없을 때 사용할 기본 배율(예: 1.4배)
+	float AmbushSpeedRate = 3.0f;          
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Ambush")
+	float AttackSpeedRate = 2.0f;          
 
 	// 헬퍼
 	UFUNCTION(BlueprintCallable, Category = "AI|Ambush")
@@ -144,8 +161,88 @@ protected:
 	void UpdateTransition_PatrolToCombatReady();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State")
-	float DetectDistanceCache = 0.f; // DT에서 채움
+	float DetectDistanceCache = 0.f; 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State")
-	float FallbackDetectDistance = 800.f; // 안전 기본값
+	float FallbackDetectDistance = 800.f;
+
+
+	// --- [공격 공통 훅: 파생 전용 가상 함수] ---
+protected:
+	// 파생: 공격용 히트박스 생성 및 부착(머리/칼 등).
+	virtual void SetupAttackCollision() {}
+
+	// 파생: 공격 타이밍에 히트박스 On/Off(AnimNotify에서 호출)
+	virtual void ActivateAttackHitbox(bool bEnable);
+
+	// 파생: 데미지 수치(또는 DT/Def 기반 계산)
+	virtual float GetAttackDamage() const { return 10.f; }
+
+	// 파생 후처리 훅 (이펙트/사운드 등).
+	virtual void OnAttackHit(AActor* _Victim) {}
+
+	// --- [공격 공통 로직: 베이스에서 제공] ---
+protected:
+	// 등록된 모든 공격 히트박스(파생이 RegisterHitbox로 등록)
+	UPROPERTY()
+	TArray<UPrimitiveComponent*> AttackHitboxes;
+
+	// 한 번의 스윙에서 중복 히트 방지
+	TSet<TWeakObjectPtr<AActor>> HitActorsThisSwing;
+
+	// 현재 스윙 활성화 여부(Overlap을 받을지 여부)
+	bool bAttackActive = false;
+
+	// 파생 히트박스 생성 시 반드시 호출해서 베이스에 등록(Overlap 바인딩)
+	void RegisterHitbox(UPrimitiveComponent* Comp);
+
+	// 공용: 스윙 시작/종료(AnimNotify_Begin/End에서 호출하면 편합니다)
+public:
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void BeginAttackWindow(); // bAttackActive=true, HitActorsThisSwing 초기화
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void EndAttackWindow();   // bAttackActive=false
+
+protected:
+	// 공통 Overlap 핸들러(등록된 모든 AttackHitboxes가 여기로 바인딩)
+	UFUNCTION()
+	void OnAttackHitboxBeginOverlap(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
+	// 맞은 대상에게 실제 처리(GAS 이벤트/데미지 등)
+	void ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit);
+
+protected:
+		// BP에서 무기 클래스를 지정
+		UPROPERTY(EditAnywhere, Category = "Weapon")
+		TSubclassOf<AMonsterBaseWeapon> WeaponClass;
+
+		// 런타임에 스폰된 무기 인스턴스
+		UPROPERTY()
+		AMonsterBaseWeapon* Weapon = nullptr;
+
+public:
+		// 필요하면 접근자
+		FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }
+		void PushAttackCollision();
+		void PopAttackCollision();
+
+private:
+		int32 AttackCollisionDepth = 0;
+		UPROPERTY(EditDefaultsOnly, Category = "Collision")
+		FName DefaultProfile = TEXT("Monster_Default");
+		UPROPERTY(EditDefaultsOnly, Category = "Collision")
+		FName AttackingProfile = TEXT("Monster_Attacking");
+
+		void ApplyCollisionProfile();
+
+
+public:
+	virtual float GetAttackPower_Implementation() const override;
 };

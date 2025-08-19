@@ -388,3 +388,28 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 
 	// PlayMontage
 }
+
+float ABasePlayer::GetAttackPower_Implementation() const
+{
+	// 1) 가장 신뢰되는 경로: ASC에 등록된 AttributeSet에서 읽기
+	const UBasePlayerAttributeSet* FromASC = nullptr;
+	if (AbilitySystem)
+	{
+		FromASC = AbilitySystem->GetSet<UBasePlayerAttributeSet>();
+		if (FromASC)
+		{
+			const float AP = FromASC->GetAttackPower();
+			return FMath::IsFinite(AP) ? AP : 0.f;
+		}
+	}
+
+	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
+	if (AttributeSet)
+	{
+		const float AP = AttributeSet->GetAttackPower();
+		return FMath::IsFinite(AP) ? AP : 0.f;
+	}
+
+	// 3) 최종 폴백
+	return 0.f;
+}
