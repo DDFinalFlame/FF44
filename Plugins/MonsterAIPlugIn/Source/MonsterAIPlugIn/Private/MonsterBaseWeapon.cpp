@@ -61,7 +61,7 @@ void AMonsterBaseWeapon::BeginAttackWindow()
     HitActorsThisSwing.Reset();
     SetHitboxEnable(true);
 
-    UE_LOG(LogTemp, Warning, TEXT("Hitbox enable"));
+    //UE_LOG(LogTemp, Warning, TEXT("Hitbox enable"));
 }
 
 void AMonsterBaseWeapon::EndAttackWindow()
@@ -71,7 +71,7 @@ void AMonsterBaseWeapon::EndAttackWindow()
     bActive = false;
     HitActorsThisSwing.Reset();
 
-    UE_LOG(LogTemp, Warning, TEXT("Hitbox disable"));
+   //UE_LOG(LogTemp, Warning, TEXT("Hitbox disable"));
 }
 
 void AMonsterBaseWeapon::SetHitboxEnable(bool bEnable)
@@ -117,28 +117,29 @@ void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
         FGameplayEventData Payload;
         Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
         Payload.Instigator = OwnerMonster; //몬스터끼리 공격 X
-        OwnerMonster ? static_cast<AActor*>(OwnerMonster) : static_cast<AActor*>(this);
         Payload.Target = Victim;
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
     }
 
-    //// 2) 데미지 적용(ByCaller 권장)
-    //if (OwnerMonster)
-    //{
-    //    UAbilitySystemComponent* OwnerASC = OwnerMonster->GetAbilitySystemComponent();
-    //    UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
-    //    if (OwnerASC && TargetASC && OwnerMonster->TestDamageGE) // 임시 GE 사용 예시
-    //    {
-    //        FGameplayEffectContextHandle Ctx = OwnerASC->MakeEffectContext();
-    //        Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
-    //        FGameplayEffectSpecHandle Spec = OwnerASC->MakeOutgoingSpec(OwnerMonster->TestDamageGE, 1.f, Ctx);
-    //        if (Spec.IsValid())
-    //        {
-    //            const FGameplayTag Tag_Damage = FGameplayTag::RequestGameplayTag(TEXT("Data.Damage"));
-    //            Spec.Data->SetSetByCallerMagnitude(Tag_Damage, Damage);
-    //            TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
-    //        }
-    //    }
-    //}
+    // 2) 데미지 GE 적용(여기서 실제 체력 감소)
+    if (!DamageGE || !OwnerMonster) return;
+
+    UAbilitySystemComponent* SourceASC =
+        UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerMonster);
+    UAbilitySystemComponent* TargetASC =
+        UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
+
+    if (!SourceASC || !TargetASC) return;
+
+    // 컨텍스트 생성 + 공격자 주입(중요)
+    FGameplayEffectContextHandle Ctx = SourceASC->MakeEffectContext();
+    Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
+
+    // Spec 생성
+    FGameplayEffectSpecHandle Spec = SourceASC->MakeOutgoingSpec(DamageGE, 1.f, Ctx);
+    if (!Spec.IsValid()) return;
+
+    // 타깃에 적용
+    TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 }
 

@@ -7,6 +7,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "AttackStatProvider.h"
+#include "MonsterAttributeSet.h"
 #include "MonsterCharacter.generated.h"
 
 
@@ -31,7 +33,8 @@ enum class EMonsterState : uint8
 
 
 UCLASS()
-class MONSTERAIPLUGIN_API AMonsterCharacter : public ACharacter, public IAbilitySystemInterface
+class MONSTERAIPLUGIN_API AMonsterCharacter : public ACharacter, 
+	public IAbilitySystemInterface, public IAttackStatProvider
 {
 	GENERATED_BODY()
 
@@ -238,4 +241,8 @@ private:
 		FName AttackingProfile = TEXT("Monster_Attacking");
 
 		void ApplyCollisionProfile();
+
+
+public:
+	virtual float GetAttackPower_Implementation() const override;
 };

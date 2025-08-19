@@ -21,6 +21,6 @@ float UMMC_AttackToDamage::CalculateBaseMagnitude_Implementation(const FGameplay
     if (Source && Source->GetClass()->ImplementsInterface(UAttackStatProvider::StaticClass()))
         Attack = IAttackStatProvider::Execute_GetAttackPower(Source);
 
-    Attack *= (-1);
+    //Attack *= (-1);
     return Attack;
 }
