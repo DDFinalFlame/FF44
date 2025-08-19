@@ -122,23 +122,23 @@ void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
     }
 
-    // 2) 데미지 적용(ByCaller 권장)
-    if (OwnerMonster)
-    {
-        UAbilitySystemComponent* OwnerASC = OwnerMonster->GetAbilitySystemComponent();
-        UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
-        if (OwnerASC && TargetASC && OwnerMonster->TestDamageGE) // 임시 GE 사용 예시
-        {
-            FGameplayEffectContextHandle Ctx = OwnerASC->MakeEffectContext();
-            Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
-            FGameplayEffectSpecHandle Spec = OwnerASC->MakeOutgoingSpec(OwnerMonster->TestDamageGE, 1.f, Ctx);
-            if (Spec.IsValid())
-            {
-                const FGameplayTag Tag_Damage = FGameplayTag::RequestGameplayTag(TEXT("Data.Damage"));
-                Spec.Data->SetSetByCallerMagnitude(Tag_Damage, Damage);
-                TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
-            }
-        }
-    }
+    //// 2) 데미지 적용(ByCaller 권장)
+    //if (OwnerMonster)
+    //{
+    //    UAbilitySystemComponent* OwnerASC = OwnerMonster->GetAbilitySystemComponent();
+    //    UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
+    //    if (OwnerASC && TargetASC && OwnerMonster->TestDamageGE) // 임시 GE 사용 예시
+    //    {
+    //        FGameplayEffectContextHandle Ctx = OwnerASC->MakeEffectContext();
+    //        Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
+    //        FGameplayEffectSpecHandle Spec = OwnerASC->MakeOutgoingSpec(OwnerMonster->TestDamageGE, 1.f, Ctx);
+    //        if (Spec.IsValid())
+    //        {
+    //            const FGameplayTag Tag_Damage = FGameplayTag::RequestGameplayTag(TEXT("Data.Damage"));
+    //            Spec.Data->SetSetByCallerMagnitude(Tag_Damage, Damage);
+    //            TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+    //        }
+    //    }
+    //}
 }
 

@@ -386,6 +386,8 @@ void AMonsterCharacter::TriggerHitReact(AActor* InstigatorActor)
 	{
 		FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
 		Ctx.AddInstigator(InstigatorActor ? InstigatorActor : this, GetController());
+
+		// 클래스 직접 적용도 OK (Spec 핸들 없어도 GE 내부 Modifiers(MMC)가 수행됨)
 		AbilitySystemComponent->ApplyGameplayEffectToSelf(
 			TestDamageGE->GetDefaultObject<UGameplayEffect>(), 1.f, Ctx);
 	}
