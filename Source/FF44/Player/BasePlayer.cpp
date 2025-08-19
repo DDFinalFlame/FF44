@@ -53,10 +53,6 @@ ABasePlayer::ABasePlayer()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
-	if(AbilitySystem)
-	{		
-		AttributeSet = CreateDefaultSubobject<UBasePlayerAttributeSet>(TEXT("AttributeSet"));
-	}
 }
 
 void ABasePlayer::BeginPlay()

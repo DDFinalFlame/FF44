@@ -8,8 +8,9 @@
 UGA_Player_Attack::UGA_Player_Attack()
 {
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Attack"));
-	ActivationRequiredTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Equip"));
+	ActivationRequiredTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Weapon.Equip"));
 	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Dodge"));
+	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Hit"));
 }
 
 void UGA_Player_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -50,6 +51,16 @@ void UGA_Player_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,                        // Key (-1 = 새 메시지 계속 추가)
+			5.f,                       // Duration (5초)
+			FColor::Green,             // 색상
+			FString::Printf(TEXT("EndAbility: %s"), *GetName())
+		);
+	}
 }
 
 void UGA_Player_Attack::OnAttack_Implementation()
