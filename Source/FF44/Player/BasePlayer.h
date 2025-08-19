@@ -11,6 +11,7 @@
 #include "BasePlayer.generated.h"
 
 class AActor;
+class ABaseWeapon;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
@@ -83,7 +84,7 @@ protected:
 	TSubclassOf<UGameplayAbility> UnEquipWeaponAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
-	TSubclassOf<UGameplayAbility> ComboAttackAbility;
+	TArray<TSubclassOf<UGameplayAbility>> ComboAttackAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> HitAbility;
@@ -97,10 +98,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////////
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	AActor* Weapon;
+	ABaseWeapon* Weapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	TSubclassOf<class ABaseWeapon> WeaponClass;
+	TSubclassOf<ABaseWeapon> WeaponClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FName EquipSocket= "Equip_Weapon";
@@ -119,8 +120,8 @@ public:
 	virtual void UnEquipWeapon();
 
 public:
-	AActor* GetWeapon() const { return Weapon; }
-	void SetWeapon(AActor* _Weapon) { Weapon = _Weapon; }
+	ABaseWeapon* GetWeapon() const { return Weapon; }
+	void SetWeapon(ABaseWeapon* _Weapon) { Weapon = _Weapon; }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////

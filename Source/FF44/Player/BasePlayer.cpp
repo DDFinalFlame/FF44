@@ -53,10 +53,6 @@ ABasePlayer::ABasePlayer()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
-	if(AbilitySystem)
-	{		
-		AttributeSet = CreateDefaultSubobject<UBasePlayerAttributeSet>(TEXT("AttributeSet"));
-	}
 }
 
 void ABasePlayer::BeginPlay()
@@ -104,18 +100,17 @@ void ABasePlayer::BeginPlay()
 	}
 
 	// Weapon를 월드에 생성 후 바로 장착
-	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
-	auto WeaponActor = Cast<ABaseWeapon>(Weapon);
-
-	if (WeaponActor)
-		WeaponActor->SetOwner(this);
-	else
+	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
+	if (Weapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Weapon is not a valid ABaseWeapon instance."));
+		Weapon->SetOwner(this);
+		EquipWeapon();
+	}
+	else 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon not spawned. Check WeaponClass."));
 		return;
 	}
-
-	EquipWeapon();
 
 	// 초기 Ability Tag 설정
 	AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
@@ -125,12 +120,14 @@ void ABasePlayer::BeginPlay()
 	{
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));	
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
 
-		/*if (AttributeSetClass)
-			AttributeSet = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);*/
+		for(int32 i=0;i< ComboAttackAbility.Num(); ++i)
+			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
+
+		if (AttributeSetClass)
+			AttributeSet = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);
 	}	
 }
 
@@ -370,7 +367,8 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
-	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);	
+	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
+		AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility[i]);
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
