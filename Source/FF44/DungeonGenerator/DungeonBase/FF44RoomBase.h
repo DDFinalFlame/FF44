@@ -34,7 +34,7 @@ public:
     UBoxComponent* Bounds;
 
     UPROPERTY(EditDefaultsOnly, Category = "Room|Meta")
-    TArray<FName> RoomTags;
+    FName RoomTypeTag;
 
     UPROPERTY(EditDefaultsOnly, Category = "Room|Meta")
     int32 SpawnWeight = 1;

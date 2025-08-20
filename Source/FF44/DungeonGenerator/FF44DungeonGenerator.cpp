@@ -152,6 +152,17 @@ void AFF44DungeonGenerator::SpawnNextRoom()
     R.Yaw += 90.f;
     LatestSpawnedRoom->SetActorRotation(R);
 
+    const AFF44RoomBase* OwnerRoom = Cast<AFF44RoomBase>(SelectedExitPoint->GetOwner());
+    const FName PrevTag = OwnerRoom ? OwnerRoom->RoomTypeTag : NAME_None;
+    const FName NewTag = LatestSpawnedRoom->RoomTypeTag;
+
+    if (PrevTag == FName("CrossRoad") && NewTag == FName("CrossRoad"))
+    {
+        LatestSpawnedRoom->Destroy();
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
+        return;
+    }
+
     if (RemoveOverlappingRooms())
     {
         LatestSpawnedRoom->Destroy();

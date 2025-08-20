@@ -3,3 +3,7 @@
 
 #include "DungeonGenerator/DungeonBase/FF44Crossroad.h"
 
+AFF44Crossroad::AFF44Crossroad()
+{
+	RoomTypeTag = "CrossRoad";
+}

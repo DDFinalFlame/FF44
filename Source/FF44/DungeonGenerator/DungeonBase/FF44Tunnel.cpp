@@ -3,3 +3,7 @@
 
 #include "DungeonGenerator/DungeonBase/FF44Tunnel.h"
 
+AFF44Tunnel::AFF44Tunnel()
+{
+	RoomTypeTag = "Tunnel";
+}

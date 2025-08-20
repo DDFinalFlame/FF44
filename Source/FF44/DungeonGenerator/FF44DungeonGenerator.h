@@ -44,6 +44,7 @@ public:
 
 public:
 	TArray<USceneComponent*> Exits;
+	TArray<FName> RecentTwoRoomTags;
 
 	UPROPERTY(Transient)
 	USceneComponent* SelectedExitPoint = nullptr;

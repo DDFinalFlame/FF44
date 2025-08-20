@@ -13,5 +13,8 @@ UCLASS()
 class FF44_API AFF44Tunnel : public AFF44RoomBase
 {
 	GENERATED_BODY()
+
+public:
+	AFF44Tunnel();
 	
 };
