@@ -50,7 +50,7 @@ ABasePlayer::ABasePlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->bUsePawnControlRotation = false;	
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
@@ -69,21 +69,6 @@ void ABasePlayer::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
 		return;
-	}
-
-	// Data Load
-	if (PlayerStatTable)
-	{
-		if(FPlayerStatRow* row = PlayerStatTable->FindRow<FPlayerStatRow>(def->StatRowName, TEXT("Player Stat Row")))
-		{
-			// 초기 Stats 적용
-			ApplyInitStats(*row, def->InitStatGE_SetByCaller);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Player Stat Row not found in DataTable."));
-			return;
-		}
 	}
 	
 	// Player Controller Set
@@ -127,7 +112,13 @@ void ABasePlayer::BeginPlay()
 			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
 
 		if (AttributeSetClass)
-			AttributeSet = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);
+		{
+			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
+			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
+
+			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+		}
+
 	}	
 }
 
@@ -150,36 +141,6 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 	//		AbilitySystem->TryActivateAbilityByClass(HitAbility);
 	//	}
 	//}
-}
-
-void ABasePlayer::ApplyInitStats(const FPlayerStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE)
-{
-	if (!AbilitySystem || !InitGE) return;
-
-	FGameplayEffectContextHandle Ech = AbilitySystem->MakeEffectContext();
-	FGameplayEffectSpecHandle Esh = AbilitySystem->MakeOutgoingSpec(InitGE, 1.f, Ech);
-
-	if (!Esh.IsValid()) return;
-
-	const FGameplayTag Tag_CurrentHP = FGameplayTag::RequestGameplayTag(FName("Player.Stat.CurrentHP"));
-	const FGameplayTag Tag_MaxHealth = FGameplayTag::RequestGameplayTag(FName("Player.Stat.MaxHP"));
-	const FGameplayTag Tag_CurrentStamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.CurrentStamina"));
-	const FGameplayTag Tag_MaxStamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.MaxStamina"));
-	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Player.Stat.AttackPower"));
-
-	Esh.Data->SetSetByCallerMagnitude(Tag_CurrentHP, Row.MaxHP);
-	Esh.Data->SetSetByCallerMagnitude(Tag_MaxHealth, Row.MaxHP);
-	Esh.Data->SetSetByCallerMagnitude(Tag_CurrentStamina, Row.MaxStamina);
-	Esh.Data->SetSetByCallerMagnitude(Tag_MaxStamina, Row.MaxStamina);
-	Esh.Data->SetSetByCallerMagnitude(Tag_Attack, Row.AttackPower);
-
-	AbilitySystem->ApplyGameplayEffectSpecToSelf(*Esh.Data.Get());
-
-	UKismetSystemLibrary::PrintString(this, 
-		FString::Printf(TEXT("Health : %f, Stamina : %f, Attack : %f"), 
-			Row.MaxHP,
-			Row.MaxStamina,
-			Row.AttackPower));
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
@@ -404,9 +365,9 @@ float ABasePlayer::GetAttackPower_Implementation() const
 	}
 
 	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
-	if (AttributeSet)
+	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
 	{
-		const float AP = AttributeSet->GetAttackPower();
+		const float AP = Attribute->GetAttackPower();
 		return FMath::IsFinite(AP) ? AP : 0.f;
 	}
 
