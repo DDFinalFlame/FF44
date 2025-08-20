@@ -23,13 +23,14 @@ protected:
 	FGameplayTag ComboEnabledTag;
 
 protected:
-	void OnAttack_Implementation();
+	virtual void CommitExecute(const FGameplayAbilitySpecHandle Handle,
+							   const FGameplayAbilityActorInfo* ActorInfo,
+							   const FGameplayAbilityActivationInfo ActivationInfo) override;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Event")
-	void OnMontageEnded();
-
-	UFUNCTION(BlueprintCallable)
-	void UnbindMontage();
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle,
+							const FGameplayAbilityActorInfo* ActorInfo,
+							const FGameplayAbilityActivationInfo ActivationInfo,
+							bool bReplicateEndAbility, bool bWasCancelled) override;
 
 	UFUNCTION()
 	void OnEnableAttack(FName NotifyName, const FBranchingPointNotifyPayload& Payload);

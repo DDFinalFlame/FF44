@@ -88,15 +88,15 @@ void ABasePlayer::BeginPlay()
 	
 	// Player Controller Set
 	AController* PlayerController = GetController();
-	if(!PlayerController)
+	if(PlayerController)
 	{
 		FRotator ControlRotation = PlayerController->GetControlRotation();
 		ControlRotation.Pitch = -10.f;
-		return;
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
+		return;
 	}
 
 	// Weapon를 월드에 생성 후 바로 장착

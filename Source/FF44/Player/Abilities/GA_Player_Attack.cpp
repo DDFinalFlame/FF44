@@ -16,26 +16,29 @@ void UGA_Player_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 										const FGameplayAbilityActivationInfo ActivationInfo, 
 										const FGameplayEventData* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	if (ABasePlayer* player = Cast<ABasePlayer>(ActorInfo->AvatarActor.Get()))
+	{
+		OwnerPlayer = player;
+		OwnerWeapon = OwnerPlayer->GetWeapon();
+	}
+	else
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	if (!OwnerPlayer)
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
-		OwnerPlayer = Cast<ABasePlayer>(ActorInfo->AvatarActor.Get());
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
+}
 
-	if (!OwnerWeapon)
-	{
-		if (OwnerPlayer)
-		{
-			OwnerWeapon = OwnerPlayer->GetWeapon();
-		}
-	}
+void UGA_Player_Attack::CommitExecute(const FGameplayAbilitySpecHandle Handle, 
+									  const FGameplayAbilityActorInfo* ActorInfo, 
+									  const FGameplayAbilityActivationInfo ActivationInfo)
+{
 
-	OnAttack();
 }
 
 void UGA_Player_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
@@ -59,9 +62,4 @@ void UGA_Player_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	//		FString::Printf(TEXT("EndAbility: %s"), *GetName())
 	//	);
 	//}
-}
-
-void UGA_Player_Attack::OnAttack_Implementation()
-{
-
 }

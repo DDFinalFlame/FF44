@@ -29,15 +29,14 @@ protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 								 const FGameplayAbilityActorInfo* ActorInfo, 
 								 const FGameplayAbilityActivationInfo ActivationInfo,
-								 const FGameplayEventData* TriggerEventData) override;
+								 const FGameplayEventData* TriggerEventData) override;	
+
+	virtual void CommitExecute(const FGameplayAbilitySpecHandle Handle,
+							   const FGameplayAbilityActorInfo* ActorInfo,
+							   const FGameplayAbilityActivationInfo ActivationInfo) override;
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle,
 							const FGameplayAbilityActorInfo* ActorInfo, 
 							const FGameplayAbilityActivationInfo ActivationInfo,
 							bool bReplicateEndAbility, bool bWasCancelled) override;
-
-protected:
-	UFUNCTION(BlueprintNativeEvent)
-	void OnAttack();
-	virtual void OnAttack_Implementation();
 };
