@@ -20,15 +20,16 @@ AFF44RoomBase::AFF44RoomBase()
     ExitPoints = CreateDefaultSubobject<USceneComponent>(TEXT("ExitPoints"));
     ExitPoints->SetupAttachment(RootComponent);
 
-    SmallExitPoints = CreateDefaultSubobject<USceneComponent>(TEXT("SmallExitPoints"));
-    SmallExitPoints->SetupAttachment(RootComponent);
-
     OverlapFolder = CreateDefaultSubobject<USceneComponent>(TEXT("OverlapFolder"));
     OverlapFolder->SetupAttachment(RootComponent);
 
     Bounds = CreateDefaultSubobject<UBoxComponent>(TEXT("Bounds"));
     Bounds->SetupAttachment(OverlapFolder);
-
+    Bounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    Bounds->SetCollisionObjectType(ECC_GameTraceChannel2);
+    Bounds->SetCollisionResponseToAllChannels(ECR_Ignore);
+    Bounds->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Overlap);
+    Bounds->SetGenerateOverlapEvents(true);
 }
 
 void AFF44RoomBase::GetFloorMeshes(TArray<USceneComponent*>& OutFloors) const

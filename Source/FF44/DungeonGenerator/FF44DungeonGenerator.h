@@ -24,36 +24,45 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-    UPROPERTY(EditAnywhere, Category = "Generator|Setup")
+    UPROPERTY(EditAnywhere, Category = "Rooms|Setup")
     TSubclassOf<AFF44StarterRoom> StarterRoomClass;
 
-	UPROPERTY(EditAnywhere, Category = "Rooms")
-	TArray<TSubclassOf<AFF44RoomBase>> RoomsToBeSpawned;
+    UPROPERTY(EditAnywhere, Category = "Rooms|Pools")
+    TArray<TSubclassOf<AFF44RoomBase>> RoomsToBeSpawned;
 
-	UPROPERTY(EditAnywhere, Category = "Rooms")
-	TArray<TSubclassOf<AFF44RoomBase>> SmallRoomsToBeSpawned;
+    UPROPERTY(EditAnywhere, Category = "Rooms|Pools")
+    TArray<TSubclassOf<AFF44RoomBase>> SmallRoomsToBeSpawned;
 
-	UPROPERTY(EditAnywhere, Category = "Rooms")
-	int32 RoomsToSpawn = 0;
+    UPROPERTY(EditAnywhere, Category = "Rooms|Control")
+    int32 RoomsToSpawn = 30;
 
-	UPROPERTY(EditAnywhere, Category = "Rooms")
-	TSubclassOf<AActor> ExitCapClass;
+    UPROPERTY(EditAnywhere, Category = "Rooms|Control", meta = (ClampMin = "1"))
+    int32 MaxTotalRooms = 100;
+
+    UPROPERTY(EditAnywhere, Category = "Rooms|Seal")
+    TSubclassOf<AActor> ExitCapClass;
 
 public:
-	AFF44RoomBase* LatestSpawnedRoom;
-
-	USceneComponent* SelectedExitPoint;
-
 	TArray<USceneComponent*> Exits;
-	TArray<USceneComponent*> SmallExits;
+
+	UPROPERTY(Transient)
+	USceneComponent* SelectedExitPoint = nullptr;
+
+	UPROPERTY(Transient)
+	AFF44RoomBase* LatestSpawnedRoom = nullptr;
 
 	FTimerHandle SpawnNextHandle;
+
+	int32 TotalSpawned = 0;
+
 
 private:
 	void SpawnStarterRoom(AFF44StarterRoom*& OutStarter);
 	void SpawnPlayerAtStart(const AFF44StarterRoom* Starter);
+
 	void SpawnNextRoom();
 	bool RemoveOverlappingRooms();
 	void SealRemainingExits();
+
 	TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
 };

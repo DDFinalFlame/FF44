@@ -27,9 +27,6 @@ public:
     USceneComponent* ExitPoints;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
-    USceneComponent* SmallExitPoints;
-
-    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* OverlapFolder;
 
 public:
