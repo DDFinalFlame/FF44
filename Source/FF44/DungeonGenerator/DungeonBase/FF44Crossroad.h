@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
-#include "FF44Tunnel_4.generated.h"
+#include "FF44Crossroad.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FF44_API AFF44Tunnel_4 : public AFF44RoomBase
+class FF44_API AFF44Crossroad : public AFF44RoomBase
 {
 	GENERATED_BODY()
 	

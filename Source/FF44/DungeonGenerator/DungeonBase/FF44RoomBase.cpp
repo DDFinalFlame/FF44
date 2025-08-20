@@ -20,10 +20,14 @@ AFF44RoomBase::AFF44RoomBase()
     ExitPoints = CreateDefaultSubobject<USceneComponent>(TEXT("ExitPoints"));
     ExitPoints->SetupAttachment(RootComponent);
 
+    SmallExitPoints = CreateDefaultSubobject<USceneComponent>(TEXT("SmallExitPoints"));
+    SmallExitPoints->SetupAttachment(RootComponent);
+
+    OverlapFolder = CreateDefaultSubobject<USceneComponent>(TEXT("OverlapFolder"));
+    OverlapFolder->SetupAttachment(RootComponent);
+
     Bounds = CreateDefaultSubobject<UBoxComponent>(TEXT("Bounds"));
-    Bounds->SetupAttachment(RootComponent);
-    Bounds->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    Bounds->SetGenerateOverlapEvents(false);
+    Bounds->SetupAttachment(OverlapFolder);
 
 }
 

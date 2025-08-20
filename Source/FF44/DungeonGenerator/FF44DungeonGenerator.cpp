@@ -5,6 +5,7 @@
 #include "DungeonGenerator/DungeonBase/FF44StarterRoom.h"
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/BoxComponent.h"
 
 AFF44DungeonGenerator::AFF44DungeonGenerator()
 {
@@ -35,8 +36,20 @@ void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
         return;
     }
 
-    OutStarter = GetWorld()->SpawnActor<AFF44StarterRoom>(StarterRoomClass);
-    OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
+    //OutStarter = GetWorld()->SpawnActor<AFF44StarterRoom>(StarterRoomClass);
+    //OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
+
+    Exits.Empty();
+    if (OutStarter->ExitPoints)
+    {
+        OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
+    }
+
+    SmallExits.Empty();
+    if (OutStarter->SmallExitPoints)
+    {
+        OutStarter->SmallExitPoints->GetChildrenComponents(false, SmallExits);
+    }
 }
 
 void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
@@ -58,14 +71,145 @@ void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
 
 void AFF44DungeonGenerator::SpawnNextRoom()
 {
-    LatestSpawnedRoom = this->GetWorld()->SpawnActor<AFF44RoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
+    if (RoomsToSpawn <= 0) return;
+    if (RoomsToBeSpawned.Num() == 0 || Exits.Num() == 0) return;
+
+    //LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
+    // Weight 적용 시 아래 코드로 적용
+    const TSubclassOf<AFF44RoomBase> Chosen = PickWeightedRoom(RoomsToBeSpawned);
+    if (!*Chosen) return;
+    LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Chosen);
+
     SelectedExitPoint = Exits[rand() % Exits.Num()];
 
     LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
-    //LatestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
 
     FRotator R = SelectedExitPoint->GetComponentRotation();
     R.Yaw += 90.f;
     LatestSpawnedRoom->SetActorRotation(R);
+
+    if (RemoveOverlappingRooms())
+    {
+        if (LatestSpawnedRoom)
+        {
+            LatestSpawnedRoom->Destroy();
+        }
+
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
+        
+        return;
+    }
+
+    TArray<USceneComponent*> NewExits;
+    LatestSpawnedRoom->ExitPoints->GetChildrenComponents(false, NewExits);
+
+    if (NewExits.Num() == 0 && RoomsToSpawn > 1)
+    {
+        if (LatestSpawnedRoom)
+        {
+            LatestSpawnedRoom->Destroy();
+        }
+        
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
+        
+        return;
+    }
+
+    Exits.Remove(SelectedExitPoint);
+    Exits.Append(NewExits);
+
+    RoomsToSpawn--;
+    if (RoomsToSpawn > 0)
+    {
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
+    }
+    else
+    {
+        SealRemainingExits();
+    }
 }
+
+bool AFF44DungeonGenerator::RemoveOverlappingRooms()
+{
+    if (!LatestSpawnedRoom || !LatestSpawnedRoom->OverlapFolder) return false;
+
+    TArray<USceneComponent*> OverlapBoxes;
+    LatestSpawnedRoom->OverlapFolder->GetChildrenComponents(false, OverlapBoxes);
+
+    for (USceneComponent* Comp : OverlapBoxes)
+    {
+        UBoxComponent* Box = Cast<UBoxComponent>(Comp);
+        if (!Box) continue;
+
+        Box->UpdateOverlaps();
+
+        TArray<UPrimitiveComponent*> Hits;
+        Box->GetOverlappingComponents(Hits);
+
+        for (UPrimitiveComponent* Hit : Hits)
+        {
+            if (!Hit) continue;
+            if (Hit->GetOwner() == LatestSpawnedRoom) continue;
+
+            return true;
+        }
+    }
+    return false;
+}
+
+void AFF44DungeonGenerator::SealRemainingExits()
+{
+
+    for (USceneComponent* ExitComp : Exits)
+    {
+        if (!ExitComp) continue;
+
+        const FVector Loc = ExitComp->GetComponentLocation();
+
+        FRotator Rot = ExitComp->GetComponentRotation();
+        Rot.Yaw += 90.f;
+
+        GetWorld()->SpawnActor<AActor>(ExitCapClass, Loc, Rot);
+    }
+
+    Exits.Empty();
+}
+
+TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const
+{
+    if (Pool.Num() == 0) return nullptr;
+
+    int32 TotalWeight = 0;
+    for (const TSubclassOf<AFF44RoomBase>& Cls : Pool)
+    {
+        if (!*Cls) continue;
+        const AFF44RoomBase* CDO = Cls->GetDefaultObject<AFF44RoomBase>();
+        const int32 W = CDO ? FMath::Max(0, CDO->SpawnWeight) : 0; // 음수 방지
+        TotalWeight += W;
+    }
+
+    if (TotalWeight <= 0)
+    {
+        return Pool[FMath::RandRange(0, Pool.Num() - 1)];
+    }
+
+    // 룰렛 선택
+    int32 Pick = FMath::RandRange(1, TotalWeight);
+    int32 Acc = 0;
+
+    for (const TSubclassOf<AFF44RoomBase>& Cls : Pool)
+    {
+        if (!*Cls) continue;
+        const AFF44RoomBase* CDO = Cls->GetDefaultObject<AFF44RoomBase>();
+        const int32 W = CDO ? FMath::Max(0, CDO->SpawnWeight) : 0;
+        Acc += W;
+        if (Pick <= Acc)
+        {
+            return Cls;
+        }
+    }
+
+    return Pool.Last();
+}
+
 

@@ -26,6 +26,12 @@ public:
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* ExitPoints;
 
+    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
+    USceneComponent* SmallExitPoints;
+
+    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
+    USceneComponent* OverlapFolder;
+
 public:
     UPROPERTY(VisibleAnywhere, Category = "Room|Collision")
     UBoxComponent* Bounds;

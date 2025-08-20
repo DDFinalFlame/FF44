@@ -30,15 +30,30 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<AFF44RoomBase>> RoomsToBeSpawned;
 
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	TArray<TSubclassOf<AFF44RoomBase>> SmallRoomsToBeSpawned;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	int32 RoomsToSpawn = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	TSubclassOf<AActor> ExitCapClass;
+
 public:
 	AFF44RoomBase* LatestSpawnedRoom;
+
 	USceneComponent* SelectedExitPoint;
 
-	TArray<USceneComponent*> LastestRoomSpawnPoints;
 	TArray<USceneComponent*> Exits;
+	TArray<USceneComponent*> SmallExits;
+
+	FTimerHandle SpawnNextHandle;
 
 private:
 	void SpawnStarterRoom(AFF44StarterRoom*& OutStarter);
 	void SpawnPlayerAtStart(const AFF44StarterRoom* Starter);
 	void SpawnNextRoom();
+	bool RemoveOverlappingRooms();
+	void SealRemainingExits();
+	TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
 };
