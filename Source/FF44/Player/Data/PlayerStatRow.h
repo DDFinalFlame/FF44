@@ -8,7 +8,7 @@ struct FPlayerStatRow : public FTableRowBase
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float MaxHealth = 100.f;
+    float MaxHP = 100.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MaxStamina = 100.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

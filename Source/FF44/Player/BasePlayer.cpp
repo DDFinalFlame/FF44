@@ -161,19 +161,23 @@ void ABasePlayer::ApplyInitStats(const FPlayerStatRow& Row, TSubclassOf<class UG
 
 	if (!Esh.IsValid()) return;
 
-	const FGameplayTag Tag_Health = FGameplayTag::RequestGameplayTag(FName("Player.Stat.Health"));
-	const FGameplayTag Tag_Stamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.Stamina"));
+	const FGameplayTag Tag_CurrentHP = FGameplayTag::RequestGameplayTag(FName("Player.Stat.CurrentHP"));
+	const FGameplayTag Tag_MaxHealth = FGameplayTag::RequestGameplayTag(FName("Player.Stat.MaxHP"));
+	const FGameplayTag Tag_CurrentStamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.CurrentStamina"));
+	const FGameplayTag Tag_MaxStamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.MaxStamina"));
 	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Player.Stat.AttackPower"));
 
-	Esh.Data->SetSetByCallerMagnitude(Tag_Health, Row.MaxHealth);
-	Esh.Data->SetSetByCallerMagnitude(Tag_Stamina, Row.MaxStamina);
+	Esh.Data->SetSetByCallerMagnitude(Tag_CurrentHP, Row.MaxHP);
+	Esh.Data->SetSetByCallerMagnitude(Tag_MaxHealth, Row.MaxHP);
+	Esh.Data->SetSetByCallerMagnitude(Tag_CurrentStamina, Row.MaxStamina);
+	Esh.Data->SetSetByCallerMagnitude(Tag_MaxStamina, Row.MaxStamina);
 	Esh.Data->SetSetByCallerMagnitude(Tag_Attack, Row.AttackPower);
 
 	AbilitySystem->ApplyGameplayEffectSpecToSelf(*Esh.Data.Get());
 
 	UKismetSystemLibrary::PrintString(this, 
 		FString::Printf(TEXT("Health : %f, Stamina : %f, Attack : %f"), 
-			Row.MaxHealth, 
+			Row.MaxHP,
 			Row.MaxStamina,
 			Row.AttackPower));
 }

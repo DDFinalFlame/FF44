@@ -19,26 +19,44 @@ class FF44_API UBasePlayerAttributeSet : public UAttributeSet
 public:
 	UBasePlayerAttributeSet();
 
-    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_Health)
-    FGameplayAttributeData Health;
-    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, Health)
+    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_CurrentHP)
+    FGameplayAttributeData CurrentHP;
+    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, CurrentHP)
 
-    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_Stamina)
-    FGameplayAttributeData Stamina;
-    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, Stamina)
+    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_MaxHP)
+    FGameplayAttributeData MaxHP;
+    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, MaxHP)
+
+    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_CurrentStamina)
+    FGameplayAttributeData CurrentStamina;
+    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, CurrentStamina)
+
+    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_MaxStamina)
+    FGameplayAttributeData MaxStamina;
+    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, MaxStamina)
 
     UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_AttackPower)
     FGameplayAttributeData AttackPower;
     ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, AttackPower)
 
     UFUNCTION()
-    void OnRep_Health(const FGameplayAttributeData& OldHealth);
+    void OnRep_CurrentHP(const FGameplayAttributeData& _OldValue);
 
     UFUNCTION()
-    void OnRep_Stamina(const FGameplayAttributeData& OldStamina);
+    void OnRep_MaxHP(const FGameplayAttributeData& _OldValue);
 
     UFUNCTION()
-    void OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower);
+    void OnRep_CurrentStamina(const FGameplayAttributeData& _OldValue);
+
+    UFUNCTION()
+    void OnRep_MaxStamina(const FGameplayAttributeData& _OldValue);
+
+    UFUNCTION()
+    void OnRep_AttackPower(const FGameplayAttributeData& _OldValue);
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& _Data) override;
+
+public:
+    static FGameplayTag TAG_Player_Event_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Player.Death")); }
 };

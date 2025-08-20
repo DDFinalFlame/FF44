@@ -52,15 +52,15 @@ void UGA_Player_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle,
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,                        // Key (-1 = 새 메시지 계속 추가)
-			5.f,                       // Duration (5초)
-			FColor::Green,             // 색상
-			FString::Printf(TEXT("EndAbility: %s"), *GetName())
-		);
-	}
+	//if (GEngine)
+	//{
+	//	GEngine->AddOnScreenDebugMessage(
+	//		-1,                        // Key (-1 = 새 메시지 계속 추가)
+	//		5.f,                       // Duration (5초)
+	//		FColor::Green,             // 색상
+	//		FString::Printf(TEXT("EndAbility: %s"), *GetName())
+	//	);
+	//}
 }
 
 void UGA_Player_Attack::OnAttack_Implementation()
