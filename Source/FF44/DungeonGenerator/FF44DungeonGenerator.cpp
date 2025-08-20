@@ -36,20 +36,20 @@ void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
         return;
     }
 
-    //OutStarter = GetWorld()->SpawnActor<AFF44StarterRoom>(StarterRoomClass);
-    //OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
+    OutStarter = GetWorld()->SpawnActor<AFF44StarterRoom>(StarterRoomClass);
+    OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
 
-    Exits.Empty();
-    if (OutStarter->ExitPoints)
-    {
-        OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
-    }
+    //Exits.Empty();
+    //if (OutStarter->ExitPoints)
+    //{
+    //    OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
+    //}
 
-    SmallExits.Empty();
-    if (OutStarter->SmallExitPoints)
-    {
-        OutStarter->SmallExitPoints->GetChildrenComponents(false, SmallExits);
-    }
+    //SmallExits.Empty();
+    //if (OutStarter->SmallExitPoints)
+    //{
+    //    OutStarter->SmallExitPoints->GetChildrenComponents(false, SmallExits);
+    //}
 }
 
 void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
@@ -72,46 +72,45 @@ void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
 void AFF44DungeonGenerator::SpawnNextRoom()
 {
     if (RoomsToSpawn <= 0) return;
-    if (RoomsToBeSpawned.Num() == 0 || Exits.Num() == 0) return;
-
-    //LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
-    // Weight 적용 시 아래 코드로 적용
-    const TSubclassOf<AFF44RoomBase> Chosen = PickWeightedRoom(RoomsToBeSpawned);
-    if (!*Chosen) return;
-    LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Chosen);
+    if (Exits.Num() == 0) return;
 
     SelectedExitPoint = Exits[rand() % Exits.Num()];
+    const bool bSmallExit = SelectedExitPoint->ComponentHasTag(TEXT("Small"));
+
+    const TArray<TSubclassOf<AFF44RoomBase>>& Pool = bSmallExit ? SmallRoomsToBeSpawned : RoomsToBeSpawned;
+    if (Pool.Num() == 0)
+    {
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
+        return;
+    }
+
+    LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Pool[rand() % Pool.Num()]);
+    if (!LatestSpawnedRoom)
+    {
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
+        return;
+    }
 
     LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
-
     FRotator R = SelectedExitPoint->GetComponentRotation();
     R.Yaw += 90.f;
     LatestSpawnedRoom->SetActorRotation(R);
 
     if (RemoveOverlappingRooms())
     {
-        if (LatestSpawnedRoom)
-        {
-            LatestSpawnedRoom->Destroy();
-        }
-
+        LatestSpawnedRoom->Destroy();
         GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
-        
         return;
     }
 
     TArray<USceneComponent*> NewExits;
-    LatestSpawnedRoom->ExitPoints->GetChildrenComponents(false, NewExits);
+    if (LatestSpawnedRoom->ExitPoints)
+        LatestSpawnedRoom->ExitPoints->GetChildrenComponents(false, NewExits);
 
     if (NewExits.Num() == 0 && RoomsToSpawn > 1)
     {
-        if (LatestSpawnedRoom)
-        {
-            LatestSpawnedRoom->Destroy();
-        }
-        
+        LatestSpawnedRoom->Destroy();
         GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, 0.01f, false);
-        
         return;
     }
 
