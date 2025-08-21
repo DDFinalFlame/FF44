@@ -39,12 +39,24 @@ public:
     UPROPERTY(EditAnywhere, Category = "Rooms|Control", meta = (ClampMin = "1"))
     int32 MaxTotalRooms = 100;
 
+	UPROPERTY(EditAnywhere, Category = "Rooms|Control")
+	float RoomSpawnInterval = 0.01f;
+
     UPROPERTY(EditAnywhere, Category = "Rooms|Seal")
     TSubclassOf<AActor> ExitCapClass;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms|Seal")
+	TSubclassOf<AActor> SmallExitCapClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
+	bool bDungeonCompleted = false;
 
 public:
 	TArray<USceneComponent*> Exits;
 	TArray<FName> RecentTwoRoomTags;
+
+	UPROPERTY(Transient)
+	AFF44StarterRoom* StarterRoomRef = nullptr;
 
 	UPROPERTY(Transient)
 	USceneComponent* SelectedExitPoint = nullptr;
