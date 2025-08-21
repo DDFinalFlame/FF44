@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "ProjectileBase.generated.h"
@@ -12,12 +12,16 @@ class ENEMY_API AProjectileBase : public AActor
 	GENERATED_BODY()
 
 protected:
+	/* 메시 **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+	UStaticMeshComponent* MeshComponent;
+
 	/* 충돌체 **/
-	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
-	USphereComponent* CollisionComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision", meta = (AllowPrivateAccess = "true"))
+	UCapsuleComponent* CapsuleComponent;
 
 	/* 이동 **/
-	UPROPERTY(VisibleAnywhere, Category = Movement)
+	UPROPERTY(VisibleAnywhere, Category = "Movement")
 	UProjectileMovementComponent* ProjectileMovementComponent;
 	
 public:	

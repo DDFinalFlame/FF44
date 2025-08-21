@@ -22,6 +22,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackTag")
 	FGameplayTag AbilityTag;
 
+	/* **/
+
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;

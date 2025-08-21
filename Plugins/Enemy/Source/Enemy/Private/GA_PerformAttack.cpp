@@ -38,6 +38,9 @@ void UGA_PerformAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     MontageDelegate.BindUObject(this, &UGA_PerformAttack::OnMontageEnded);
     AnimInstance->Montage_Play(AttackAnimMontage);
     AnimInstance->Montage_SetEndDelegate(MontageDelegate, AttackAnimMontage);
+
+    /* **/
+
 }
 
 void UGA_PerformAttack::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)

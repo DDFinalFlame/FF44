@@ -15,7 +15,7 @@ class ENEMY_API UEQS_Context_AttackTarget : public UEnvQueryContext
 	GENERATED_BODY()
 protected:
 	UPROPERTY(EditAnywhere, Category = "EQS")
-	FName TargetKeyName = "Target";
+	FName TargetKeyName = "F_Target";
 
 public:
 	virtual void ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQueryContextData& ContextData) const override;

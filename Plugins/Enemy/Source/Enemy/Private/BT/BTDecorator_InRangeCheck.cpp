@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BTDecorator_InRangeCheck.h"
+#include "BT/BTDecorator_InRangeCheck.h"
 
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"

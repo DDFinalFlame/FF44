@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BTService_SelectBehavior.h"
+#include "BT/BTService_SelectBehavior.h"
 
 #include "AIController.h"
 #include "BaseEnemy.h"

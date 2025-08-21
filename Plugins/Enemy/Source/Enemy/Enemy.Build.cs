@@ -8,11 +8,6 @@ public class Enemy : ModuleRules
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicIncludePaths.AddRange(new string[] {
-            "Enemy/Public",
-            "Enemy/Public/Abilities"
-        });
-
         PrivateIncludePaths.AddRange(
             new string[] {
             }
@@ -26,14 +21,11 @@ public class Enemy : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "AIModule",
-                "StateTreeModule",
-                "GameplayStateTreeModule",
-                "UMG",
-                "InputCore",
                 "GameplayAbilities",
                 "GameplayTags",
                 "GameplayTasks",
-                "AnimGraphRuntime"
+                "AnimGraphRuntime",
+                "MonsterAIPlugIn",
             }
             );
 

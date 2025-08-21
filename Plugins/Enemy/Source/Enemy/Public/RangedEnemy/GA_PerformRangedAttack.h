@@ -18,11 +18,11 @@ class ENEMY_API UGA_PerformRangedAttack : public UGA_PerformAttack
 
 protected:
 	/* 발사체 스폰 위치 **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	FVector WeaponLocation;
 
 	/* 스폰할 발사체 클래스 **/ 
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
 	TSubclassOf<AProjectileBase> ProjectileClass;
 
 protected:

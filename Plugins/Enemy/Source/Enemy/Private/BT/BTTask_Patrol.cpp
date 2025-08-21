@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BTTask_Patrol.h"
+#include "BT/BTTask_Patrol.h"
 
 #include "AIController.h"
 #include "BaseEnemy.h"

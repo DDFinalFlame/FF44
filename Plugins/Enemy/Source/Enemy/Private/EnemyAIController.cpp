@@ -23,7 +23,10 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	/* Enemy 저장 **/
 	ControlledEnemy = Cast<ABaseEnemy>(InPawn);
 
-	RunBehaviorTree(BehaviorTreeAsset);
+	if (ControlledEnemy->BehaviorTree)
+	{
+		RunBehaviorTree(ControlledEnemy->BehaviorTree);
+	}
 
 	// UpdateTarget 타이머 등록
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::UpdateTarget, 0.1f, true);
@@ -83,7 +86,7 @@ void AEnemyAIController::SetTarget(AActor* NewTarget) const
 {
 	if (IsValid(Blackboard))
 	{
-		Blackboard->SetValueAsObject(FName("Target"), NewTarget);
+		Blackboard->SetValueAsObject(FName("F_Target"), NewTarget);
 	}
 
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())
@@ -96,7 +99,7 @@ void AEnemyAIController::SetNoiseTarget(AActor* NewTarget) const
 {
 	if (IsValid(Blackboard))
 	{
-		Blackboard->SetValueAsObject(FName("NoiseTarget"), NewTarget);
+		Blackboard->SetValueAsObject(FName("F_NoiseTarget"), NewTarget);
 	}
 
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())

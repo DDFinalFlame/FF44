@@ -15,9 +15,6 @@ class ENEMY_API AEnemyAIController : public AAIController
 {
 	GENERATED_BODY()
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior")
-	UBehaviorTree* BehaviorTreeAsset;
-
 	/* AI가 주변 인식하게 하는 컴포넌트 **/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UAIPerceptionComponent* AIPerceptionComponent;

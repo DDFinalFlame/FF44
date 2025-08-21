@@ -1,4 +1,4 @@
-#include "BTDecorator_IsTargetUnblocked.h"
+#include "BT/BTDecorator_IsTargetUnblocked.h"
 
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"

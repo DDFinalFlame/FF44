@@ -4,39 +4,47 @@ AProjectileBase::AProjectileBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-    // Component 세팅
-    if (!RootComponent)
-    {
-        RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSceneComponent"));
-    }
+	// Component 세팅
+	if (!RootComponent)
+	{
+		RootComponent = CreateDefaultSubobject<USceneComponent>("Root");
+	}
+	/* 충돌 Component **/
+	if (!CapsuleComponent)
+	{
+		CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
+		CapsuleComponent->SetupAttachment(RootComponent);
+	}
 
-    /* 충돌 Component **/
-    if (!CollisionComponent)
-    {
-        CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-        CollisionComponent->InitSphereRadius(15.0f);
-        RootComponent = CollisionComponent;
-    }
+	/* Mesh **/
+	if (!MeshComponent)
+	{
+		MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("MeshComponent");
+		MeshComponent->SetupAttachment(CapsuleComponent);
+		MeshComponent->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
+	}
 
-    /* 이동 Component **/
-    if (!ProjectileMovementComponent)
-    {
-        ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-        ProjectileMovementComponent->SetUpdatedComponent(CollisionComponent);
-        ProjectileMovementComponent->InitialSpeed = 3000.0f;
-        ProjectileMovementComponent->MaxSpeed = 3000.0f;
-        ProjectileMovementComponent->bRotationFollowsVelocity = true;
-        ProjectileMovementComponent->bShouldBounce = true;
-        ProjectileMovementComponent->Bounciness = 0.3f;
-        ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
-    }
 
+	/* 이동 Component **/
+	if (!ProjectileMovementComponent)
+	{
+		ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
+		ProjectileMovementComponent->SetUpdatedComponent(CapsuleComponent);
+		ProjectileMovementComponent->InitialSpeed = 2500.0f;
+		ProjectileMovementComponent->MaxSpeed = 3000.0f;
+		ProjectileMovementComponent->bRotationFollowsVelocity = false;
+		ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
+	}
+
+	// 발사체 속성
+	/* life time **/
+	InitialLifeSpan = 4.0f;
 }
 
 void AProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 void AProjectileBase::Tick(float DeltaTime)
@@ -47,6 +55,6 @@ void AProjectileBase::Tick(float DeltaTime)
 
 void AProjectileBase::FireInDirection(const FVector& ShootDirection)
 {
-    ProjectileMovementComponent->Velocity = ShootDirection * ProjectileMovementComponent->InitialSpeed;
+	ProjectileMovementComponent->Velocity = ShootDirection * ProjectileMovementComponent->InitialSpeed;
 }
 
