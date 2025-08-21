@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "FF44DungeonGenerator.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
+
 class AFF44StarterRoom;
 class AFF44RoomBase;
 
@@ -48,8 +50,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Rooms|Seal")
 	TSubclassOf<AActor> SmallExitCapClass;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Candidates")
+	TArray<FTransform> PortalCandidatePoints;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Candidates")
+	TArray<FTransform> BossCandidatePoints;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	bool bDungeonCompleted = false;
+
+	UPROPERTY(BlueprintAssignable, Category = "Dungeon")
+	FOnDungeonComplete OnDungeonComplete;
 
 public:
 	TArray<USceneComponent*> Exits;
@@ -76,6 +87,8 @@ private:
 	void SpawnNextRoom();
 	bool RemoveOverlappingRooms();
 	void SealRemainingExits();
+
+	void CollectSpecialPointsFromRoom(const AFF44RoomBase* Room);
 
 	TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
 };

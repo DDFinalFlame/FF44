@@ -17,6 +17,21 @@ AFF44RoomBase::AFF44RoomBase()
     Walls = CreateDefaultSubobject<USceneComponent>(TEXT("Walls"));
     Walls->SetupAttachment(RootComponent);
 
+    Objects = CreateDefaultSubobject<USceneComponent>(TEXT("Objects"));
+    Objects->SetupAttachment(RootComponent);
+
+    InteractableObejects = CreateDefaultSubobject<USceneComponent>(TEXT("InteractableObejects"));
+    InteractableObejects->SetupAttachment(RootComponent);
+
+    MonsterSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("MonsterSpawnPoints"));
+    MonsterSpawnPoints->SetupAttachment(RootComponent);
+
+    PortalPoints = CreateDefaultSubobject<USceneComponent>(TEXT("PortalPoints"));
+    PortalPoints->SetupAttachment(RootComponent);
+
+    BossPoints = CreateDefaultSubobject<USceneComponent>(TEXT("BossPoints"));
+    BossPoints->SetupAttachment(RootComponent);
+
     ExitPoints = CreateDefaultSubobject<USceneComponent>(TEXT("ExitPoints"));
     ExitPoints->SetupAttachment(RootComponent);
 

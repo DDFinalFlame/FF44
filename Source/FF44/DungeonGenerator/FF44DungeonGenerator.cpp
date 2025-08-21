@@ -124,6 +124,8 @@ void AFF44DungeonGenerator::SpawnNextRoom()
     Exits.Remove(SelectedExitPoint);
     Exits.Append(NewExits);
 
+    CollectSpecialPointsFromRoom(LatestSpawnedRoom);
+
     if (RoomsToSpawn > 0)
     {
         RoomsToSpawn--;
@@ -139,6 +141,7 @@ void AFF44DungeonGenerator::SpawnNextRoom()
         }
 
         bDungeonCompleted = true;
+        OnDungeonComplete.Broadcast();
 
         return;
     }
@@ -155,6 +158,7 @@ void AFF44DungeonGenerator::SpawnNextRoom()
         }
 
         bDungeonCompleted = true;
+        OnDungeonComplete.Broadcast();
     }
 }
 
@@ -209,6 +213,32 @@ void AFF44DungeonGenerator::SealRemainingExits()
     }
 
     Exits.Empty();
+}
+
+void AFF44DungeonGenerator::CollectSpecialPointsFromRoom(const AFF44RoomBase* Room)
+{
+    if (!Room) return;
+
+    // Portal
+    if (Room->PortalPoints)
+    {
+        TArray<USceneComponent*> ChildrenComp;
+        Room->PortalPoints->GetChildrenComponents(false, ChildrenComp);
+        for (USceneComponent* C : ChildrenComp)
+        {
+            if (C) PortalCandidatePoints.Add(C->GetComponentTransform());
+        }
+    }
+    // Boss
+    if (Room->BossPoints)
+    {
+        TArray<USceneComponent*> ChildrenComp;
+        Room->BossPoints->GetChildrenComponents(false, ChildrenComp);
+        for (USceneComponent* C : ChildrenComp)
+        {
+            if (C) BossCandidatePoints.Add(C->GetComponentTransform());
+        }
+    }
 }
 
 TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const

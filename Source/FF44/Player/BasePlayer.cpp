@@ -14,10 +14,6 @@
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
 
-// Temp
-#include "DungeonGenerator/DungeonBase/Door.h"
-#include "DungeonGenerator/Rooms/RB_DungeonElevatorRoom1.h"
-
 
 ABasePlayer::ABasePlayer()
 {
@@ -68,9 +64,6 @@ void ABasePlayer::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
 	}
-
-	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABasePlayer::OnBeginOverlap);
-	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ABasePlayer::OnEndOverlap);
 
 }
 
@@ -178,34 +171,3 @@ void ABasePlayer::RSkill(const FInputActionValue& Value)
 {
 }
 
-void ABasePlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OtherActor->ActorHasTag("InteractableDungeonDoors"))
-	{
-		Cast<ADoor>(OtherActor)->OpenDoor();
-	}
-
-	if (OtherActor->ActorHasTag("InteractableElevator"))
-	{
-		Cast<ARB_DungeonElevatorRoom1>(OtherActor)->GoUp();
-	}
-
-	if (OtherActor->ActorHasTag("InteractableCoin"))
-	{
-		OtherActor->Destroy();
-	}
-}
-
-void ABasePlayer::OnEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor->ActorHasTag("InteractableDungeonDoors"))
-	{
-		Cast<ADoor>(OtherActor)->CloseDoor();
-	}
-
-	if (OtherActor->ActorHasTag("InteractableElevator"))
-	{
-		Cast<ARB_DungeonElevatorRoom1>(OtherActor)->GoDown();
-	}
-
-}
