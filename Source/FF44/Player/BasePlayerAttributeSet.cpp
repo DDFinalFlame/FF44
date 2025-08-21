@@ -32,6 +32,11 @@ void UBasePlayerAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& _O
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBasePlayerAttributeSet, AttackPower, _OldValue);
 }
 
+void UBasePlayerAttributeSet::OnRep_DefencePoint(const FGameplayAttributeData& _OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBasePlayerAttributeSet, DefencePoint, _OldValue);
+}
+
 void UBasePlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -41,6 +46,7 @@ void UBasePlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, CurrentStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, DefencePoint, COND_None, REPNOTIFY_Always);
 }
 
 void UBasePlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& _Data)

@@ -39,6 +39,10 @@ public:
     FGameplayAttributeData AttackPower;
     ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, AttackPower)
 
+    UPROPERTY(BlueprintReadOnly, Category = "Stats", ReplicatedUsing = OnRep_DefencePoint)
+    FGameplayAttributeData DefencePoint;
+    ATTRIBUTE_ACCESSORS(UBasePlayerAttributeSet, DefencePoint)
+
     UFUNCTION()
     void OnRep_CurrentHP(const FGameplayAttributeData& _OldValue);
 
@@ -53,6 +57,9 @@ public:
 
     UFUNCTION()
     void OnRep_AttackPower(const FGameplayAttributeData& _OldValue);
+
+    UFUNCTION()
+	void OnRep_DefencePoint(const FGameplayAttributeData& _OldValue);
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
     virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& _Data) override;

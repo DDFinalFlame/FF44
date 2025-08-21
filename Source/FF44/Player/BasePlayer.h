@@ -5,7 +5,6 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 
-#include "Data/PlayerStatRow.h"
 #include "Data/PlayerDefinition.h"
 #include "AttackStatProvider.h"
 #include "BasePlayer.generated.h"
