@@ -107,6 +107,7 @@ void ABasePlayer::BeginPlay()
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
 
 		for(int32 i=0;i< ComboAttackAbility.Num(); ++i)
 			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
@@ -133,14 +134,7 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 										bool bFromSweep, const FHitResult& SweepResult)
 {
-	//if (OtherActor && OtherActor != this)
-	//{
-	//	auto Monster = Cast<AMonsterCharacter>(OtherActor);
-	//	if (Monster)
-	//	{
-	//		AbilitySystem->TryActivateAbilityByClass(HitAbility);
-	//	}
-	//}
+
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
@@ -303,8 +297,6 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 void ABasePlayer::Dodge(const FInputActionValue& Value)
 {
 	AbilitySystem->TryActivateAbilityByClass(DodgeAbility);
-	
-	// PlayMontage
 }
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
