@@ -102,10 +102,10 @@ void UMonsterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			if (asc && !asc->HasMatchingGameplayTag(MonsterTags::State_Dead))
 			{
 				FGameplayEventData evt;
-				evt.EventTag = MonsterTags::Event_Death;
+				evt.EventTag = MonsterTags::Event_Monster_Death;
 				evt.Target = avatar;
 
-				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(avatar, MonsterTags::Event_Death, evt);
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(avatar, MonsterTags::Event_Monster_Death, evt);
 			}
 		}
 	}
