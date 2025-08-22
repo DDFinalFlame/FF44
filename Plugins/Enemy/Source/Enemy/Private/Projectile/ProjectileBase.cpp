@@ -15,7 +15,7 @@ AProjectileBase::AProjectileBase()
 	if (!CapsuleComponent)
 	{
 		CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
-		CapsuleComponent->BodyInstance.SetCollisionProfileName(TEXT("Projectile"));
+		//CapsuleComponent->BodyInstance.SetCollisionProfileName(TEXT("Projectile"));
 		CapsuleComponent->SetupAttachment(RootComponent);
 		// 충돌 처리
 		CapsuleComponent->OnComponentHit.AddDynamic(this, &AProjectileBase::OnHit);
