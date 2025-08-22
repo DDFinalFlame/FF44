@@ -37,7 +37,7 @@ bool UBTDecorator_IsTargetUnblocked::IsTargetUnblocked(APawn* Observer, AActor* 
         Params
     );
 
-    DrawDebugLine(Observer->GetWorld(), Observer->GetActorLocation(), Target->GetActorLocation(), bHit ? FColor::Red : FColor::Green, false, 1.f, 0, 2.f);
+    //DrawDebugLine(Observer->GetWorld(), Observer->GetActorLocation(), Target->GetActorLocation(), bHit ? FColor::Red : FColor::Green, false, 1.f, 0, 2.f);
 
     return !bHit;
 }

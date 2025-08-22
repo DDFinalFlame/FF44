@@ -82,7 +82,7 @@ void AProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActo
 
 	FGameplayEventData EventData;
 	
-	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));
+	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
 	EventData.Instigator = GetOwner();
 	EventData.Target = OtherActor;
 
