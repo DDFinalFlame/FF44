@@ -116,7 +116,7 @@ void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
     // 1) 이벤트로 HitReact 유도
     {
         FGameplayEventData Payload;
-        Payload.EventTag = MonsterTags::Event_Hit;
+        Payload.EventTag = MonsterTags::Event_Player_Hit;
         Payload.Instigator = OwnerMonster; //몬스터끼리 공격 X
         Payload.Target = Victim;
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
