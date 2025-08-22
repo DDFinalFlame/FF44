@@ -26,6 +26,7 @@ public class FF44 : ModuleRules
 			"GameplayTasks",
 			"MonsterAIPlugIn",
 			"MotionWarping",
+            "GameplayCameras",
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
@@ -34,7 +35,7 @@ public class FF44 : ModuleRules
 
         PublicIncludePaths.AddRange(new string[] {
             ModuleDirectory,
-			MonsterAIPath
+			MonsterAIPath,
         });
 	}
 }
