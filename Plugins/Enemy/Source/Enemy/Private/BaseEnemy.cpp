@@ -1,5 +1,6 @@
 #include "BaseEnemy.h"
 #include "EnemyRotationComponent.h"
+#include "MonsterAttributeSet.h"
 #include "GAS/EnemyAttributeSet.h"
 #include "MonsterDefinition.h"
 #include "MonsterStatRow.h"
@@ -11,6 +12,8 @@ ABaseEnemy::ABaseEnemy()
 
 	// Create Component
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComponent");
+
+
 	RotationComponent = CreateDefaultSubobject<UEnemyRotationComponent>("RotationComponent");
 }
 
@@ -20,8 +23,15 @@ void ABaseEnemy::BeginPlay()
 
 	if (AbilitySystemComponent)
 	{
+		if (AbilitySystemComponent)
+		{
+			UMonsterAttributeSet* AttributeSet = NewObject<UMonsterAttributeSet>(this, UMonsterAttributeSet::StaticClass());
+			AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
+		}
 		GiveDefaultAbilities();
 		InitializeAttributeSet();
+
+
 	}
 
 	//TO-DO : À§Ä¡ ? 
@@ -46,7 +56,7 @@ void ABaseEnemy::BeginPlay()
 			Weapon->EquipWeapon();
 		}
 	}
-	
+
 }
 
 UAbilitySystemComponent* ABaseEnemy::GetAbilitySystemComponent() const
@@ -118,13 +128,17 @@ void ABaseEnemy::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UG
 	FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(InitGE, 1.f, Ctx);
 	if (!Spec.IsValid()) return;
 
+	const FGameplayTag Tag_MaxHealth = FGameplayTag::RequestGameplayTag(FName("Data.MaxHealth"));
 	const FGameplayTag Tag_Health = FGameplayTag::RequestGameplayTag(FName("Data.Health"));
 	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Data.AttackPower"));
 	const FGameplayTag Tag_Move = FGameplayTag::RequestGameplayTag(FName("Data.MoveSpeed"));
+	const FGameplayTag Tag_Defense = FGameplayTag::RequestGameplayTag(FName("Data.Defense"));
 
+	Spec.Data->SetSetByCallerMagnitude(Tag_MaxHealth, Row.MaxHealth);
 	Spec.Data->SetSetByCallerMagnitude(Tag_Health, Row.MaxHealth);
 	Spec.Data->SetSetByCallerMagnitude(Tag_Attack, Row.AttackPower);
 	Spec.Data->SetSetByCallerMagnitude(Tag_Move, Row.MoveSpeed);
+	Spec.Data->SetSetByCallerMagnitude(Tag_Defense, Row.Defense);
 
 	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 

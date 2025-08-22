@@ -10,13 +10,15 @@
 #include "BaseEnemy.generated.h"
 
 class AEnemyBaseWeapon;
-struct FMonsterStatRow;
-class UMonsterDefinition;
 class UEnemyAttributeSet;
 class UBehaviorTree;
 class UEnemyRotationComponent;
 class UAbilitySystemComponent;
 class UGameplayEffect;
+
+class UMonsterDefinition;
+class UMonsterAttributeSet;
+struct FMonsterStatRow;
 
 UCLASS()  
 class ENEMY_API ABaseEnemy : public ACharacter  , public IAbilitySystemInterface, public IEnemyWeaponControl
@@ -31,6 +33,9 @@ protected:
 	/* 몬스터 초기화 데이터 ( MonsterAIPlugin 참조 ) **/
 	UPROPERTY(EditAnywhere, Category = "Monster | Data")
 	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	TSubclassOf<UMonsterAttributeSet> AttributeSetClass;
 
 // GAS Section
 protected:

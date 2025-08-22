@@ -5,7 +5,7 @@
 
 EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Start Attack Task"));
+	//GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Start Attack Task"));
 
 	AAIController* AICon = OwnerComp.GetAIOwner();
 	if (!AICon) return EBTNodeResult::Failed;
