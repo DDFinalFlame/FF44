@@ -16,8 +16,16 @@ class ENEMY_API ARangedEnemy : public ABaseEnemy, public IRangeAttack
 	GENERATED_BODY()
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Weapon | Mesh")
+	UStaticMeshComponent* WeaponMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Weapon | Socket")
+	FName SocketName;
+
 public:
 	ARangedEnemy();
+public:
+	void BeginPlay() override;
 // RangeAttack Interface
 public:
 	virtual FVector GetMuzzleLocation() override;

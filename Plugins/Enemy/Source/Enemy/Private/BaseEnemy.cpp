@@ -12,8 +12,6 @@ ABaseEnemy::ABaseEnemy()
 	// Create Component
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComponent");
 	RotationComponent = CreateDefaultSubobject<UEnemyRotationComponent>("RotationComponent");
-
-
 }
 
 void ABaseEnemy::BeginPlay()
