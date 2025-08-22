@@ -28,7 +28,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 		RunBehaviorTree(ControlledEnemy->BehaviorTree);
 	}
 
-	// UpdateTarget 타이머 등록
+	/* UpdateTarget 타이머 등록 **/
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::UpdateTarget, 0.1f, true);
 }
 

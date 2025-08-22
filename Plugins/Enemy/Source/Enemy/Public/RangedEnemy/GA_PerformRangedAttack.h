@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GA_PerformAttack.h"
+#include "GAS/GA_PerformAttack.h"
 #include "GA_PerformRangedAttack.generated.h"
 
 class AProjectileBase;
@@ -16,6 +16,8 @@ class ENEMY_API UGA_PerformRangedAttack : public UGA_PerformAttack
 {
 	GENERATED_BODY()
 
+public:
+	UGA_PerformRangedAttack();
 protected:
 	/* 발사체 스폰 위치 **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")

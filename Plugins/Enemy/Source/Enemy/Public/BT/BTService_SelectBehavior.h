@@ -45,4 +45,5 @@ protected:
 private:
 	void SetBehaviorKey(UBlackboardComponent* BlackboardComponent, EAIBehavior Behavior) const;
 	void UpdateBehavior(UBlackboardComponent* BlackboardComponent);
+	bool IsHit();
 };

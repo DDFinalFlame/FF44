@@ -1,10 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GA_PerformAttack.h"
+#include "GAS/GA_PerformAttack.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "BaseEnemy.h"
 #include <Abilities/Tasks/AbilityTask_PlayMontageAndWait.h>
+
+UGA_PerformAttack::UGA_PerformAttack()
+{
+    /* 블루 프린트에서 설정한 tag 부여 **/
+    if (AbilityTag.IsValid())
+    {
+        AbilityTags.AddTag(AbilityTag);
+    }
+}
 
 void UGA_PerformAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
@@ -14,10 +23,6 @@ void UGA_PerformAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         return;
     }
 
-	if (AbilityTag.IsValid() && !AbilityTags.HasTagExact(AbilityTag))
-    {
-        AbilityTags.AddTag(AbilityTag);
-    }
 
     ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
     if (!Character || !AttackAnimMontage)
@@ -45,13 +50,13 @@ void UGA_PerformAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 void UGA_PerformAttack::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
 {
-	Super::OnGiveAbility(ActorInfo, Spec);
+    ///* 블루 프린트에서 설정한 tag 부여 **/
+    //if (AbilityTag.IsValid())
+    //{
+    //    AbilityTags.AddTag(AbilityTag);
+    //}
 
-    /* 블루 프린트에서 설정한 tag 부여 **/
-    if (AbilityTag.IsValid())
-    {
-        AbilityTags.AddTag(AbilityTag);
-    }
+	Super::OnGiveAbility(ActorInfo, Spec);
 }
 
 void UGA_PerformAttack::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)

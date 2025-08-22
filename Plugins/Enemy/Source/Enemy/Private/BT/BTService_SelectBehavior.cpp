@@ -43,6 +43,8 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 	check(BlackboardComponent);
 	check(ControlledEnemy);
 
+	if (IsHit()) { return; }
+
 	AActor* TargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(TargetKey.SelectedKeyName));
 	AActor* NoiseTargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(NoiseTargetKey.SelectedKeyName));
 
@@ -82,4 +84,19 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 			SetBehaviorKey(BlackboardComponent, EAIBehavior::Idle);
 		}
 	}
+}
+
+bool UBTService_SelectBehavior::IsHit()
+{
+	UAbilitySystemComponent* ASC = ControlledEnemy->FindComponentByClass<UAbilitySystemComponent>();
+	if (!ASC) { return false; }
+
+	FGameplayTag HitTag = FGameplayTag::RequestGameplayTag("Enemy.State.Hit");
+
+	if (ASC->HasMatchingGameplayTag(HitTag))
+	{
+		return true;
+	}
+
+	return false;
 }

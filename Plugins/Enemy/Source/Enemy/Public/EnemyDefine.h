@@ -8,7 +8,8 @@ enum class EAIBehavior : uint8
 	MeleeAttack,
 	RangeAttack,
 	Approach,
-	Investigate
+	Investigate,
+	Hit
 };
 
 UENUM(BlueprintType)

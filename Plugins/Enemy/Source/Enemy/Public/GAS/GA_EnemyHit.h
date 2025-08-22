@@ -4,25 +4,27 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "GA_PerformAttack.generated.h"
+#include "GA_EnemyHit.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ENEMY_API UGA_PerformAttack : public UGameplayAbility
+class ENEMY_API UGA_EnemyHit : public UGameplayAbility
 {
 	GENERATED_BODY()
-
+public:
+	UGA_EnemyHit();
 protected:
 	/* attack 유형별 설정 **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
-	TObjectPtr<UAnimMontage> AttackAnimMontage;
+	TObjectPtr<UAnimMontage> HitAnimMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackTag")
-	FGameplayTag AbilityTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EventTag")
+	FGameplayTag EventTag;
 
-	/* **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	TSubclassOf<UGameplayEffect> HitEffect;
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
@@ -30,8 +32,4 @@ protected:
 
 	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-	
-
-	
 };
