@@ -13,6 +13,8 @@ struct FMonsterStatRow : public FTableRowBase
     float AttackPower = 10.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) 
     float MoveSpeed = 300.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float Defense = 5.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) 
     float DetectDistance = 1500.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) 

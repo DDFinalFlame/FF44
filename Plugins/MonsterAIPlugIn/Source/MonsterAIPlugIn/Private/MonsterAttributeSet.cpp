@@ -6,7 +6,7 @@
 #include "GameplayEffectExtension.h"  
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
-
+#include "MonsterTags.h"
 UMonsterAttributeSet::UMonsterAttributeSet()
 {
 }
@@ -31,6 +31,11 @@ void UMonsterAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& _old)
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UMonsterAttributeSet, MaxHealth, _old);
 }
 
+void UMonsterAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMonsterAttributeSet, Defense, OldValue);
+}
+
 void UMonsterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -39,6 +44,7 @@ void UMonsterAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION_NOTIFY(UMonsterAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMonsterAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMonsterAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMonsterAttributeSet, Defense, COND_None, REPNOTIFY_Always);
 }
 
 /** 값이 바뀌기 직전: Max/Min 범위 정리 */
@@ -62,6 +68,12 @@ void UMonsterAttributeSet::PreAttributeChange(const FGameplayAttribute& _attr, f
 	else if (_attr == GetMoveSpeedAttribute())
 	{
 		if (_newValue < 0.f) _newValue = 0.f;
+	}
+	else if (_attr == GetDefenseAttribute())
+	{
+		// 방어력 0이하로 떨어지는거 방지 
+		// 만약 - 방어력을 넣을때, 해제
+		_newValue = FMath::Max(0.f, _newValue);
 	}
 }
 
@@ -87,13 +99,13 @@ void UMonsterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			UAbilitySystemComponent* asc = _data.Target.AbilityActorInfo->AbilitySystemComponent.Get();
 
 			// 이미 Dead 상태면(다중 타격 중복 방지) 재송신 금지
-			if (asc && !asc->HasMatchingGameplayTag(TAG_State_Dead()))
+			if (asc && !asc->HasMatchingGameplayTag(MonsterTags::State_Dead))
 			{
 				FGameplayEventData evt;
-				evt.EventTag = TAG_Event_Death();
+				evt.EventTag = MonsterTags::Event_Death;
 				evt.Target = avatar;
 
-				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(avatar, TAG_Event_Death(), evt);
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(avatar, MonsterTags::Event_Death, evt);
 			}
 		}
 	}

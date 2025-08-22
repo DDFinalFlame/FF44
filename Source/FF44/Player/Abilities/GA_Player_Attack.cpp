@@ -4,6 +4,7 @@
 
 #include "Player/BasePlayer.h"
 #include "Weapon/BaseWeapon.h"
+#include "MonsterTags.h"
 
 UGA_Player_Attack::UGA_Player_Attack()
 {

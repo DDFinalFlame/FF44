@@ -4,7 +4,7 @@
 #include "MonsterCharacter.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "MonsterTags.h"
-//static FGameplayTag TAG_Ability_Attack() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Attack")); }
+
 UGA_MonsterAttack::UGA_MonsterAttack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
