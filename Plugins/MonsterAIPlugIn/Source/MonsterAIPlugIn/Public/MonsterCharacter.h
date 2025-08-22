@@ -123,39 +123,11 @@ protected:
 
 
 public:
-	// --- 디버그 피격 테스트용 ---
-
-	UPROPERTY(EditAnywhere, Category = "HitTest|Trigger")
-	TSubclassOf<class UGameplayEffect> TestDamageGE; // 에디터에서 GE_TestDamage 지정
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitTest|Trigger")
-	USphereComponent* HitTestTrigger = nullptr;
-
-	// 연속 트리거 방지용 쿨다운
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HitTest|Trigger")
-	float HitCooldown = 0.5f;
-
-	// 마지막 트리거 시각
-	double LastHitTime = -1000.0;
-
-	// 플레이어와 오버랩 시작 시 콜백
-	UFUNCTION()
-	void OnHitTestBegin(UPrimitiveComponent* _OverlappedComp, AActor* _OtherActor,
-		UPrimitiveComponent* _OtherComp, int32 _OtherBodyIndex,
-		bool _bFromSweep, const FHitResult& _SweepResult);
-
-	// 실제 피격 처리(이벤트 전송+데미지 적용)
-	void TriggerHitReact(AActor* _InstigatorActor);
-
 	UFUNCTION(BlueprintPure, Category = "Monster|Data")
 	UMonsterDefinition* GetMonsterDef() const { return MonsterDefinition.Get(); }
 
 	// 죽음 처리
 	void OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
-
-	//protected:
-	//	UPROPERTY(EditAnywhere, Category = "Monster|Data")
-	//	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
 
 protected:
 	void UpdateTransition_PatrolToCombatReady();
@@ -194,7 +166,7 @@ protected:
 	bool bAttackActive = false;
 
 	// 파생 히트박스 생성 시 반드시 호출해서 베이스에 등록(Overlap 바인딩)
-	void RegisterHitbox(UPrimitiveComponent* Comp);
+	//void RegisterHitbox(UPrimitiveComponent* Comp);
 
 	// 공용: 스윙 시작/종료(AnimNotify_Begin/End에서 호출하면 편합니다)
 public:
@@ -203,20 +175,20 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void EndAttackWindow();   // bAttackActive=false
-
-protected:
-	// 공통 Overlap 핸들러(등록된 모든 AttackHitboxes가 여기로 바인딩)
-	UFUNCTION()
-	void OnAttackHitboxBeginOverlap(
-		UPrimitiveComponent* OverlappedComp,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
-
-	// 맞은 대상에게 실제 처리(GAS 이벤트/데미지 등)
-	void ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit);
+//
+//protected:
+//	// 공통 Overlap 핸들러(등록된 모든 AttackHitboxes가 여기로 바인딩)
+//	UFUNCTION()
+//	void OnAttackHitboxBeginOverlap(
+//		UPrimitiveComponent* OverlappedComp,
+//		AActor* OtherActor,
+//		UPrimitiveComponent* OtherComp,
+//		int32 OtherBodyIndex,
+//		bool bFromSweep,
+//		const FHitResult& SweepResult);
+//
+//	// 맞은 대상에게 실제 처리(GAS 이벤트/데미지 등)
+//	void ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit);
 
 protected:
 		// BP에서 무기 클래스를 지정

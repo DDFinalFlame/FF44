@@ -8,10 +8,6 @@
 #include "MonsterCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "MonsterTags.h" 
-//
-//static FGameplayTag TAG_Ability_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Dead")); }
-//static FGameplayTag TAG_State_Dead() { return FGameplayTag::RequestGameplayTag(TEXT("State.Dead")); }
-//static FGameplayTag TAG_Event_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Death")); }
 
 
 UGA_MonsterDeath::UGA_MonsterDeath()

@@ -10,8 +10,8 @@ class MONSTERAIPLUGIN_API UGA_HitReact : public UGameplayAbility
     GENERATED_BODY()
 public:
     UGA_HitReact();
-    UPROPERTY(EditDefaultsOnly, Category = "HitReact")
-    TSubclassOf<class UGameplayEffect> HitReactEffectClass;
+    UPROPERTY(EditDefaultsOnly, Category = "HitReact|Effect")
+    TSubclassOf<class UGameplayEffect> DamageGE;
 
 protected:
 

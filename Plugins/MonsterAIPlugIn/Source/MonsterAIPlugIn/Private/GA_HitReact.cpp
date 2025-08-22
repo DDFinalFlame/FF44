@@ -1,4 +1,5 @@
-﻿#include "GA_HitReact.h"
+﻿
+#include "GA_HitReact.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -26,13 +27,13 @@ UGA_HitReact::UGA_HitReact()
     BlockAbilitiesWithTag.AddTag(MonsterTags::Ability_Attack);
 
     FAbilityTriggerData Trig;
-    Trig.TriggerTag = MonsterTags::Event_Hit;
+    Trig.TriggerTag = MonsterTags::Event_Monster_Hit;
     Trig.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
     AbilityTriggers.Add(Trig);
 
     // 기본 값(헤더에도 선언 필요)
     RetryDelaySeconds = 0.02f;
-    MaxHitReactDuration = 1.5f;   
+    MaxHitReactDuration = 1.5f;
 }
 
 bool UGA_HitReact::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -66,16 +67,27 @@ UAnimMontage* UGA_HitReact::GetMonsterHitMontage(const FGameplayAbilityActorInfo
 
 void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActorInfo* Info, const FGameplayAbilityActivationInfo ActivationInfo,
-    const FGameplayEventData*)
+    const FGameplayEventData* EventData)
 {
     UE_LOG(LogTemp, Warning, TEXT("HitReact ActivateAbility called!"));
-
+    // 커밋 실패 시 즉시 종료
     if (!CommitAbility(Handle, Info, ActivationInfo))
     {
         EndAbility(Handle, Info, ActivationInfo, true, true);
         return;
     }
+    // 상태전환
+    if (Info && Info->AvatarActor.IsValid() &&
+        Info->AbilitySystemComponent.IsValid() &&
+        Info->AbilitySystemComponent->GetOwnerRole() == ROLE_Authority)
+    {
+        if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Info->AvatarActor.Get()))
+        {
+            MC->SetMonsterState(EMonsterState::Hit); 
+        }
+    }
 
+    // Dead tag 감시
     if (Info && Info->AbilitySystemComponent.IsValid())
     {
         DeadTagDelegateHandle = Info->AbilitySystemComponent
@@ -83,6 +95,7 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             .AddUObject(this, &UGA_HitReact::OnDeadTagChanged);
     }
 
+    // 즉시 이동 정지
     if (ACharacter* C = Cast<ACharacter>(Info ? Info->AvatarActor.Get() : nullptr))
     {
         if (UCharacterMovementComponent* Move = C->GetCharacterMovement())
@@ -91,15 +104,38 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         }
     }
 
-    // 상태 GE 부여(있으면)
-    if (HitReactEffectClass && Info && Info->AbilitySystemComponent.IsValid())
+
+
+
+    if (Info && Info->AbilitySystemComponent.IsValid() && DamageGE)
     {
-        ActiveGE = Info->AbilitySystemComponent->ApplyGameplayEffectToSelf(
-            HitReactEffectClass->GetDefaultObject<UGameplayEffect>(), 1.f,
-            Info->AbilitySystemComponent->MakeEffectContext());
+        UAbilitySystemComponent* TargetASC = Info->AbilitySystemComponent.Get(); // 피격자(=몬스터)
+
+        // 이벤트에서 공격자 ASC 얻기
+        const AActor* InstigatorActor = EventData ? EventData->Instigator.Get() : nullptr;
+        UAbilitySystemComponent* AttackerASC =
+            InstigatorActor ? UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<AActor*>(InstigatorActor)) : nullptr;
+        /*UE_LOG(LogTemp, Warning, TEXT("Target Actor: %s"), *TargetASC->GetAvatarActor()->GetName());
+        UE_LOG(LogTemp, Warning, TEXT("Source Actor: %s"), *InstigatorActor->GetName());*/
+        // 컨텍스트: 인스티게이터/타겟 모두 넣어주면 좋음
+        FGameplayEffectContextHandle Ctx = (AttackerASC ? AttackerASC : TargetASC)->MakeEffectContext();
+        if (InstigatorActor) Ctx.AddInstigator(const_cast<AActor*>(InstigatorActor), nullptr);
+        if (Info && Info->AvatarActor.IsValid()) Ctx.AddSourceObject(Info->AvatarActor.Get());
+
+        if (AttackerASC && TargetASC && TargetASC->GetOwnerRole() == ROLE_Authority)
+        {
+            // 스펙을 '공격자 ASC'로 만든다 (Source=플레이어)
+            FGameplayEffectSpecHandle Spec = AttackerASC->MakeOutgoingSpec(DamageGE, 1.f, Ctx);
+            if (Spec.IsValid())
+            {
+                // ByCaller 안 쓸 거면 아무 것도 넣지 말고,
+                // EC의 캡처(Attack=Source, Defense=Target)에만 의존
+                AttackerASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+            }
+        }
     }
 
-
+    //워치독 타이머(몽타주 미콜백/예외 상황 방지용)
     if (UWorld* W = GetWorld())
     {
         W->GetTimerManager().SetTimer(FailSafeHandle, this,
@@ -108,6 +144,7 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     // 재생 시도(재시도 로직 포함)
     TryPlayHitReactMontage(Info);
+  
 }
 
 void UGA_HitReact::TryPlayHitReactMontage(const FGameplayAbilityActorInfo* Info)
@@ -130,7 +167,7 @@ void UGA_HitReact::TryPlayHitReactMontage(const FGameplayAbilityActorInfo* Info)
 
         if (Task)
         {
-            // ★ 변경: BlendOut도 잡아주면 더 안전
+            // 변경: BlendOut도 잡아주면 더 안전
             Task->OnBlendOut.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
             Task->OnCompleted.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
             Task->OnInterrupted.AddDynamic(this, &UGA_HitReact::OnMontageInterrupted);
@@ -192,7 +229,7 @@ void UGA_HitReact::OnRetryTimerElapsed()
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }
 
-void UGA_HitReact::OnFailSafeTimeout() 
+void UGA_HitReact::OnFailSafeTimeout()
 {
     UE_LOG(LogTemp, Warning, TEXT("HitReact FailSafeTimeout -> Force EndAbility"));
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
