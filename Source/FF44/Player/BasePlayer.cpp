@@ -90,6 +90,10 @@ void ABasePlayer::PossessedBy(AController* NewController)
 	if (NewController) 
 	{
 		//GameplayCamera->ActivateCameraForPlayerController(Cast<APlayerController>(NewController), true, EGameplayCameraComponentActivationMode::Push);
+
+		auto old = GetController();
+
+		SetController(NewController);
 	}
 }
 
