@@ -11,7 +11,9 @@
 			"AdditionalDependencies": [
 				"Engine",
 				"AIModule",
-				"UMG"
+				"UMG",
+				"CoreUObject",
+				"GameplayAbilities"
 			]
 		}
 	],
@@ -33,6 +35,14 @@
 		},
 		{
 			"Name": "GameplayAbilities",
+			"Enabled": true
+		},
+		{
+			"Name": "MotionWarping",
+			"Enabled": true
+		},
+		{
+			"Name": "MonsterAIPlugin",
 			"Enabled": true
 		}
 	]

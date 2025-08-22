@@ -417,14 +417,5 @@ UpgradeLog.htm
 *.xcworkspace/*
 .vscode/
 
-# Optional: Ignore local config (but keep Default configs)
-Config/DefaultEditor.ini
-Config/DefaultEditorPerProjectUserSettings.ini
-Config/EditorPerProjectUserSettings.ini
-/Content/Demo
-/Content/Characters/Mannequins
-/Content/Input
-/Content/LevelPrototyping
-/Content/ThirdPerson
-/Content/__ExternalActors__/ThirdPerson/Lvl_ThirdPerson
-/Content/__ExternalObjects__/ThirdPerson/Lvl_ThirdPerson
+# Ignore Solution
+FF44.sln
