@@ -8,6 +8,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "MonsterCharacter.h"
+#include "MonsterTags.h"
 
 // Sets default values
 AMonsterBaseWeapon::AMonsterBaseWeapon()
@@ -115,31 +116,11 @@ void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
     // 1) 이벤트로 HitReact 유도
     {
         FGameplayEventData Payload;
-        Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
+        Payload.EventTag = MonsterTags::Event_Hit;
         Payload.Instigator = OwnerMonster; //몬스터끼리 공격 X
         Payload.Target = Victim;
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
     }
 
-    // 2) 데미지 GE 적용(여기서 실제 체력 감소)
-    if (!DamageGE || !OwnerMonster) return;
-
-    UAbilitySystemComponent* SourceASC =
-        UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerMonster);
-    UAbilitySystemComponent* TargetASC =
-        UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
-
-    if (!SourceASC || !TargetASC) return;
-
-    // 컨텍스트 생성 + 공격자 주입(중요)
-    FGameplayEffectContextHandle Ctx = SourceASC->MakeEffectContext();
-    Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
-
-    // Spec 생성
-    FGameplayEffectSpecHandle Spec = SourceASC->MakeOutgoingSpec(DamageGE, 1.f, Ctx);
-    if (!Spec.IsValid()) return;
-
-    // 타깃에 적용
-    TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 }
 

@@ -31,23 +31,6 @@ public:
         const FGameplayAbilityActivationInfo ActivationInfo,
         bool bReplicateEndAbility, bool bWasCancelled) override;
 
-protected:
-     // 태그 헬퍼(프로젝트 스타일에 맞춤)
-    static FGameplayTag TAG_Ability_Death()
-    {
-        return FGameplayTag::RequestGameplayTag(TEXT("Ability.Monster.Dead"));
-    }
-
-    static FGameplayTag TAG_State_Dead()
-    {
-        return FGameplayTag::RequestGameplayTag(TEXT("State.Dead"));
-    }
-
-    static FGameplayTag TAG_Event_Death()
-    {
-        return FGameplayTag::RequestGameplayTag(TEXT("Event.Death"));
-    }
-
 private:
     // 안전한 스켈레탈 메시 해석(기본 Mesh가 null이어도 대체 탐색)
     static USkeletalMeshComponent* ResolveSkeletalMesh(ACharacter* Chr);
