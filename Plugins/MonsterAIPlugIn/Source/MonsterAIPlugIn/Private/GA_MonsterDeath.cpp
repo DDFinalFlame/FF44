@@ -187,7 +187,7 @@ void UGA_MonsterDeath::OnMontageEnded()
     if (Chr)
     {
         // 몽타주 끝난 후 래그돌 진입(연출 → 물리)
-        EnterRagdoll(Chr);
+        //EnterRagdoll(Chr);
         Chr->SetLifeSpan(5.f);
     }
 

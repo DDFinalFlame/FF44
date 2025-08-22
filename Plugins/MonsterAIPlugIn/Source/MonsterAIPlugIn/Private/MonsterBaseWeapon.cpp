@@ -112,34 +112,55 @@ void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
             );
         }
     }
-    // 1) 이벤트로 HitReact 유도
-    {
-        FGameplayEventData Payload;
-        Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
-        Payload.Instigator = OwnerMonster; //몬스터끼리 공격 X
-        Payload.Target = Victim;
-        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
-    }
+    //// 1) 이벤트로 HitReact 유도
+    //{
+    //    FGameplayEventData Payload;
+    //    Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
+    //    Payload.Instigator = OwnerMonster; //몬스터끼리 공격 X
+    //    Payload.Target = Victim;
+    //    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, Payload.EventTag, Payload);
+    //}
 
-    // 2) 데미지 GE 적용(여기서 실제 체력 감소)
-    if (!DamageGE || !OwnerMonster) return;
+    //// 2) 데미지 GE 적용(여기서 실제 체력 감소)
+    //if (!DamageGE || !OwnerMonster) return;
+
+    //UAbilitySystemComponent* SourceASC =
+    //    UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerMonster);
+    //UAbilitySystemComponent* TargetASC =
+    //    UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
+
+    //if (!SourceASC || !TargetASC) return;
+
+    //// 컨텍스트 생성 + 공격자 주입(중요)
+    //FGameplayEffectContextHandle Ctx = SourceASC->MakeEffectContext();
+    //Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
+
+    //// Spec 생성
+    //FGameplayEffectSpecHandle Spec = SourceASC->MakeOutgoingSpec(DamageGE, 1.f, Ctx);
+    //if (!Spec.IsValid()) return;
+
+    //// 타깃에 적용
+    //TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+
+    if (!Victim || !OwnerMonster) return;
 
     UAbilitySystemComponent* SourceASC =
         UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerMonster);
-    UAbilitySystemComponent* TargetASC =
-        UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
+    if (!SourceASC) return;
 
-    if (!SourceASC || !TargetASC) return;
+    // 공격자의 현재 공격력 읽기 (필요하면 계수 곱하기)
+    float Attack = SourceASC->GetNumericAttribute(UMonsterAttributeSet::GetAttackPowerAttribute());
+    const float SkillCoeff = 1.0f;
+    const float FinalAttack = Attack * SkillCoeff;
 
-    // 컨텍스트 생성 + 공격자 주입(중요)
-    FGameplayEffectContextHandle Ctx = SourceASC->MakeEffectContext();
-    Ctx.AddInstigator(OwnerMonster, OwnerMonster->GetController());
+    // **이벤트에 공격력만 담아 전송**
+    FGameplayEventData Payload;
+    Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
+    Payload.Instigator = OwnerMonster;  
+    Payload.Target = Victim;
+    Payload.EventMagnitude = FinalAttack; // 공격력
 
-    // Spec 생성
-    FGameplayEffectSpecHandle Spec = SourceASC->MakeOutgoingSpec(DamageGE, 1.f, Ctx);
-    if (!Spec.IsValid()) return;
-
-    // 타깃에 적용
-    TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+        Victim, Payload.EventTag, Payload);
 }
 

@@ -274,6 +274,7 @@ void AMonsterCharacter::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<c
 	FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(InitGE, 1.f, Ctx);
 	if (!Spec.IsValid()) return;
 
+	//Max HP 를 먼저 보내고 Current HP를 보내줘야된다.
 	const FGameplayTag Tag_MaxHealth = FGameplayTag::RequestGameplayTag(FName("Data.MaxHealth"));
 	const FGameplayTag Tag_Health = FGameplayTag::RequestGameplayTag(FName("Data.Health"));
 	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Data.AttackPower"));
@@ -503,11 +504,8 @@ void AMonsterCharacter::ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit)
 	}
 
 	// 2) 데미지 적용 (예: TestDamageGE 사용 or 데미지 전용 GE)
-	if (AbilitySystemComponent)
+	if (AbilitySystemComponent && TestDamageGE)
 	{
-		// ByCaller로 데미지 수치 전달을 추천합니다.
-		// 지금은 간단하게 TestDamageGE 적용 + GetAttackDamage 반영 예시:
-		if (TestDamageGE)
 		{
 			FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
 			Ctx.AddInstigator(this, GetController());
@@ -570,12 +568,12 @@ float AMonsterCharacter::GetAttackPower_Implementation() const
 		}
 	}
 
-	// 2) 폴백: 멤버 보관용 AttributeSet에서 조회
-	if (AttributeSet)
-	{
-		const float AP = AttributeSet->GetAttackPower();
-		return FMath::IsFinite(AP) ? AP : 0.f;
-	}
+	//// 2) 폴백: 멤버 보관용 AttributeSet에서 조회
+	//if (AttributeSet)
+	//{
+	//	const float AP = AttributeSet->GetAttackPower();
+	//	return FMath::IsFinite(AP) ? AP : 0.f;
+	//}
 
-	return 0.f;
+    return 0.f;
 }

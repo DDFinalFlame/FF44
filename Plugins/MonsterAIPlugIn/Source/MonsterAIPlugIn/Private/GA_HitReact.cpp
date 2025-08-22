@@ -8,7 +8,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "MonsterTags.h"
 #include "TimerManager.h" 
-
+#include "CombatEventData.h"
 UGA_HitReact::UGA_HitReact()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -26,7 +26,7 @@ UGA_HitReact::UGA_HitReact()
     BlockAbilitiesWithTag.AddTag(MonsterTags::Ability_Attack);
 
     FAbilityTriggerData Trig;
-    Trig.TriggerTag = MonsterTags::Event_Hit;
+    Trig.TriggerTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Attack"));
     Trig.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
     AbilityTriggers.Add(Trig);
 
@@ -66,7 +66,7 @@ UAnimMontage* UGA_HitReact::GetMonsterHitMontage(const FGameplayAbilityActorInfo
 
 void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActorInfo* Info, const FGameplayAbilityActivationInfo ActivationInfo,
-    const FGameplayEventData*)
+    const FGameplayEventData* EventData)
 {
     UE_LOG(LogTemp, Warning, TEXT("HitReact ActivateAbility called!"));
 
@@ -91,14 +91,52 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         }
     }
 
-    // 상태 GE 부여(있으면)
-    if (HitReactEffectClass && Info && Info->AbilitySystemComponent.IsValid())
-    {
-        ActiveGE = Info->AbilitySystemComponent->ApplyGameplayEffectToSelf(
-            HitReactEffectClass->GetDefaultObject<UGameplayEffect>(), 1.f,
-            Info->AbilitySystemComponent->MakeEffectContext());
-    }
+    
 
+
+    if (Info && Info->AbilitySystemComponent.IsValid() && DamageGE)
+    {
+        UAbilitySystemComponent* TargetASC = Info->AbilitySystemComponent.Get(); // 피격자(=나)
+        const float AttackFromEvent = EventData ? EventData->EventMagnitude : 0.f;
+
+        // 컨텍스트: 공격자를 Instigator로
+        AActor* InstigatorActor = EventData ? const_cast<AActor*>(EventData->Instigator.Get()) : nullptr;
+        FGameplayEffectContextHandle Ctx = TargetASC->MakeEffectContext();
+        if (InstigatorActor) Ctx.AddInstigator(InstigatorActor, nullptr);
+
+        float MyMoveSpeed = 0.f;
+        if (const UMonsterAttributeSet* M = TargetASC->GetSet<UMonsterAttributeSet>())
+        {
+            MyMoveSpeed = M->GetMoveSpeed();   
+        }
+
+
+        FGameplayEffectSpecHandle Spec = TargetASC->MakeOutgoingSpec(DamageGE, 1.f, Ctx);
+
+        if (const UCombatEventData* CombatData = Cast<UCombatEventData>(EventData->OptionalObject))
+        {
+            Spec.Data->SetSetByCallerMagnitude(
+                FGameplayTag::RequestGameplayTag(TEXT("Player.Stat.Defense")),
+                CombatData->Defense
+            );
+            Spec.Data->SetSetByCallerMagnitude(
+                FGameplayTag::RequestGameplayTag(TEXT("Player.Stat.AttackPower")),
+                CombatData->AttackPower
+            );
+            Spec.Data->SetSetByCallerMagnitude(
+                FGameplayTag::RequestGameplayTag(TEXT("Data.MoveSpeed")),
+                MyMoveSpeed
+            );
+        }
+
+        if (Spec.IsValid())
+        {
+            // SetByCaller 키 = "Player.Stat.AttackPower"
+            //Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("Player.Stat.AttackPower")), AttackFromEvent);
+
+            TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+        }
+    }
 
     if (UWorld* W = GetWorld())
     {
@@ -130,7 +168,7 @@ void UGA_HitReact::TryPlayHitReactMontage(const FGameplayAbilityActorInfo* Info)
 
         if (Task)
         {
-            // ★ 변경: BlendOut도 잡아주면 더 안전
+            // 변경: BlendOut도 잡아주면 더 안전
             Task->OnBlendOut.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
             Task->OnCompleted.AddDynamic(this, &UGA_HitReact::OnMontageCompleted);
             Task->OnInterrupted.AddDynamic(this, &UGA_HitReact::OnMontageInterrupted);

@@ -13,6 +13,9 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "HitReact")
     TSubclassOf<class UGameplayEffect> HitReactEffectClass;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Hit")
+    TSubclassOf<UGameplayEffect> DamageGE;
+
 protected:
 
     virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle,

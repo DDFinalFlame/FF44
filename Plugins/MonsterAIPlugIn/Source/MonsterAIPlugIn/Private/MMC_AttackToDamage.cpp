@@ -11,16 +11,18 @@
 
 float UMMC_AttackToDamage::CalculateBaseMagnitude_Implementation(const FGameplayEffectSpec& Spec) const
 {
-    UE_LOG(LogTemp, Warning, TEXT("[MMC] ENTER"));
+    const FGameplayTag TagAttack = FGameplayTag::RequestGameplayTag(TEXT("Player.Stat.AttackPower"));
+    const FGameplayTag TagDefense = FGameplayTag::RequestGameplayTag(TEXT("Player.Stat.Defense"));
+    const FGameplayTag TagSpeed = FGameplayTag::RequestGameplayTag(TEXT("Data.MoveSpeed"));
+    float Attack = Spec.GetSetByCallerMagnitude(TagAttack, false, -FLT_MAX);
+    float Defense = Spec.GetSetByCallerMagnitude(TagDefense, false, -FLT_MAX);
+    float Speed = Spec.GetSetByCallerMagnitude(TagSpeed, false, -FLT_MAX);
 
-    const FGameplayEffectContextHandle& Ctx = Spec.GetContext();
-    UAbilitySystemComponent* SrcASC = Ctx.GetInstigatorAbilitySystemComponent();
-    AActor* Source = SrcASC ? SrcASC->GetAvatarActor() : Ctx.GetOriginalInstigator();
+    float FinalAttack = Attack + Defense - Speed ;
 
-    float Attack = 0.f;
-    if (Source && Source->GetClass()->ImplementsInterface(UAttackStatProvider::StaticClass()))
-        Attack = IAttackStatProvider::Execute_GetAttackPower(Source);
-
-    //Attack *= (-1);
-    return Attack;
+    if (Attack == -FLT_MAX) {
+        const FGameplayTag Old = FGameplayTag::RequestGameplayTag(TEXT("Data.AttackPower"));
+        Attack = Spec.GetSetByCallerMagnitude(Old, false, 0.f);
+    }
+    return -FinalAttack;
 }
