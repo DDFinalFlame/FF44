@@ -41,6 +41,10 @@ public:
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, MoveSpeed)
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attr", ReplicatedUsing = OnRep_Defense)
+	FGameplayAttributeData Defense;
+	ATTRIBUTE_ACCESSORS(UMonsterAttributeSet, Defense)
+
 	// OnRep 함수
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -55,8 +59,6 @@ public:
 	UFUNCTION() void OnRep_MaxHealth(const FGameplayAttributeData& _old);
 	UFUNCTION() void OnRep_AttackPower(const FGameplayAttributeData& _old);
 	UFUNCTION() void OnRep_MoveSpeed(const FGameplayAttributeData& _old);
+	UFUNCTION() void OnRep_Defense(const FGameplayAttributeData& _old);
 
-	/** 태그 헬퍼(프로젝트 네이밍 스타일 유지) */
-	static FGameplayTag TAG_Event_Death() { return FGameplayTag::RequestGameplayTag(TEXT("Event.Death")); }
-	static FGameplayTag TAG_State_Dead() { return FGameplayTag::RequestGameplayTag(TEXT("State.Dead")); }
 };

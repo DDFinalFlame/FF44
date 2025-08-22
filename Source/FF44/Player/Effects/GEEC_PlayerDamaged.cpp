@@ -40,13 +40,4 @@ void UGEEC_PlayerDamaged::Execute_Implementation(const FGameplayEffectCustomExec
 	UAbilitySystemComponent* SourceASC = Spec.GetContext().GetOriginalInstigatorAbilitySystemComponent();
 	UAbilitySystemComponent* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
 
-	if (SourceASC && SourceASC->GetAvatarActor())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Source Actor: %s"), *SourceASC->GetAvatarActor()->GetName());
-	}
-
-	if (TargetASC && TargetASC->GetAvatarActor())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Target Actor: %s"), *TargetASC->GetAvatarActor()->GetName());
-	}
 }
