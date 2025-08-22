@@ -40,8 +40,19 @@ protected:
 private:
     class UAnimMontage* GetMonsterHitMontage(const FGameplayAbilityActorInfo* Info) const;
 
+
+protected:
+    void TryPlayHitReactMontage(const FGameplayAbilityActorInfo* Info);
+    void OnRetryTimerElapsed();
+
+    void OnFailSafeTimeout();
+    void OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
+
     FActiveGameplayEffectHandle ActiveGE;
+    FTimerHandle RetryTimerHandle;
+    FTimerHandle FailSafeHandle;          // 워치독
+    FDelegateHandle DeadTagDelegateHandle;// Dead 태그 이벤트 해제용
 
-
-
+    float RetryDelaySeconds = 0.02f;
+    float MaxHitReactDuration = 1.5f;     // 워치독 시간
 };

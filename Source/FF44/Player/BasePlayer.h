@@ -5,17 +5,23 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 
+#include "Data/PlayerDefinition.h"
+#include "AttackStatProvider.h"
 #include "BasePlayer.generated.h"
 
+class AActor;
+class ABaseWeapon;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
 class UGameplayAbility;
-class AActor;
+
+class UBasePlayerAttributeSet;
+
 struct FInputActionValue;
 
 UCLASS()
-class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface
+class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider
 {
 	GENERATED_BODY()
 
@@ -25,6 +31,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable)
+	virtual void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+									  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+									  bool bFromSweep, const FHitResult& SweepResult);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Components										///
@@ -39,6 +50,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAbilitySystemComponent* AbilitySystem;
 
+public:
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
+
+///////////////////////////////////////////////////////////////////////////////////////
+///										Data										///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attribute")
+	TSubclassOf<UBasePlayerAttributeSet> AttributeSetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TSoftObjectPtr<UPlayerDefinition> PlayerDefinition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	UDataTable* PlayerMetaDataTable = nullptr;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Abilities										///
@@ -48,23 +74,20 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> EquipWeaponAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	struct FGameplayTagContainer EquipWeaponTag;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> UnEquipWeaponAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	struct FGameplayTagContainer UnEquipWeaponTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TArray<TSubclassOf<UGameplayAbility>> ComboAttackAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
-	TSubclassOf<UGameplayAbility> ComboAttackAbility;
+	TSubclassOf<UGameplayAbility> HitAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	struct FGameplayTagContainer ComboAttackTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> DodgeAbility;
 
-public:
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> DeathAbility;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -72,10 +95,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	AActor* Weapon;
+	ABaseWeapon* Weapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	TSubclassOf<class ABaseWeapon> WeaponClass;
+	TSubclassOf<ABaseWeapon> WeaponClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FName EquipSocket= "Equip_Weapon";
@@ -94,8 +117,8 @@ public:
 	virtual void UnEquipWeapon();
 
 public:
-	AActor* GetWeapon() const { return Weapon; }
-	void SetWeapon(AActor* _Weapon) { Weapon = _Weapon; }
+	ABaseWeapon* GetWeapon() const { return Weapon; }
+	void SetWeapon(ABaseWeapon* _Weapon) { Weapon = _Weapon; }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -136,6 +159,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
+	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual int GetCurrentInputDirection() const { return CurrentInputDirection; }
+
+
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -155,4 +186,7 @@ protected:
 	virtual void Attack(const FInputActionValue& Value);
 	virtual void SpecialAct(const FInputActionValue& Value);
 	virtual void Skill(const FInputActionValue& Value);
+
+public:
+	virtual float GetAttackPower_Implementation() const override;
 };

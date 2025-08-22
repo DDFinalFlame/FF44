@@ -16,6 +16,7 @@
 
 // Class
 #include "Weapon/BaseWeapon.h"
+#include "BasePlayerAttributeSet.h"
 
 ABasePlayer::ABasePlayer()
 {
@@ -23,6 +24,7 @@ ABasePlayer::ABasePlayer()
 
 	// Components Setup
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABasePlayer::OnCapsuleBeginOverlap);
 
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
@@ -48,7 +50,7 @@ ABasePlayer::ABasePlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->bUsePawnControlRotation = false;	
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
@@ -56,22 +58,44 @@ ABasePlayer::ABasePlayer()
 void ABasePlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Definition Load
+	if (!PlayerDefinition.IsValid())
+		PlayerDefinition.LoadSynchronous();
+
+	UPlayerDefinition* def = PlayerDefinition.Get();
+
+	if(!def)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
+		return;
+	}
 	
+	// Player Controller Set
 	AController* PlayerController = GetController();
-	if(!PlayerController)
+	if(PlayerController)
 	{
 		FRotator ControlRotation = PlayerController->GetControlRotation();
 		ControlRotation.Pitch = -10.f;
-		return;
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
+		return;
 	}
 
 	// Weapon를 월드에 생성 후 바로 장착
-	Weapon = GetWorld()->SpawnActor<AActor>(WeaponClass);
-	EquipWeapon();
+	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
+	if (Weapon)
+	{
+		Weapon->SetOwner(this);
+		EquipWeapon();
+	}
+	else 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon not spawned. Check WeaponClass."));
+		return;
+	}
 
 	// 초기 Ability Tag 설정
 	AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
@@ -81,13 +105,35 @@ void ABasePlayer::BeginPlay()
 	{
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility));		
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+
+		for(int32 i=0;i< ComboAttackAbility.Num(); ++i)
+			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
+
+		if (AttributeSetClass)
+		{
+			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
+			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
+
+			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+		}
+
 	}	
 }
 
 void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	CurrentInputDirection = 0;
+}
+
+void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+										bool bFromSweep, const FHitResult& SweepResult)
+{
 
 }
 
@@ -195,6 +241,23 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 
 	if (Controller)
 	{
+		if(MovementVector.X > 0.f)
+		{
+			CurrentInputDirection = 4; // Right
+		}
+		else if(MovementVector.X < 0.f)
+		{
+			CurrentInputDirection = 3; // Left
+		}
+		else if(MovementVector.Y > 0.f)
+		{
+			CurrentInputDirection = 1; // Forward
+		}
+		else if(MovementVector.Y < 0.f)
+		{
+			CurrentInputDirection = 2; // Backward
+		}
+
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
@@ -223,7 +286,7 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 
 void ABasePlayer::Run(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
@@ -233,9 +296,7 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
 {
-	// Change State
-	
-	// PlayMontage
+	AbilitySystem->TryActivateAbilityByClass(DodgeAbility);
 }
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
@@ -263,9 +324,8 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
-	AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility);
-
-	// PlayMontage?
+	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
+		AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility[i]);
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
@@ -280,4 +340,29 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// Change State
 
 	// PlayMontage
+}
+
+float ABasePlayer::GetAttackPower_Implementation() const
+{
+	// 1) 가장 신뢰되는 경로: ASC에 등록된 AttributeSet에서 읽기
+	const UBasePlayerAttributeSet* FromASC = nullptr;
+	if (AbilitySystem)
+	{
+		FromASC = AbilitySystem->GetSet<UBasePlayerAttributeSet>();
+		if (FromASC)
+		{
+			const float AP = FromASC->GetAttackPower();
+			return FMath::IsFinite(AP) ? AP : 0.f;
+		}
+	}
+
+	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
+	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
+	{
+		const float AP = Attribute->GetAttackPower();
+		return FMath::IsFinite(AP) ? AP : 0.f;
+	}
+
+	// 3) 최종 폴백
+	return 0.f;
 }

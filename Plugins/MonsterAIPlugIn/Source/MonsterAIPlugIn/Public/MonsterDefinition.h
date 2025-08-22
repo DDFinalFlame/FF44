@@ -33,9 +33,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Monster|GAS")
     TSubclassOf<class UGameplayEffect> InitStatGE_SetByCaller;
 
-    // (선택) 공격 몽타주 맵
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Monster|Combat")
-    TMap<FName, TSoftObjectPtr<class UAnimMontage>> AttackMontages;
+    // 전투 몽타주
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+    TSoftObjectPtr<class UAnimMontage> AttackMontage; // "Light","Heavy" 등 키로 선택
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+    TSoftObjectPtr<class UAnimMontage> HitReactMontage;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+    TSoftObjectPtr<class UAnimMontage> DeathMontage;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Monster|Tags")
     FGameplayTagContainer MonsterTags;

@@ -57,4 +57,17 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Sense|FOV")
 	bool bUsePlanarFOV = true;             // true면 Z 무시(수평면 기준 각도)
+
+	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
+	struct FBlackboardKeySelector DetectDistanceKey;
+
+	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
+	struct FBlackboardKeySelector AttackDistanceKey;
+
+	// 폴백 기본값 (BB값이 없거나 0일 때 사용)
+	UPROPERTY(EditAnywhere, Category = "Defaults")
+	float DefaultDetectDistance = 800.f;
+
+	UPROPERTY(EditAnywhere, Category = "Defaults")
+	float DefaultAttackDistance = 200.f;
 };
