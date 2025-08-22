@@ -10,16 +10,18 @@
 #include "Player/BasePlayer.h"
 #include "Weapon/BaseWeapon.h"
 
-void UGA_Player_Attack_Combo::OnAttack_Implementation()
+void UGA_Player_Attack_Combo::CommitExecute(const FGameplayAbilitySpecHandle Handle, 
+                                            const FGameplayAbilityActorInfo* ActorInfo, 
+                                            const FGameplayAbilityActivationInfo ActivationInfo)
 {
     if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
     {
         AnimInst->OnPlayMontageNotifyBegin.AddDynamic(this, &UGA_Player_Attack_Combo::OnEnableAttack);
         AnimInst->OnPlayMontageNotifyEnd.AddDynamic(this, &UGA_Player_Attack_Combo::OnDisableAttack);
 
-        if(USkeletalMeshComponent* Mesh = OwnerPlayer->GetMesh())
+        if (USkeletalMeshComponent* Mesh = OwnerPlayer->GetMesh())
         {
-			// 없다면 Combo_1 몽타주를 재생
+            // 없다면 Combo_1 몽타주를 재생
             UAbilityTask_PlayMontageAndWait* Task =
                 UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
                     this,           // Ability 자신
@@ -31,16 +33,19 @@ void UGA_Player_Attack_Combo::OnAttack_Implementation()
                     1.0f            // Root Motion Scale
                 );
 
-            Task->OnCompleted.AddDynamic(this, &UGA_Player_Attack_Combo::OnMontageEnded);            
-            Task->OnInterrupted.AddDynamic(this, &UGA_Player_Attack_Combo::OnMontageEnded);
-            Task->OnBlendOut.AddDynamic(this, &UGA_Player_Attack_Combo::OnMontageEnded);
-            Task->OnCancelled.AddDynamic(this, &UGA_Player_Attack_Combo::OnMontageEnded);
+            Task->OnCompleted.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+            Task->OnBlendOut.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+            Task->OnInterrupted.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+            Task->OnCancelled.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
             Task->ReadyForActivation();
-		}
+        }
     }
 }
 
-void UGA_Player_Attack_Combo::UnbindMontage()
+void UGA_Player_Attack_Combo::EndAbility(const FGameplayAbilitySpecHandle Handle, 
+                                         const FGameplayAbilityActorInfo* ActorInfo,
+                                         const FGameplayAbilityActivationInfo ActivationInfo, 
+                                         bool bReplicateEndAbility, bool bWasCancelled)
 {
     if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
     {
@@ -48,17 +53,9 @@ void UGA_Player_Attack_Combo::UnbindMontage()
         AnimInst->OnPlayMontageNotifyEnd.RemoveDynamic(this, &UGA_Player_Attack_Combo::OnDisableAttack);
     }
 
-    if (GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(
-            -1,                        // Key (-1 = 새 메시지 계속 추가)
-            5.f,                       // Duration (5초)
-            FColor::Red,             // 색상
-            FString::Printf(TEXT("Unbind"))
-        );
-    }
-
     GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(ComboEnabledTag);
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGA_Player_Attack_Combo::OnEnableAttack(FName NotifyName, const FBranchingPointNotifyPayload& Payload)

@@ -7,10 +7,8 @@
 
 UGA_Player_Attack::UGA_Player_Attack()
 {
-	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Attack"));
+	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Attack"));
 	ActivationRequiredTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Weapon.Equip"));
-	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Dodge"));
-	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Hit"));
 }
 
 void UGA_Player_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -18,26 +16,29 @@ void UGA_Player_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 										const FGameplayAbilityActivationInfo ActivationInfo, 
 										const FGameplayEventData* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	if (ABasePlayer* player = Cast<ABasePlayer>(ActorInfo->AvatarActor.Get()))
+	{
+		OwnerPlayer = player;
+		OwnerWeapon = OwnerPlayer->GetWeapon();
+	}
+	else
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	if (!OwnerPlayer)
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
-		OwnerPlayer = Cast<ABasePlayer>(ActorInfo->AvatarActor.Get());
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
+}
 
-	if (!OwnerWeapon)
-	{
-		if (OwnerPlayer)
-		{
-			OwnerWeapon = OwnerPlayer->GetWeapon();
-		}
-	}
+void UGA_Player_Attack::CommitExecute(const FGameplayAbilitySpecHandle Handle, 
+									  const FGameplayAbilityActorInfo* ActorInfo, 
+									  const FGameplayAbilityActivationInfo ActivationInfo)
+{
 
-	OnAttack();
 }
 
 void UGA_Player_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, 
@@ -52,18 +53,13 @@ void UGA_Player_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle,
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,                        // Key (-1 = 새 메시지 계속 추가)
-			5.f,                       // Duration (5초)
-			FColor::Green,             // 색상
-			FString::Printf(TEXT("EndAbility: %s"), *GetName())
-		);
-	}
-}
-
-void UGA_Player_Attack::OnAttack_Implementation()
-{
-
+	//if (GEngine)
+	//{
+	//	GEngine->AddOnScreenDebugMessage(
+	//		-1,                        // Key (-1 = 새 메시지 계속 추가)
+	//		5.f,                       // Duration (5초)
+	//		FColor::Green,             // 색상
+	//		FString::Printf(TEXT("EndAbility: %s"), *GetName())
+	//	);
+	//}
 }

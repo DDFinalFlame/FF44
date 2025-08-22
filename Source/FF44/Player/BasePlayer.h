@@ -5,7 +5,6 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 
-#include "Data/PlayerStatRow.h"
 #include "Data/PlayerDefinition.h"
 #include "AttackStatProvider.h"
 #include "BasePlayer.generated.h"
@@ -58,9 +57,6 @@ public:
 ///										Data										///
 ///////////////////////////////////////////////////////////////////////////////////////
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
-	UBasePlayerAttributeSet* AttributeSet;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attribute")
 	TSubclassOf<UBasePlayerAttributeSet> AttributeSetClass;
 
@@ -68,9 +64,7 @@ protected:
 	TSoftObjectPtr<UPlayerDefinition> PlayerDefinition;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	UDataTable* PlayerStatTable = nullptr;
-
-	void ApplyInitStats(const FPlayerStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
+	UDataTable* PlayerMetaDataTable = nullptr;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Abilities										///
@@ -91,6 +85,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DodgeAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> DeathAbility;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////

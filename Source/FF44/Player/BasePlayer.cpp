@@ -50,7 +50,7 @@ ABasePlayer::ABasePlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->bUsePawnControlRotation = false;	
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
@@ -70,33 +70,18 @@ void ABasePlayer::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
 		return;
 	}
-
-	// Data Load
-	if (PlayerStatTable)
-	{
-		if(FPlayerStatRow* row = PlayerStatTable->FindRow<FPlayerStatRow>(def->StatRowName, TEXT("Player Stat Row")))
-		{
-			// 초기 Stats 적용
-			ApplyInitStats(*row, def->InitStatGE_SetByCaller);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Player Stat Row not found in DataTable."));
-			return;
-		}
-	}
 	
 	// Player Controller Set
 	AController* PlayerController = GetController();
-	if(!PlayerController)
+	if(PlayerController)
 	{
 		FRotator ControlRotation = PlayerController->GetControlRotation();
 		ControlRotation.Pitch = -10.f;
-		return;
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
+		return;
 	}
 
 	// Weapon를 월드에 생성 후 바로 장착
@@ -122,12 +107,19 @@ void ABasePlayer::BeginPlay()
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
 
 		for(int32 i=0;i< ComboAttackAbility.Num(); ++i)
 			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
 
 		if (AttributeSetClass)
-			AttributeSet = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);
+		{
+			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
+			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
+
+			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+		}
+
 	}	
 }
 
@@ -142,40 +134,7 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 										bool bFromSweep, const FHitResult& SweepResult)
 {
-	//if (OtherActor && OtherActor != this)
-	//{
-	//	auto Monster = Cast<AMonsterCharacter>(OtherActor);
-	//	if (Monster)
-	//	{
-	//		AbilitySystem->TryActivateAbilityByClass(HitAbility);
-	//	}
-	//}
-}
 
-void ABasePlayer::ApplyInitStats(const FPlayerStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE)
-{
-	if (!AbilitySystem || !InitGE) return;
-
-	FGameplayEffectContextHandle Ech = AbilitySystem->MakeEffectContext();
-	FGameplayEffectSpecHandle Esh = AbilitySystem->MakeOutgoingSpec(InitGE, 1.f, Ech);
-
-	if (!Esh.IsValid()) return;
-
-	const FGameplayTag Tag_Health = FGameplayTag::RequestGameplayTag(FName("Player.Stat.Health"));
-	const FGameplayTag Tag_Stamina = FGameplayTag::RequestGameplayTag(FName("Player.Stat.Stamina"));
-	const FGameplayTag Tag_Attack = FGameplayTag::RequestGameplayTag(FName("Player.Stat.AttackPower"));
-
-	Esh.Data->SetSetByCallerMagnitude(Tag_Health, Row.MaxHealth);
-	Esh.Data->SetSetByCallerMagnitude(Tag_Stamina, Row.MaxStamina);
-	Esh.Data->SetSetByCallerMagnitude(Tag_Attack, Row.AttackPower);
-
-	AbilitySystem->ApplyGameplayEffectSpecToSelf(*Esh.Data.Get());
-
-	UKismetSystemLibrary::PrintString(this, 
-		FString::Printf(TEXT("Health : %f, Stamina : %f, Attack : %f"), 
-			Row.MaxHealth, 
-			Row.MaxStamina,
-			Row.AttackPower));
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
@@ -338,8 +297,6 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 void ABasePlayer::Dodge(const FInputActionValue& Value)
 {
 	AbilitySystem->TryActivateAbilityByClass(DodgeAbility);
-	
-	// PlayMontage
 }
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
@@ -400,9 +357,9 @@ float ABasePlayer::GetAttackPower_Implementation() const
 	}
 
 	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
-	if (AttributeSet)
+	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
 	{
-		const float AP = AttributeSet->GetAttackPower();
+		const float AP = Attribute->GetAttackPower();
 		return FMath::IsFinite(AP) ? AP : 0.f;
 	}
 
