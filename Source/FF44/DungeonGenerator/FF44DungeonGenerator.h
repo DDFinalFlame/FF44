@@ -35,6 +35,15 @@ public:
     UPROPERTY(EditAnywhere, Category = "Rooms|Pools")
     TArray<TSubclassOf<AFF44RoomBase>> SmallRoomsToBeSpawned;
 
+	UPROPERTY(EditAnywhere, Category = "Rooms|Special")
+	TSubclassOf<AFF44RoomBase> PortalRoomClass;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms|Special")
+	TSubclassOf<AFF44RoomBase> BossRoomClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Floor")
+	bool bIsBossFloor = false;
+
     UPROPERTY(EditAnywhere, Category = "Rooms|Control")
     int32 RoomsToSpawn = 30;
 
@@ -87,6 +96,10 @@ private:
 	void SpawnNextRoom();
 	bool RemoveOverlappingRooms();
 	void SealRemainingExits();
+
+	USceneComponent* SelectGoalExit() const;
+	void PlaceFloorGoalAndFinish();
+	bool IsRoomOverlapping(AFF44RoomBase* Room) const;
 
 	void CollectSpecialPointsFromRoom(const AFF44RoomBase* Room);
 

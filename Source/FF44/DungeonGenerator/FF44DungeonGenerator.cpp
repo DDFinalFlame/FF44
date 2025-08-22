@@ -135,59 +135,24 @@ void AFF44DungeonGenerator::SpawnNextRoom()
 
     if (TotalSpawned >= MaxTotalRooms)
     {
-        if (Exits.Num() > 0)
-        {
-            SealRemainingExits();
-        }
-
-        bDungeonCompleted = true;
-        OnDungeonComplete.Broadcast();
-
+        PlaceFloorGoalAndFinish();
         return;
     }
 
     if (RoomsToSpawn > 0 || Exits.Num() > 0)
     {
-        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, RoomSpawnInterval, false);
+        GetWorld()->GetTimerManager().SetTimer(
+            SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, RoomSpawnInterval, false);
     }
     else
     {
-        if (Exits.Num() > 0)
-        {
-            SealRemainingExits();
-        }
-
-        bDungeonCompleted = true;
-        OnDungeonComplete.Broadcast();
+        PlaceFloorGoalAndFinish();
     }
 }
 
 bool AFF44DungeonGenerator::RemoveOverlappingRooms()
 {
-    if (!LatestSpawnedRoom || !LatestSpawnedRoom->OverlapFolder) return false;
-
-    TArray<USceneComponent*> OverlapBoxes;
-    LatestSpawnedRoom->OverlapFolder->GetChildrenComponents(false, OverlapBoxes);
-
-    for (USceneComponent* Comp : OverlapBoxes)
-    {
-        UBoxComponent* Box = Cast<UBoxComponent>(Comp);
-        if (!Box) continue;
-
-        Box->UpdateOverlaps();
-
-        TArray<UPrimitiveComponent*> Hits;
-        Box->GetOverlappingComponents(Hits);
-
-        for (UPrimitiveComponent* Hit : Hits)
-        {
-            if (!Hit) continue;
-            if (Hit->GetOwner() == LatestSpawnedRoom) continue;
-
-            return true;
-        }
-    }
-    return false;
+    return IsRoomOverlapping(LatestSpawnedRoom);
 }
 
 void AFF44DungeonGenerator::SealRemainingExits()
@@ -213,6 +178,101 @@ void AFF44DungeonGenerator::SealRemainingExits()
     }
 
     Exits.Empty();
+}
+
+USceneComponent* AFF44DungeonGenerator::SelectGoalExit() const
+{
+    if (Exits.Num() == 0) return nullptr;
+
+    TArray<USceneComponent*> NonSmall;
+    for (USceneComponent* E : Exits)
+    {
+        if (E && !E->ComponentHasTag(TEXT("Small")))
+        {
+            NonSmall.Add(E);
+        }
+    }
+    if (NonSmall.Num() > 0)
+    {
+        return NonSmall[FMath::RandRange(0, NonSmall.Num() - 1)];
+    }
+    return Exits[FMath::RandRange(0, Exits.Num() - 1)];
+}
+
+void AFF44DungeonGenerator::PlaceFloorGoalAndFinish()
+{
+    TSubclassOf<AFF44RoomBase> GoalCls = bIsBossFloor ? BossRoomClass : PortalRoomClass;
+
+    bool bPlaced = false;
+
+    if (*GoalCls && Exits.Num() > 0)
+    {
+        TArray<int32> Idx;
+        Idx.Reserve(Exits.Num());
+        for (int32 i = 0; i < Exits.Num(); ++i) Idx.Add(i);
+        for (int32 i = 0; i < Idx.Num(); ++i) { Idx.Swap(i, FMath::RandRange(i, Idx.Num() - 1)); }
+
+        for (int32 k = 0; k < Idx.Num(); ++k)
+        {
+            const int32 ExitIndex = Idx[k];
+            USceneComponent* ExitComp = Exits[ExitIndex];
+            if (!ExitComp) continue;
+
+            const FVector Loc = ExitComp->GetComponentLocation();
+            FRotator Rot = ExitComp->GetComponentRotation();
+            Rot.Yaw += 90.f;
+
+            AFF44RoomBase* Goal = GetWorld()->SpawnActor<AFF44RoomBase>(GoalCls, Loc, Rot);
+            if (!Goal) continue;
+
+            if (IsRoomOverlapping(Goal))
+            {
+                Goal->Destroy();
+                continue;
+            }
+
+            Exits.RemoveAt(ExitIndex);
+
+            bPlaced = true;
+            break;
+        }
+    }
+
+    if (Exits.Num() > 0)
+    {
+        SealRemainingExits();
+    }
+    Exits.Empty();
+
+    bDungeonCompleted = true;
+    OnDungeonComplete.Broadcast();
+}
+
+bool AFF44DungeonGenerator::IsRoomOverlapping(AFF44RoomBase* Room) const
+{
+    if (!Room || !Room->OverlapFolder) return false;
+
+    TArray<USceneComponent*> Boxes;
+    Room->OverlapFolder->GetChildrenComponents(false, Boxes);
+
+    for (USceneComponent* C : Boxes)
+    {
+        if (UBoxComponent* Box = Cast<UBoxComponent>(C))
+        {
+            const_cast<UBoxComponent*>(Box)->UpdateOverlaps();
+
+            TArray<UPrimitiveComponent*> Hits;
+            Box->GetOverlappingComponents(Hits);
+
+            for (UPrimitiveComponent* Hit : Hits)
+            {
+                if (!Hit) continue;
+                if (Hit->GetOwner() == Room) continue;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void AFF44DungeonGenerator::CollectSpecialPointsFromRoom(const AFF44RoomBase* Room)
