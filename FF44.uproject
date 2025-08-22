@@ -38,11 +38,11 @@
 			"Enabled": true
 		},
 		{
-			"Name": "MonsterAIPlugin",
+			"Name": "MotionWarping",
 			"Enabled": true
 		},
 		{
-			"Name": "MotionWarping",
+			"Name": "MonsterAIPlugin",
 			"Enabled": true
 		}
 	]

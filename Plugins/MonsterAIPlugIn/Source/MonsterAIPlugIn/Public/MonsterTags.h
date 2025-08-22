@@ -17,8 +17,9 @@ namespace MonsterTags
 
     // 이벤트 관련 신호
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Monster_Hit);
-    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Hit);
-    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Death);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Monster_Death);
+
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Hit);
 
     //스텟 관련
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_MaxHealth);
