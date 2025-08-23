@@ -26,4 +26,7 @@ namespace MonsterTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_AttackPower);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_MoveSpeed);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Defense);
+
+    //Cue еб╠в
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(GC_Impact_Hit);
 }

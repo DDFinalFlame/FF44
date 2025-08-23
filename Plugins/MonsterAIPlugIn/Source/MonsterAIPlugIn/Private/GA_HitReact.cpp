@@ -5,6 +5,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Abilities/GameplayAbilityTargetTypes.h"
 #include "MonsterCharacter.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "MonsterTags.h"
@@ -104,7 +105,84 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         }
     }
 
+    // === HitResult 꺼내기 ===
+    FHitResult HR;
+    bool bHasHit = false;
 
+    if (EventData && EventData->TargetData.Num() > 0)
+    {
+        const FGameplayAbilityTargetData* TD = EventData->TargetData.Data[0].Get();
+        if (const FGameplayAbilityTargetData_SingleTargetHit* HitTD =
+            static_cast<const FGameplayAbilityTargetData_SingleTargetHit*>(TD))
+        {
+            HR = HitTD->HitResult;
+            bHasHit = true;
+        }
+    }
+  
+    if (Info && Info->AbilitySystemComponent.IsValid() &&
+        Info->AbilitySystemComponent->GetOwnerRole() == ROLE_Authority)
+    {
+        FGameplayCueParameters Params;
+        // Instigator / EffectCauser: const AActor* -> AActor* 로 변환 후 대입
+        AActor* InstigatorActor = (EventData && EventData->Instigator)
+            ? const_cast<AActor*>(EventData->Instigator.Get())
+            : nullptr;
+
+        // 약포인터 그대로 대입(에러 방지)
+        Params.Instigator = InstigatorActor;
+        Params.EffectCauser = InstigatorActor;
+
+        AActor* TargetActor =
+            (EventData && EventData->Target) ? const_cast<AActor*>(EventData->Target.Get())
+            : (Info && Info->AvatarActor.IsValid() ? Info->AvatarActor.Get() : nullptr);
+
+        if (bHasHit)
+        {
+            Params.SourceObject = HR.Component.Get();
+            Params.Location = HR.ImpactPoint;
+            Params.Normal = HR.ImpactNormal;
+            Params.bReplicateLocationWhenUsingMinimalRepProxy = true;
+
+            USceneComponent* AttachComp = HR.GetComponent();
+            if (!Cast<USkeletalMeshComponent>(AttachComp))
+            {
+                if (TargetActor)
+                {
+                    if (USkeletalMeshComponent* Mesh = TargetActor->FindComponentByClass<USkeletalMeshComponent>())
+                    {
+                        AttachComp = Mesh;                              // ← 여기로 강제
+                    }
+                    else
+                    {
+                        AttachComp = TargetActor->GetRootComponent();   // 최후 폴백
+                    }
+                }
+            }
+            Params.TargetAttachComponent = AttachComp;
+        }
+
+
+        if (TargetActor)
+        {
+            if (UAbilitySystemComponent* TargetASC =
+                UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor))
+            {
+                //GCN_Burst의 OnBurst가 여기서 호출됩니다.
+                TargetASC->ExecuteGameplayCue(MonsterTags::GC_Impact_Hit, Params);
+
+
+            }
+        }
+        else
+        {
+            // 폴백(그래도 보이게 하려면 시전자 ASC에 실행)
+            if (Info && Info->AbilitySystemComponent.IsValid())
+            {
+                Info->AbilitySystemComponent->ExecuteGameplayCue(MonsterTags::GC_Impact_Hit, Params);
+            }
+        }
+    }
 
 
     if (Info && Info->AbilitySystemComponent.IsValid() && DamageGE)

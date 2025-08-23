@@ -21,3 +21,5 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_AttackPower, "Data.AttackPower");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_MoveSpeed, "Data.MoveSpeed");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Defense, "Data.Defense");
 
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Impact_Hit, "GameplayCue.Impact.Hit");
+
