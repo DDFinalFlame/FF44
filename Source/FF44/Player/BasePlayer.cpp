@@ -65,22 +65,26 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
-	CameraBoom->TargetArmLength = 200.f;
-	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
-	// 카메라가 늦게 따라오는 설정
-	//CameraBoom->bEnableCameraLag = true;
-	//CameraBoom->bEnableCameraRotationLag = true;
+	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	//CameraBoom->SetupAttachment(RootComponent);
+	//CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
+	//CameraBoom->TargetArmLength = 200.f;
+	//CameraBoom->bUsePawnControlRotation = true;
+	//CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
+	//// 카메라가 늦게 따라오는 설정
+	////CameraBoom->bEnableCameraLag = true;
+	////CameraBoom->bEnableCameraRotationLag = true;
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->bUsePawnControlRotation = false;	
+	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	//FollowCamera->SetupAttachment(CameraBoom);
+	//FollowCamera->bUsePawnControlRotation = false;	
 
 	GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("MainCamera"));
-	GameplayCamera->SetupAttachment(GetMesh());
+	GameplayCamera->SetupAttachment(RootComponent);
+	// Player의 Control Rotation을 카메라 회전에 맞춰 동기화하는 옵션
+	GameplayCamera->bSetControlRotationWhenViewTarget = true;
+	// 이 카메라를 로컬 플레이어 0번에 자동 활성화하도록 지정한다.
+	GameplayCamera->AutoActivateForPlayer = EAutoReceiveInput::Player0;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
