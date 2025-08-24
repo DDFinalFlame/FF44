@@ -82,9 +82,6 @@ ABasePlayer::ABasePlayer()
 	GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("MainCamera"));
 	GameplayCamera->SetupAttachment(RootComponent);
 	// Player의 Control Rotation을 카메라 회전에 맞춰 동기화하는 옵션
-	GameplayCamera->bSetControlRotationWhenViewTarget = true;
-	// 이 카메라를 로컬 플레이어 0번에 자동 활성화하도록 지정한다.
-	GameplayCamera->AutoActivateForPlayer = EAutoReceiveInput::Player0;
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
