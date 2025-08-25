@@ -24,11 +24,11 @@ public class FF44 : ModuleRules
             "GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
+            "MotionWarping",
+            "GameplayCameras",
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
-            "MotionWarping",
-            "GameplayCameras",
             "MonsterAIPlugIn",
         });
 			

@@ -10,8 +10,6 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "GameFramework/GameplayCameraComponent.h"
-#include "GameFramework/GameplayCameraComponentBase.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
@@ -79,19 +77,12 @@ ABasePlayer::ABasePlayer()
 	//FollowCamera->SetupAttachment(CameraBoom);
 	//FollowCamera->bUsePawnControlRotation = false;	
 
-	GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("MainCamera"));
-	GameplayCamera->SetupAttachment(RootComponent);
-	// Player의 Control Rotation을 카메라 회전에 맞춰 동기화하는 옵션
-
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
 {
-	if (NewController) 
-	{
-		//GameplayCamera->ActivateCameraForPlayerController(Cast<APlayerController>(NewController), true, EGameplayCameraComponentActivationMode::Push);
-	}
+
 }
 
 void ABasePlayer::BeginPlay()
@@ -158,7 +149,6 @@ void ABasePlayer::BeginPlay()
 
 			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
 		}
-
 	}	
 }
 
