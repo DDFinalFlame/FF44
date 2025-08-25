@@ -24,12 +24,13 @@ public class FF44 : ModuleRules
             "GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
-			"MonsterAIPlugIn",
-			"MotionWarping",
+            "MotionWarping",
             "GameplayCameras",
         });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] {
+            "MonsterAIPlugIn",
+        });
 			
         string MonsterAIPath = Path.Combine(ModuleDirectory, "../../Plugins/MonsterAIPlugIn/Source/MonsterAIPlugIn/Public");
 
