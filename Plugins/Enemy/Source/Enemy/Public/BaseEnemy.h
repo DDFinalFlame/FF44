@@ -4,8 +4,10 @@
 #include "GameFramework/Character.h"  
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "EnemyDefine.h"
 #include "Engine/TargetPoint.h"
+
+#include "EnemyStateConfig.h"
+#include "BT/BTService_SelectBehavior.h"
 #include "Interfaces/EnemyWeaponControl.h"
 #include "BaseEnemy.generated.h"
 
@@ -34,7 +36,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Monster | Data")
 	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster | Data")
 	TSubclassOf<UMonsterAttributeSet> AttributeSetClass;
 
 // GAS Section
@@ -53,7 +55,20 @@ public:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior")
 	UBehaviorTree* BehaviorTree;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior")
+	FName BehaviorKeyName;
+
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior")
+	FEnemyStateConfig BehaviorConfig;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI | Behavior")
+	EAIBehavior CurrentBehavior;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI | Behavior")
+	bool IsCurrentBehaviorEnd = true;
+
 	UPROPERTY(EditAnywhere, Category = "AI | Patrol")
 	TArray<ATargetPoint*> PatrolPoints;
 
@@ -108,4 +123,12 @@ public:
 public:
 	virtual void ActivateWeaponCollision() override;
 	virtual void DeactivateWeaponCollision() override;
+
+// AI - State
+public:
+	void SetState(EAIBehavior NewBehavior);
+	bool ChangeState(EAIBehavior NewBehavior);
+	bool CheckCurrentBehavior(EAIBehavior NewBehavior);
+	bool IsCurrentStateInterruptible();
+	FORCEINLINE EAIBehavior GetCurrentBehavior() const { return CurrentBehavior; }
 };

@@ -1,10 +1,14 @@
 #include "BaseEnemy.h"
+
+#include "AIController.h"
 #include "EnemyRotationComponent.h"
 #include "MonsterAttributeSet.h"
-#include "GAS/EnemyAttributeSet.h"
 #include "MonsterDefinition.h"
 #include "MonsterStatRow.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Weapon/EnemyBaseWeapon.h"
+
+class AAIController;
 
 ABaseEnemy::ABaseEnemy()
 {
@@ -154,3 +158,41 @@ void ABaseEnemy::DeactivateWeaponCollision()
 	Weapon->DeactivateCollision();
 }
 
+void ABaseEnemy::SetState(EAIBehavior NewBehavior)
+{
+	CurrentBehavior = NewBehavior;
+}
+
+bool ABaseEnemy::ChangeState(EAIBehavior NewBehavior)
+{
+	if (IsCurrentStateInterruptible())
+	{
+		CurrentBehavior = NewBehavior;
+
+		if (AAIController* MyController = Cast<AAIController>(GetController()))
+		{
+			if (UBlackboardComponent* BB = MyController->GetBlackboardComponent())
+			{
+				BB->SetValueAsEnum(BehaviorKeyName, static_cast<uint8>(CurrentBehavior));
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool ABaseEnemy::IsCurrentStateInterruptible()
+{
+	return BehaviorConfig.CheckIsInterruptible(CurrentBehavior);
+}
+
+bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior)
+{
+	if (CurrentBehavior == NewBehavior)
+	{
+		return true;
+	}
+	return false;
+}
