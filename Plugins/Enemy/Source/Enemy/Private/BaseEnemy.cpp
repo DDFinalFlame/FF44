@@ -2,6 +2,7 @@
 
 #include "AIController.h"
 #include "EnemyRotationComponent.h"
+#include "HitReactionDataAsset.h"
 #include "MonsterAttributeSet.h"
 #include "MonsterDefinition.h"
 #include "MonsterStatRow.h"
@@ -186,6 +187,20 @@ bool ABaseEnemy::ChangeState(EAIBehavior NewBehavior)
 bool ABaseEnemy::IsCurrentStateInterruptible()
 {
 	return BehaviorConfig.CheckIsInterruptible(CurrentBehavior);
+}
+
+UAnimMontage* ABaseEnemy::GetHitMontage(EHitDirection Direction) const
+{
+	if (HitMontageData)
+	{
+		UAnimMontage* Montage = HitMontageData->GetHitMontage(EnemyType, Direction);
+		if (Montage)
+		{
+			return Montage;
+		}
+	}
+
+	return nullptr;
 }
 
 bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior)

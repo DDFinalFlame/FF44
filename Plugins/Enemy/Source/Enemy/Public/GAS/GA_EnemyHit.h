@@ -16,10 +16,6 @@ class ENEMY_API UGA_EnemyHit : public UGameplayAbility
 public:
 	UGA_EnemyHit();
 protected:
-	/* attack 유형별 설정 **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
-	TObjectPtr<UAnimMontage> HitAnimMontage;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EventTag")
 	FGameplayTag EventTag;
 

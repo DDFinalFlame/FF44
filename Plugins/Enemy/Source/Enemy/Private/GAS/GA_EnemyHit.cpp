@@ -26,7 +26,7 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 
 	ABaseEnemy* Enemy = Cast<ABaseEnemy>(ActorInfo->AvatarActor.Get());
-	if (!Enemy || !HitAnimMontage)
+	if (!Enemy)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
@@ -91,9 +91,20 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	/* 몽타주 끝날 때 델리게이트 연결 **/
 	FOnMontageEnded MontageDelegate;
 
-	MontageDelegate.BindUObject(this, &UGA_EnemyHit::OnMontageEnded);
-	AnimInstance->Montage_Play(HitAnimMontage);
-	AnimInstance->Montage_SetEndDelegate(MontageDelegate, HitAnimMontage);
+	if (UAnimMontage* Montage = Enemy->GetHitMontage(EHitDirection::Front))
+	{
+		MontageDelegate.BindUObject(this, &UGA_EnemyHit::OnMontageEnded);
+		AnimInstance->Montage_Play(Montage);
+		AnimInstance->Montage_SetEndDelegate(MontageDelegate, Montage);
+	}
+	else
+	{
+		/* 상태 변경 **/
+		Enemy->SetState(EAIBehavior::Patrol);
+		/* 어빌리티 종료 **/
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+
+	}
 
 }
 

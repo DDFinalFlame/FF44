@@ -11,6 +11,7 @@
 #include "Interfaces/EnemyWeaponControl.h"
 #include "BaseEnemy.generated.h"
 
+class UHitReactionDataAsset;
 class AEnemyBaseWeapon;
 class UEnemyAttributeSet;
 class UBehaviorTree;
@@ -90,6 +91,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat | Weapon");
 	AEnemyBaseWeapon* Weapon;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Hit Reaction")
+	UHitReactionDataAsset* HitMontageData;
+
 public:  
 	ABaseEnemy();  
 
@@ -131,4 +135,8 @@ public:
 	bool CheckCurrentBehavior(EAIBehavior NewBehavior);
 	bool IsCurrentStateInterruptible();
 	FORCEINLINE EAIBehavior GetCurrentBehavior() const { return CurrentBehavior; }
+
+// Montage
+public:
+	UAnimMontage* GetHitMontage(EHitDirection Direction) const;
 };
