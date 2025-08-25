@@ -19,6 +19,7 @@
 // Class
 #include "Weapon/BaseWeapon.h"
 #include "BasePlayerAttributeSet.h"
+#include "UI/BasePlayerWidget.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -159,6 +160,8 @@ void ABasePlayer::BeginPlay()
 		}
 
 	}	
+
+	InitPlayerUI();
 }
 
 void ABasePlayer::Tick(float DeltaTime)
@@ -337,6 +340,12 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// Change State
 
 	// PlayMontage
+}
+
+void ABasePlayer::InitPlayerUI()
+{
+	auto HPWidget = CreateWidget<UBasePlayerWidget>(GetWorld(), PlayerHPClass);
+	HPWidget->InitASC(AbilitySystem, AbilitySystem->GetSet<UBasePlayerAttributeSet>());
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
