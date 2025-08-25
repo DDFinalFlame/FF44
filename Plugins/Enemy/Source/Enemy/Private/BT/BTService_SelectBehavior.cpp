@@ -22,15 +22,21 @@ void UBTService_SelectBehavior::OnBecomeRelevant(UBehaviorTreeComponent& OwnerCo
 	{
 		return;
 	}
-
-	ControlledEnemy = Cast<ABaseEnemy>(ControlledPawn);
 }
 
 void UBTService_SelectBehavior::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	UpdateBehavior(OwnerComp.GetBlackboardComponent());
+	if (APawn* ControlledPawn = OwnerComp.GetAIOwner()->GetPawn())
+	{
+		if (ABaseEnemy* ControlledEnemy = Cast<ABaseEnemy>(ControlledPawn))
+		{
+			UpdateBehavior(OwnerComp.GetBlackboardComponent(), ControlledEnemy);
+			
+		}
+		return;
+	}
 }
 
 void UBTService_SelectBehavior::SetBehaviorKey(UBlackboardComponent* BlackboardComponent, EAIBehavior Behavior) const
@@ -38,11 +44,12 @@ void UBTService_SelectBehavior::SetBehaviorKey(UBlackboardComponent* BlackboardC
 	BlackboardComponent->SetValueAsEnum(BehaviorKey.SelectedKeyName, static_cast<uint8>(Behavior));
 }
 
-void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardComponent)
+void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardComponent, ABaseEnemy* ControlledEnemy)
 {
 	check(BlackboardComponent);
 	check(ControlledEnemy);
 
+	// TO-DO : State 명시 필요
 	if (IsHit()) { return; }
 
 	AActor* TargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(TargetKey.SelectedKeyName));
@@ -88,7 +95,7 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 
 bool UBTService_SelectBehavior::IsHit()
 {
-	UAbilitySystemComponent* ASC = ControlledEnemy->FindComponentByClass<UAbilitySystemComponent>();
+	/*UAbilitySystemComponent* ASC = ControlledEnemy->FindComponentByClass<UAbilitySystemComponent>();
 	if (!ASC) { return false; }
 
 	FGameplayTag HitTag = FGameplayTag::RequestGameplayTag("Enemy.State.Hit");
@@ -96,7 +103,7 @@ bool UBTService_SelectBehavior::IsHit()
 	if (ASC->HasMatchingGameplayTag(HitTag))
 	{
 		return true;
-	}
+	}*/
 
 	return false;
 }

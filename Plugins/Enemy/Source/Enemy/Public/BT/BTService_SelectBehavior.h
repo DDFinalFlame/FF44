@@ -17,9 +17,6 @@ class ENEMY_API UBTService_SelectBehavior : public UBTService
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY()
-	ABaseEnemy* ControlledEnemy;
-
 	UPROPERTY(EditAnywhere)
 	FBlackboardKeySelector TargetKey;
 
@@ -44,6 +41,6 @@ protected:
 
 private:
 	void SetBehaviorKey(UBlackboardComponent* BlackboardComponent, EAIBehavior Behavior) const;
-	void UpdateBehavior(UBlackboardComponent* BlackboardComponent);
+	void UpdateBehavior(UBlackboardComponent* BlackboardComponent, ABaseEnemy* ControlledEnemy);
 	bool IsHit();
 };
