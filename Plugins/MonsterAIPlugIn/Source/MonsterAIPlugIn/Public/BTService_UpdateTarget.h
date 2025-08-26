@@ -4,11 +4,15 @@
 #include "BehaviorTree/BTService.h"
 #include "BTService_UpdateTarget.generated.h"
 
+/**
+ * Perception이 세팅한 TargetActor/HasLineOfSight/LastKnownLocation을 "읽어"
+ * DistanceToTarget, CanAttack 등 전투 보조 값만 갱신하는 서비스
+ */
 UCLASS()
 class MONSTERAIPLUGIN_API UBTService_UpdateTarget : public UBTService
 {
 	GENERATED_BODY()
-	
+
 public:
 	UBTService_UpdateTarget();
 
@@ -20,54 +24,31 @@ protected:
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 public:
-	/** 추적 시작 거리 */
-	UPROPERTY(EditAnywhere, Category = "Sense")
-	float DetectDistance;
-
-	/** 공격 가능 거리 */
-	UPROPERTY(EditAnywhere, Category = "Sense")
-	float AttackDistance;
-
-	/** 타겟 액터(Object: Actor) */
+	/** 타깃 액터(Object: Actor) ? Perception이 세팅, 서비스는 "읽기 전용" */
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector TargetActorKey;
 
-	/** 공격 가능 여부(Bool) */
+	/** 공격 가능 여부(Bool) ? 서비스가 계산하여 세팅 */
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector CanAttackKey;
 
-	/** 플레이어 인덱스 (싱글이면 0 고정) */
-	UPROPERTY(EditAnywhere, Category = "Sense")
-	int32 PlayerIndex;
-
+	/** 타깃까지의 거리(Float) ? 서비스가 계산하여 세팅 */
 	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
-	struct FBlackboardKeySelector HasLineOfSightKey;
+	struct FBlackboardKeySelector DistanceToTargetKey;
 
-	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
-	struct FBlackboardKeySelector LastKnownLocationKey;  
-
-	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
-	struct FBlackboardKeySelector DistanceToTargetKey;   
-
-	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
-	struct FBlackboardKeySelector NextAttackTimeKey;
-
-	UPROPERTY(EditAnywhere, Category = "Sense|FOV")
-	float FOVDegrees = 80.f;              // 전체 시야각(예: 120도)
-
-	UPROPERTY(EditAnywhere, Category = "Sense|FOV")
-	bool bUsePlanarFOV = true;             // true면 Z 무시(수평면 기준 각도)
-
-	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
-	struct FBlackboardKeySelector DetectDistanceKey;
-
+	/** 공격 사거리(Float) ? BB에 있으면 우선, 없으면 기본값 사용 */
 	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
 	struct FBlackboardKeySelector AttackDistanceKey;
 
-	// 폴백 기본값 (BB값이 없거나 0일 때 사용)
-	UPROPERTY(EditAnywhere, Category = "Defaults")
-	float DefaultDetectDistance = 800.f;
+	/** Perception이 세팅한 시야 여부를 읽어 CanAttack 조건에 포함할지 여부 */
+	UPROPERTY(EditAnywhere, Category = "Sense")
+	bool bRequireLOSForCanAttack = true;
 
+	/** Perception이 세팅한 HasLineOfSight(Bool) ? 읽기 전용(선택) */
+	UPROPERTY(EditAnywhere, Category = "Blackboard|Optional")
+	struct FBlackboardKeySelector HasLineOfSightKey;
+
+	/** 기본 공격 사거리 (BB 없을 때 사용) */
 	UPROPERTY(EditAnywhere, Category = "Defaults")
 	float DefaultAttackDistance = 200.f;
 };

@@ -1,26 +1,18 @@
 #include "BTService_UpdateTarget.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/Character.h"
-
 
 UBTService_UpdateTarget::UBTService_UpdateTarget()
 {
-	NodeName = TEXT("Update Target & CanAttack");
+	NodeName = TEXT("Update Distance & CanAttack (Read Target from Perception)");
 
-	// 서비스 호출 간격 (에디터에서도 조정 가능)
+	// 서비스 호출 간격
 	Interval = 0.2f;
 	RandomDeviation = 0.0f;
 
-	DetectDistance = 800.f;
-	AttackDistance = 200.f;
-	PlayerIndex = 0;
-
-	bNotifyBecomeRelevant = false; 
+	bNotifyBecomeRelevant = false;
 	bNotifyTick = true;
 }
-
 
 void UBTService_UpdateTarget::InitializeFromAsset(UBehaviorTree& Asset)
 {
@@ -29,23 +21,24 @@ void UBTService_UpdateTarget::InitializeFromAsset(UBehaviorTree& Asset)
 	UBlackboardData* BBAsset = GetBlackboardAsset();
 	if (!BBAsset) return;
 
+	// Perception이 넣어주는 키들: 읽기 전용
 	TargetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, TargetActorKey), AActor::StaticClass());
-	CanAttackKey.AddBoolFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, CanAttackKey));
-	HasLineOfSightKey.AddBoolFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, HasLineOfSightKey));
-	LastKnownLocationKey.AddVectorFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, LastKnownLocationKey));
-	DistanceToTargetKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, DistanceToTargetKey));
-	NextAttackTimeKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, NextAttackTimeKey));
-	DetectDistanceKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, DetectDistanceKey));
-	AttackDistanceKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, AttackDistanceKey));
-
 	TargetActorKey.ResolveSelectedKey(*BBAsset);
+
+	// 서비스가 세팅하는 키들
+	CanAttackKey.AddBoolFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, CanAttackKey));
 	CanAttackKey.ResolveSelectedKey(*BBAsset);
-	HasLineOfSightKey.ResolveSelectedKey(*BBAsset);
-	LastKnownLocationKey.ResolveSelectedKey(*BBAsset);
+
+	DistanceToTargetKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, DistanceToTargetKey));
 	DistanceToTargetKey.ResolveSelectedKey(*BBAsset);
-	NextAttackTimeKey.ResolveSelectedKey(*BBAsset);
-	DetectDistanceKey.ResolveSelectedKey(*BBAsset);
+
+	// (선택) BB에서 공격 사거리 읽기
+	AttackDistanceKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, AttackDistanceKey));
 	AttackDistanceKey.ResolveSelectedKey(*BBAsset);
+
+	// (선택) Perception이 넣는 시야 여부를 읽어 CanAttack 조건에 포함
+	HasLineOfSightKey.AddBoolFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_UpdateTarget, HasLineOfSightKey));
+	HasLineOfSightKey.ResolveSelectedKey(*BBAsset);
 }
 
 void UBTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -58,92 +51,46 @@ void UBTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 	APawn* SelfPawn = AICon->GetPawn();
 	if (!SelfPawn) return;
 
-	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(SelfPawn->GetWorld(), PlayerIndex);
-	if (!Player) return;
-
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	if (!BB) return;
 
-	// 거리 갱신
-	const FVector SelfLoc = SelfPawn->GetActorLocation();
-	const FVector TargetLoc = Player->GetActorLocation();
-	const float   Distance = FVector::Dist(TargetLoc, SelfLoc);
+	// Perception이 세팅한 TargetActor만 읽는다 (여기서 세팅/클리어하지 않음)
+	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName));
 
+	// 타깃 없으면 초기화 후 종료
+	if (!Target)
+	{
+		if (DistanceToTargetKey.SelectedKeyType)
+			BB->SetValueAsFloat(DistanceToTargetKey.SelectedKeyName, FLT_MAX);
+
+		if (CanAttackKey.SelectedKeyType)
+			BB->SetValueAsBool(CanAttackKey.SelectedKeyName, false);
+
+		return;
+	}
+
+	// 거리 계산 및 기록
+	const float Distance = FVector::Dist(Target->GetActorLocation(), SelfPawn->GetActorLocation());
 	if (DistanceToTargetKey.SelectedKeyType)
-	{
 		BB->SetValueAsFloat(DistanceToTargetKey.SelectedKeyName, Distance);
-	}
 
-	// BB 값 읽기 (없으면 폴백)
-	float Detect = DefaultDetectDistance;
-	if (DetectDistanceKey.SelectedKeyType)
-	{
-		const float FromBB = BB->GetValueAsFloat(DetectDistanceKey.SelectedKeyName);
-		if (FromBB > 0.f) Detect = FromBB;
-	}
-
-	float Attack = DefaultAttackDistance;
+	// 공격 사거리 결정: BB > 기본값
+	float AttackRange = DefaultAttackDistance;
 	if (AttackDistanceKey.SelectedKeyType)
 	{
 		const float FromBB = BB->GetValueAsFloat(AttackDistanceKey.SelectedKeyName);
-		if (FromBB > 0.f) Attack = FromBB;
+		if (FromBB > 0.f) AttackRange = FromBB;
 	}
 
-	// 타겟/공격 가능 갱신
-	if (Distance < DetectDistance)
+	// (선택) 시야 필요 조건 적용
+	bool bLOSOK = true;
+	if (bRequireLOSForCanAttack && HasLineOfSightKey.SelectedKeyType)
 	{
-		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, Player);
-		BB->SetValueAsBool(CanAttackKey.SelectedKeyName, Distance < Attack);
-	}
-	else
-	{
-		BB->ClearValue(TargetActorKey.SelectedKeyName);
-		BB->SetValueAsBool(CanAttackKey.SelectedKeyName, false);
+		bLOSOK = BB->GetValueAsBool(HasLineOfSightKey.SelectedKeyName);
 	}
 
-	// ----------------------
-	// LOS + FOV 체크
-	// ----------------------
-	// 1) 기본 LOS(가려짐 없음)
-	bool bHasLOS = AICon->LineOfSightTo(Player);
+	const bool bCanAttack = (Distance <= AttackRange) && bLOSOK;
 
-	// 2) FOV(시야각) 체크
-	//    - 수평면 기준 체크 옵션(bUsePlanarFOV) 지원
-	FVector EyeLoc = SelfPawn->GetPawnViewLocation();      // 없으면 SelfLoc 써도 됩니다.
-	FVector ToTarget = TargetLoc - EyeLoc;
-	FVector Forward = SelfPawn->GetActorForwardVector();
-
-	if (bUsePlanarFOV)
-	{
-		ToTarget.Z = 0.f;
-		Forward.Z = 0.f;
-	}
-
-	const float LenToTarget = ToTarget.Size();
-	const float LenForward = Forward.Size();
-	bool bInFOV = false;
-
-	if (LenToTarget > KINDA_SMALL_NUMBER && LenForward > KINDA_SMALL_NUMBER)
-	{
-		ToTarget.Normalize();
-		Forward.Normalize();
-
-		const float HalfFOVCos = FMath::Cos(FMath::DegreesToRadians(FOVDegrees * 0.5f));
-		const float Dot = FVector::DotProduct(Forward, ToTarget);
-		bInFOV = (Dot >= HalfFOVCos);
-	}
-
-	// 3) 최종 시야 가시성 = LOS ∧ FOV
-	const bool bVisible = bHasLOS && bInFOV;
-
-	if (HasLineOfSightKey.SelectedKeyType)
-	{
-		BB->SetValueAsBool(HasLineOfSightKey.SelectedKeyName, bVisible);
-	}
-
-	// 4) 마지막 위치 갱신(보일 때만)
-	if (bVisible && LastKnownLocationKey.SelectedKeyType)
-	{
-		BB->SetValueAsVector(LastKnownLocationKey.SelectedKeyName, TargetLoc);
-	}
+	if (CanAttackKey.SelectedKeyType)
+		BB->SetValueAsBool(CanAttackKey.SelectedKeyName, bCanAttack);
 }

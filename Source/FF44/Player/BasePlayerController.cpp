@@ -1,7 +1,9 @@
 #include "Player/BasePlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "GenericTeamAgentInterface.h"
 #include "InputMappingContext.h"
+
 
 void ABasePlayerController::SetupInputComponent()
 {

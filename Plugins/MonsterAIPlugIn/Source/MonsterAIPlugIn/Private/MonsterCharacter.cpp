@@ -396,21 +396,6 @@ void AMonsterCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount)
 	}
 }
 
-//
-//void AMonsterCharacter::RegisterHitbox(UPrimitiveComponent* Comp)
-//{
-//	if (!Comp) return;
-//	AttackHitboxes.Add(Comp);
-//
-//	Comp->SetGenerateOverlapEvents(false); // 기본은 Off (창/검이 켜질 때만 On)
-//	Comp->OnComponentBeginOverlap.AddDynamic(this, &AMonsterCharacter::OnAttackHitboxBeginOverlap);
-//
-//	// 충돌 설정 예시(원하시는 프로필로 교체 가능)
-//	Comp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-//	Comp->SetCollisionObjectType(ECC_WorldDynamic);
-//	Comp->SetCollisionResponseToAllChannels(ECR_Ignore);
-//	Comp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // 플레이어만 맞추려면 여기에
-//}
 
 void AMonsterCharacter::ActivateAttackHitbox(bool bEnable)
 {
@@ -435,71 +420,6 @@ void AMonsterCharacter::EndAttackWindow()
 	bAttackActive = false;
 	HitActorsThisSwing.Reset();
 }
-
-//void AMonsterCharacter::OnAttackHitboxBeginOverlap(
-//	UPrimitiveComponent* OverlappedComp,
-//	AActor* OtherActor,
-//	UPrimitiveComponent* OtherComp,
-//	int32 OtherBodyIndex,
-//	bool bFromSweep,
-//	const FHitResult& SweepResult)
-//{
-//	//if (!bAttackActive) return;
-//	//if (!OtherActor || OtherActor == this) return;
-//
-//	//// 팀/플레이어 필터링 필요 시 여기에서 태그/인터페이스 체크
-//	//if (HitActorsThisSwing.Contains(OtherActor)) return; // 중복 타격 방지
-//
-//	//HitActorsThisSwing.Add(OtherActor);
-//	//ApplyMeleeHitTo(OtherActor, SweepResult);
-//}
-
-//void AMonsterCharacter::ApplyMeleeHitTo(AActor* Victim, const FHitResult& Hit)
-//{
-//	// 1) Hit 이벤트 트리거 → GA_HitReact 발동(현재 구조 활용)
-//	{
-//		FGameplayEventData Payload;
-//		Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Hit"));
-//		Payload.Instigator = this;
-//		Payload.Target = Victim;
-//		// 필요 시 ByCaller 데미지 전달도 가능 (Payload에 Magnitude 등 확장)
-//		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-//			Victim, Payload.EventTag, Payload);
-//	}
-//
-//	// 2) 데미지 적용 (예: TestDamageGE 사용 or 데미지 전용 GE)
-//	if (AbilitySystemComponent)
-//	{
-//		// ByCaller로 데미지 수치 전달을 추천합니다.
-//		// 지금은 간단하게 TestDamageGE 적용 + GetAttackDamage 반영 예시:
-//		if (TestDamageGE)
-//		{
-//			FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
-//			Ctx.AddInstigator(this, GetController());
-//
-//			FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(
-//				TestDamageGE, 1.f, Ctx);
-//
-//			if (Spec.IsValid())
-//			{
-//				// ByCaller 태그 예시: "Data.Damage" 가 있다고 가정
-//				const FGameplayTag Tag_Damage = FGameplayTag::RequestGameplayTag(FName("Data.Damage"));
-//				Spec.Data->SetSetByCallerMagnitude(Tag_Damage, GetAttackDamage());
-//
-//				// 타겟의 ASC에 적용
-//				UAbilitySystemComponent* TargetASC =
-//					UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Victim);
-//				if (TargetASC)
-//				{
-//					TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
-//				}
-//			}
-//		}
-//	}
-//
-//	// 3) 후처리 훅(파생에서 이펙트/사운드 등)
-//	OnAttackHit(Victim);
-//}
 
 void AMonsterCharacter::PushAttackCollision()
 {
