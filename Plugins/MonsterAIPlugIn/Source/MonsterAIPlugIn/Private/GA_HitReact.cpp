@@ -170,7 +170,7 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             {
                 //GCN_Burst의 OnBurst가 여기서 호출됩니다.
                 TargetASC->ExecuteGameplayCue(MonsterTags::GC_Impact_Hit, Params);
-
+                
 
             }
         }
