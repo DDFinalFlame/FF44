@@ -19,6 +19,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bShouldRotate = false;
 
+	/* 회전 속도 ( 1초에 180도 회전 )**/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotation")
+	float RotationSpeed = 180.f; 
+
 public:
 	UEnemyRotationComponent();
 
