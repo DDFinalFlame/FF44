@@ -10,14 +10,16 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Perception/AISense_Hearing.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
 
 // Class
-#include "Weapon/BaseWeapon.h"
 #include "BasePlayerAttributeSet.h"
-#include "UI/BasePlayerHUDWidget.h"
+#include "BasePlayerController.h"
+#include "BasePlayerState.h"
+#include "Weapon/BaseWeapon.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -60,9 +62,12 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = 100.f;
+	GetCharacterMovement()->MaxAcceleration = 1000.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
+
+	OnCharacterMovementUpdated.AddDynamic(this, &ABasePlayer::CharacterMovementUpdated);
 
 	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	//CameraBoom->SetupAttachment(RootComponent);
@@ -76,14 +81,32 @@ ABasePlayer::ABasePlayer()
 
 	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	//FollowCamera->SetupAttachment(CameraBoom);
-	//FollowCamera->bUsePawnControlRotation = false;	
-
-	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+	//FollowCamera->bUsePawnControlRotation = false;		
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
 {
+	Super::PossessedBy(NewController);
 
+	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
+		if (auto ASC = PS->GetAbilitySystemComponent())
+		{
+			AbilitySystem = ASC;
+			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
+		}
+}
+
+// 리스닝 전용
+void ABasePlayer::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
+		if (auto ASC = PS->GetAbilitySystemComponent())
+		{
+			AbilitySystem = ASC;
+			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
+		}
 }
 
 void ABasePlayer::BeginPlay()
@@ -101,18 +124,30 @@ void ABasePlayer::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
 		return;
 	}
-	
-	// Player Controller Set
-	AController* PlayerController = GetController();
-	if(PlayerController)
+
+	// 나중에 첫 시작에서만 불러오도록 바꾸기
+	// Level 옮길 시에 중복되어 들어갈 수 있음.
+	if (AbilitySystem)
 	{
-		FRotator ControlRotation = PlayerController->GetControlRotation();
-		ControlRotation.Pitch = -10.f;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
-		return;
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+
+		for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
+			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
+
+		if (AttributeSetClass)
+		{
+			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
+			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
+
+			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+		}
+
+		// 초기 Ability Tag 설정
+		AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
 	}
 
 	// Weapon를 월드에 생성 후 바로 장착
@@ -128,31 +163,19 @@ void ABasePlayer::BeginPlay()
 		return;
 	}
 
-	// 초기 Ability Tag 설정
-	AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
-
-	// Ability 등록
-	if (AbilitySystem)
+	// Player Controller Set
+	if (ABasePlayerController* PlayerController = Cast<ABasePlayerController>(GetController()))
 	{
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+		FRotator ControlRotation = PlayerController->GetControlRotation();
+		ControlRotation.Pitch = -10.f;
 
-		for(int32 i=0;i< ComboAttackAbility.Num(); ++i)
-			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
-
-		if (AttributeSetClass)
-		{
-			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
-			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
-
-			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
-		}
-	}	
-
-	InitPlayerUI();
+		PlayerController->InitUI(AbilitySystem);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
+		return;
+	}
 }
 
 void ABasePlayer::Tick(float DeltaTime)
@@ -255,7 +278,7 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 		const FVector FowardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		AddMovementInput(FowardDirection, MovementVector.Y);
+ 		AddMovementInput(FowardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
 	}
 }
@@ -277,12 +300,22 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 
 void ABasePlayer::Run(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	if (AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
+		GetCharacterMovement()->MaxWalkSpeed = UnEquipRunSpeed;
+	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
+		GetCharacterMovement()->MaxWalkSpeed = EquipRunSpeed;
+	else
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 100.f;
+	if (AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
+		GetCharacterMovement()->MaxWalkSpeed = UnEquipWalkSpeed;
+	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
+		GetCharacterMovement()->MaxWalkSpeed = EquipWalkSpeed;
+	else
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 }
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
@@ -333,13 +366,75 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// PlayMontage
 }
 
-void ABasePlayer::InitPlayerUI()
+void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity)
 {
-	if (!PlayerHUDClass) return;
-	auto HUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
-	HUD->InitASC(AbilitySystem, AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+	auto OldSpeed = OldVelocity.Length();
+	auto CurrentSpeed = GetVelocity().Length();
 
-	HUD->AddToViewport();
+	if (CurrentSpeed <= 0.f)
+	{
+		IsInputMove = false;
+		CurrentNoiseLevel = 0.f;
+		return;
+	}
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),   // NoiseLocation
+		CurrentNoiseLevel,    // Loudness(0~1 권장)
+		this,                 // Instigator(보통 자기 자신)
+		1000.f,               // MaxRange(0이면 무제한, 센서 범위로 제한)
+		FName("Footstep")     // Tag
+	);
+
+	if (FMath::IsNearlyEqual(OldSpeed, CurrentSpeed)) return;
+
+	if(AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
+	{
+		CurrentNoiseLevel = CurrentSpeed / (UnEquipRunSpeed + 200.f);
+	}
+	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
+	{
+		CurrentNoiseLevel = CurrentSpeed / (EquipRunSpeed);
+	}
+
+	if (IsMontagePlaying())
+	{
+		if (AbilitySystem->HasMatchingGameplayTag(
+			FGameplayTag::RequestGameplayTag(FName("Player.Attack"))))
+			CurrentNoiseLevel = 1.0f;
+		else if (AbilitySystem->HasMatchingGameplayTag(
+			FGameplayTag::RequestGameplayTag(FName("Player.Dodge"))))
+			CurrentNoiseLevel = 0.8f;
+	}
+	else
+		IsInputMove = true;
+}
+
+bool ABasePlayer::IsMontagePlaying() const
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if(AnimInstance && AnimInstance->IsAnyMontagePlaying())
+		return true;
+
+	return false;
+}
+
+void ABasePlayer::PlayerDead()
+{
+	IsDead = true;
+
+	GetCharacterMovement()->DisableMovement();
+	bUseControllerRotationYaw = false;
+}
+
+void ABasePlayer::PlayerAlive()
+{
+	IsDead = false;
+
+	GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
+	bUseControllerRotationYaw = true;
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)

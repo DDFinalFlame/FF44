@@ -35,6 +35,7 @@ public:
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
@@ -75,6 +76,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DeathAbility;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AbilityTag")
+	FGameplayTag EquipWeaponTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AbilityTag")
+	FGameplayTag UnEquipWeaponTag;
+
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
 
@@ -100,10 +107,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	UDataTable* PlayerMetaDataTable = nullptr;
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Input											///
 ///////////////////////////////////////////////////////////////////////////////////////////
-
 protected:
 	// Movement Actions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
@@ -167,16 +174,49 @@ protected:
 	virtual void Skill(const FInputActionValue& Value);
 
 
-///////////////////////////////////////////////////////////////////////////////////////
-///										UI											///
-///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///										State											///
+///////////////////////////////////////////////////////////////////////////////////////////
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool IsDead = false;
 
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool IsInputMove = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	float CurrentNoiseLevel = 0.f;
 
 private:
-	void InitPlayerUI();
+	UFUNCTION()
+	void CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity);
+
+	bool IsMontagePlaying() const;
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void PlayerDead();
+
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void PlayerAlive();
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///										Value											///
+///////////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
+	float UnEquipWalkSpeed = 150.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
+	float UnEquipRunSpeed = 650.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
+	float EquipWalkSpeed = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
+	float EquipRunSpeed = 600.f;
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Weapons											///
