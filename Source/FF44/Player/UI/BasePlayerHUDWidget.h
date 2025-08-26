@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "BasePlayerWidget.generated.h"
+#include "BasePlayerHUDWidget.generated.h"
 
 class UAbilitySystemComponent;
 class UBasePlayerAttributeSet;
 
 UCLASS()
-class FF44_API UBasePlayerWidget : public UUserWidget
+class FF44_API UBasePlayerHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	

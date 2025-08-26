@@ -17,7 +17,7 @@ class UInputAction;
 class UGameplayAbility;
 
 class UBasePlayerAttributeSet;
-class UBasePlayerWidget;
+class UBasePlayerHUDWidget;
 
 struct FInputActionValue;
 
@@ -173,7 +173,7 @@ protected:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UBasePlayerWidget> PlayerHPClass;
+	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
 
 private:
 	void InitPlayerUI();
