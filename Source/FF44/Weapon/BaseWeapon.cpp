@@ -9,6 +9,7 @@
 #include "MonsterCharacter.h"
 #include "Player/BasePlayer.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "DrawDebugHelpers.h" 
 
 ABaseWeapon::ABaseWeapon()
 {
@@ -35,26 +36,80 @@ void ABaseWeapon::Tick(float DeltaTime)
 
 }
 
-void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
-									   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
-									   bool bFromSweep, const FHitResult& SweepResult)
+void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+    bool bFromSweep, const FHitResult& SweepResult)
 {
-	//if (OtherActor && OtherActor != this)
-	//{
-	//	auto Monster = Cast<AMonsterCharacter>(OtherActor);
-	//	if (Monster)
-	//	{
-	//		Monster->TriggerHitReact(GetOwner());
-	//	}
-	//}
+    // 1) 서버 전용
+    if (!HasAuthority()) return;
 
-	{
-		FGameplayEventData Payload;
-		Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Monster.Hit"));
-		Payload.Instigator = GetOwner();
-		Payload.Target = OtherActor;
+    // 2) 기본 필터
+    if (!OtherActor || OtherActor == GetOwner()) return;
+    if (!UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor)) return;
 
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
-	}
+    // 3) HitResult 준비
+    FHitResult HR = SweepResult;
+
+    // Sweep 정보가 없거나 비어있으면 보정
+    if (!bFromSweep || !HR.Component.IsValid())
+    {
+        HR = FHitResult();
+
+        // (a) Actor/Component 세팅
+        HR.HitObjectHandle = OtherActor;     // HR.Actor 아님
+        HR.Component = OtherComp;
+
+        // (b) 충돌 지점/법선 추정
+        const FVector Tip =
+            WeaponCollision ? WeaponCollision->GetComponentLocation()
+            : (OverlappedComp ? OverlappedComp->GetComponentLocation()
+                : GetActorLocation());
+
+        FVector ClosestPoint = OtherActor->GetActorLocation();
+        float   Dist = -1.f;
+
+        if (OtherComp)
+        {
+            // UE5.6: 3번째 인자는 FName, 반환값이 거리(float). -1이면 내부.
+            Dist = OtherComp->GetClosestPointOnCollision(Tip, ClosestPoint /*, NAME_None*/);
+        }
+
+        if (Dist >= 0.f)
+        {
+            HR.ImpactPoint = ClosestPoint;
+            HR.ImpactNormal = (Tip - ClosestPoint).GetSafeNormal();
+        }
+        else
+        {
+            HR.ImpactPoint = Tip;
+            HR.ImpactNormal = GetActorForwardVector();
+        }
+
+        // (c) 스켈레탈이면 본 이름 보정
+        if (USkeletalMeshComponent* Skel = Cast<USkeletalMeshComponent>(OtherComp))
+        {
+            HR.BoneName = Skel->FindClosestBone(HR.ImpactPoint);
+        }
+    }
+    // 디버깅박스.
+    if (UWorld* World = GetWorld())
+    {
+        // ImpactPoint 위치에 반경 10짜리 초록색 스피어를 3초 동안 표시
+        DrawDebugSphere(World, HR.ImpactPoint, 10.0f, 12, FColor::Green, false, 3.0f);
+
+        // ImpactNormal 방향 확인용 라인
+        DrawDebugLine(World, HR.ImpactPoint, HR.ImpactPoint + HR.ImpactNormal * 50.0f, FColor::Red, false, 1.0f, 0, 1.5f);
+    }
+
+
+
+    // 4) 이벤트 페이로드 구성 + HitResult를 TargetData에 담기
+    FGameplayEventData Payload;
+    Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Monster.Hit"));
+    Payload.Instigator = GetOwner();
+    Payload.Target = OtherActor;
+    Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(HR);
+
+    // 5) 전송(피격자에게)
+    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
 }
-

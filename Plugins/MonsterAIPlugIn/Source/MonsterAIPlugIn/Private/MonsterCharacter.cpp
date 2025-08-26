@@ -38,6 +38,14 @@ void AMonsterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (USkeletalMeshComponent* Sk = GetMesh())
+	{
+		MeshInitRelLoc = Sk->GetRelativeLocation();
+		MeshInitRelRot = Sk->GetRelativeRotation();
+		MeshInitRelScale = Sk->GetRelativeScale3D();
+	}
+
+
 	// Definition 로드
 	if (!MonsterDefinition.IsValid())		MonsterDefinition.LoadSynchronous();
 	UMonsterDefinition* Def = MonsterDefinition.Get();
@@ -68,7 +76,7 @@ void AMonsterCharacter::BeginPlay()
 				AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(GA, 1, AbilityIndex++));
 		}
 	}
-
+	
 	// DT에서 스탯 읽어 SetByCaller GE 적용
 	if (MonsterStatTable && Def->StatRowName.IsValid())
 	{
@@ -535,4 +543,32 @@ float AMonsterCharacter::GetAttackPower_Implementation() const
 	}
 
 	return 0.f;
+}
+
+
+void AMonsterCharacter::EnterRagdollState()
+{
+	USkeletalMeshComponent* sk = GetMesh();
+	if (sk)
+	{
+		sk->SetCollisionProfileName(TEXT("Ragdoll"));
+		sk->SetAllBodiesSimulatePhysics(true);
+		sk->WakeAllRigidBodies();
+		sk->bPauseAnims = true;
+		sk->SetAllBodiesPhysicsBlendWeight(1.f);
+	}
+
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
+
+	AAIController* aic = Cast<AAIController>(GetController());
+	if (aic && aic->BrainComponent)
+	{
+		aic->BrainComponent->StopLogic(TEXT("Ragdoll"));
+	}
+
+	SetMonsterState(EMonsterState::Ragdoll);
 }
