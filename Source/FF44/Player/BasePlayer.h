@@ -17,6 +17,7 @@ class UInputAction;
 class UGameplayAbility;
 
 class UBasePlayerAttributeSet;
+class UBasePlayerHUDWidget;
 
 struct FInputActionValue;
 
@@ -166,9 +167,21 @@ protected:
 	virtual void Skill(const FInputActionValue& Value);
 
 
+///////////////////////////////////////////////////////////////////////////////////////
+///										UI											///
+///////////////////////////////////////////////////////////////////////////////////////
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
+
+private:
+	void InitPlayerUI();
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Weapons											///
 ///////////////////////////////////////////////////////////////////////////////////////////
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	ABaseWeapon* Weapon;

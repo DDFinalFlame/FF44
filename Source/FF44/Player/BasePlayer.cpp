@@ -17,6 +17,7 @@
 // Class
 #include "Weapon/BaseWeapon.h"
 #include "BasePlayerAttributeSet.h"
+#include "UI/BasePlayerHUDWidget.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -150,6 +151,8 @@ void ABasePlayer::BeginPlay()
 			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
 		}
 	}	
+
+	InitPlayerUI();
 }
 
 void ABasePlayer::Tick(float DeltaTime)
@@ -328,6 +331,15 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// Change State
 
 	// PlayMontage
+}
+
+void ABasePlayer::InitPlayerUI()
+{
+	if (!PlayerHUDClass) return;
+	auto HUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
+	HUD->InitASC(AbilitySystem, AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+
+	HUD->AddToViewport();
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
