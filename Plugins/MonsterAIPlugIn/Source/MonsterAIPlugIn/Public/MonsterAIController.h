@@ -17,7 +17,8 @@ class MONSTERAIPLUGIN_API AMonsterAIController : public AAIController
 	GENERATED_BODY()
 	
 public:
-	AMonsterAIController();
+    //Crowd 몬스터 PathFollowingComponent 설정.
+    AMonsterAIController(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
     // 팀 반환
     virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }

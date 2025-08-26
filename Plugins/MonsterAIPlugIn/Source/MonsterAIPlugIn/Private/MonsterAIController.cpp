@@ -2,14 +2,16 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
-
+#include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Sight.h"
 #include "Perception/AISense_Hearing.h"
 
-AMonsterAIController::AMonsterAIController()
+AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectInitializer)
+// ▼ 기본 Subobject "PathFollowingComponent"를 Crowd로 교체
+    : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
     PrimaryActorTick.bCanEverTick = true;
 
@@ -18,36 +20,28 @@ AMonsterAIController::AMonsterAIController()
     SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
     HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
 
-    // 시야 설정
     if (SightConfig)
     {
-        SightConfig->SightRadius = SightRadius;
-        SightConfig->LoseSightRadius = LoseSightRadius;
-        SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle;
-
+        SightConfig->SightRadius = SightRadius;             // 값 적당히(예: 1500.f)
+        SightConfig->LoseSightRadius = LoseSightRadius;     // 예: 1800.f
+        SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle; // 예: 90.f
         SightConfig->DetectionByAffiliation.bDetectEnemies = true;
         SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-        SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
+        SightConfig->DetectionByAffiliation.bDetectNeutrals = false; // 디버깅 시 true로
     }
-
-    // 청각 설정
     if (HearingConfig)
     {
         HearingConfig->HearingRange = HearingRange;
         HearingConfig->LoSHearingRange = LoSHearingRange;
-
         HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
         HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
-        HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
+        HearingConfig->DetectionByAffiliation.bDetectNeutrals = false; // 디버깅 시 true로
     }
-
     if (PerceptionComp)
     {
         PerceptionComp->ConfigureSense(*SightConfig);
         PerceptionComp->ConfigureSense(*HearingConfig);
-
         PerceptionComp->SetDominantSense(UAISense_Sight::StaticClass());
-
         PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnTargetPerceptionUpdated);
         PerceptionComp->OnPerceptionUpdated.AddDynamic(this, &AMonsterAIController::OnPerceptionUpdated);
     }
