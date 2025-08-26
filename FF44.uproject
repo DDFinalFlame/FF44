@@ -13,7 +13,8 @@
 				"AIModule",
 				"UMG",
 				"CoreUObject",
-				"GameplayAbilities"
+				"GameplayAbilities",
+				"GameplayCameras"
 			]
 		}
 	],
@@ -39,6 +40,10 @@
 		},
 		{
 			"Name": "MotionWarping",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayCameras",
 			"Enabled": true
 		},
 		{

@@ -82,15 +82,12 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////
 ///										Cameras										///
 ///////////////////////////////////////////////////////////////////////////////////////
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cameras")
-	class UGameplayCameraComponent* GameplayCamera;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-	UCameraComponent* FollowCamera;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-	USpringArmComponent* CameraBoom;
+//protected:
+//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+//	UCameraComponent* FollowCamera;
+//
+//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+//	USpringArmComponent* CameraBoom;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
