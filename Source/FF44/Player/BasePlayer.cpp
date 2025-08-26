@@ -18,6 +18,31 @@
 #include "Weapon/BaseWeapon.h"
 #include "BasePlayerAttributeSet.h"
 
+float ABasePlayer::GetAttackPower_Implementation() const
+{
+	// 1) 가장 신뢰되는 경로: ASC에 등록된 AttributeSet에서 읽기
+	const UBasePlayerAttributeSet* FromASC = nullptr;
+	if (AbilitySystem)
+	{
+		FromASC = AbilitySystem->GetSet<UBasePlayerAttributeSet>();
+		if (FromASC)
+		{
+			const float AP = FromASC->GetAttackPower();
+			return FMath::IsFinite(AP) ? AP : 0.f;
+		}
+	}
+
+	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
+	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
+	{
+		const float AP = Attribute->GetAttackPower();
+		return FMath::IsFinite(AP) ? AP : 0.f;
+	}
+
+	// 3) 최종 폴백
+	return 0.f;
+}
+
 ABasePlayer::ABasePlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -38,21 +63,26 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
-	CameraBoom->TargetArmLength = 200.f;
-	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
-	// 카메라가 늦게 따라오는 설정
-	//CameraBoom->bEnableCameraLag = true;
-	//CameraBoom->bEnableCameraRotationLag = true;
+	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	//CameraBoom->SetupAttachment(RootComponent);
+	//CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
+	//CameraBoom->TargetArmLength = 200.f;
+	//CameraBoom->bUsePawnControlRotation = true;
+	//CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
+	//// 카메라가 늦게 따라오는 설정
+	////CameraBoom->bEnableCameraLag = true;
+	////CameraBoom->bEnableCameraRotationLag = true;
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->bUsePawnControlRotation = false;	
+	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	//FollowCamera->SetupAttachment(CameraBoom);
+	//FollowCamera->bUsePawnControlRotation = false;	
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+}
+
+void ABasePlayer::PossessedBy(AController* NewController)
+{
+
 }
 
 void ABasePlayer::BeginPlay()
@@ -119,7 +149,6 @@ void ABasePlayer::BeginPlay()
 
 			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
 		}
-
 	}	
 }
 
@@ -135,47 +164,6 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 										bool bFromSweep, const FHitResult& SweepResult)
 {
 
-}
-
-void ABasePlayer::AttachWeapon(FName _Socket)
-{
-	if (Weapon && GetMesh())
-	{
-		Weapon->AttachToComponent(
-			GetMesh(),
-			FAttachmentTransformRules::KeepRelativeTransform,
-			_Socket);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to attach weapon: Invalid Weapon or Mesh"));
-	}
-}
-
-void ABasePlayer::DetachWeapon(FName _Socket)
-{
-	if (Weapon && GetMesh())
-	{
-		Weapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to detach weapon: Invalid Weapon or Mesh"));
-	}
-}
-
-void ABasePlayer::EquipWeapon()
-{
-	AttachWeapon(EquipSocket);
-
-	// Equip Animation 재생
-}
-
-void ABasePlayer::UnEquipWeapon()
-{
-	// UnEquip Animation 재생
-
-	AttachWeapon(UnEquipSocket);
 }
 
 void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -342,27 +330,43 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// PlayMontage
 }
 
-float ABasePlayer::GetAttackPower_Implementation() const
+void ABasePlayer::AttachWeapon(FName _Socket)
 {
-	// 1) 가장 신뢰되는 경로: ASC에 등록된 AttributeSet에서 읽기
-	const UBasePlayerAttributeSet* FromASC = nullptr;
-	if (AbilitySystem)
+	if (Weapon && GetMesh())
 	{
-		FromASC = AbilitySystem->GetSet<UBasePlayerAttributeSet>();
-		if (FromASC)
-		{
-			const float AP = FromASC->GetAttackPower();
-			return FMath::IsFinite(AP) ? AP : 0.f;
-		}
+		Weapon->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::KeepRelativeTransform,
+			_Socket);
 	}
-
-	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
-	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
+	else
 	{
-		const float AP = Attribute->GetAttackPower();
-		return FMath::IsFinite(AP) ? AP : 0.f;
+		UE_LOG(LogTemp, Warning, TEXT("Failed to attach weapon: Invalid Weapon or Mesh"));
 	}
+}
 
-	// 3) 최종 폴백
-	return 0.f;
+void ABasePlayer::DetachWeapon(FName _Socket)
+{
+	if (Weapon && GetMesh())
+	{
+		Weapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to detach weapon: Invalid Weapon or Mesh"));
+	}
+}
+
+void ABasePlayer::EquipWeapon()
+{
+	AttachWeapon(EquipSocket);
+
+	// Equip Animation 재생
+}
+
+void ABasePlayer::UnEquipWeapon()
+{
+	// UnEquip Animation 재생
+
+	AttachWeapon(UnEquipSocket);
 }

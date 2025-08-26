@@ -25,7 +25,7 @@ UGA_MonsterDeath::UGA_MonsterDeath()
 
     // 트리거(순수 C++로 설정)
     FAbilityTriggerData Trig;
-    Trig.TriggerTag = MonsterTags::Event_Death;
+    Trig.TriggerTag = MonsterTags::Event_Monster_Death;
     Trig.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
     AbilityTriggers.Add(Trig);
 
