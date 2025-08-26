@@ -27,16 +27,10 @@ public:
     USceneComponent* Objects;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
-    USceneComponent* InteractableObejects;
+    USceneComponent* InteractablePoints;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* MonsterSpawnPoints;
-
-    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
-    USceneComponent* PortalPoints;
-
-    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
-    USceneComponent* BossPoints;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* ExitPoints;

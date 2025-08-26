@@ -6,10 +6,22 @@
 #include "GameFramework/Actor.h"
 #include "FF44DungeonGenerator.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
-
 class AFF44StarterRoom;
 class AFF44RoomBase;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
+
+USTRUCT(BlueprintType)
+struct FMonsterSpawnInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FTransform Transform;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName Tag = NAME_None;
+};
 
 UCLASS()
 class FF44_API AFF44DungeonGenerator : public AActor
@@ -59,11 +71,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Rooms|Seal")
 	TSubclassOf<AActor> SmallExitCapClass;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Candidates")
-	TArray<FTransform> PortalCandidatePoints;
+	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Markers")
+	TArray<FMonsterSpawnInfo> MonsterSpawnMarkers;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Candidates")
-	TArray<FTransform> BossCandidatePoints;
+	UFUNCTION(BlueprintCallable, Category = "Dungeon|Markers")
+	const TArray<FMonsterSpawnInfo>& GetMonsterSpawnMarkers() const { return MonsterSpawnMarkers; }
 
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	bool bDungeonCompleted = false;
@@ -88,7 +100,6 @@ public:
 
 	int32 TotalSpawned = 0;
 
-
 private:
 	void SpawnStarterRoom(AFF44StarterRoom*& OutStarter);
 	void SpawnPlayerAtStart(const AFF44StarterRoom* Starter);
@@ -101,7 +112,7 @@ private:
 	void PlaceFloorGoalAndFinish();
 	bool IsRoomOverlapping(AFF44RoomBase* Room) const;
 
-	void CollectSpecialPointsFromRoom(const AFF44RoomBase* Room);
+	void CollectMonsterMarkersFromRoom(const AFF44RoomBase* Room);
 
 	TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
 };

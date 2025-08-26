@@ -6,6 +6,7 @@
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/BoxComponent.h"
+#include "Components/ArrowComponent.h"
 
 AFF44DungeonGenerator::AFF44DungeonGenerator()
 {
@@ -38,6 +39,9 @@ void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
     {
         OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
     }
+
+    MonsterSpawnMarkers.Empty();
+    CollectMonsterMarkersFromRoom(OutStarter);
 }
 
 void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
@@ -124,7 +128,7 @@ void AFF44DungeonGenerator::SpawnNextRoom()
     Exits.Remove(SelectedExitPoint);
     Exits.Append(NewExits);
 
-    CollectSpecialPointsFromRoom(LatestSpawnedRoom);
+    CollectMonsterMarkersFromRoom(LatestSpawnedRoom);
 
     if (RoomsToSpawn > 0)
     {
@@ -275,29 +279,23 @@ bool AFF44DungeonGenerator::IsRoomOverlapping(AFF44RoomBase* Room) const
     return false;
 }
 
-void AFF44DungeonGenerator::CollectSpecialPointsFromRoom(const AFF44RoomBase* Room)
+void AFF44DungeonGenerator::CollectMonsterMarkersFromRoom(const AFF44RoomBase* Room)
 {
-    if (!Room) return;
+    if (!Room || !Room->MonsterSpawnPoints) return;
 
-    // Portal
-    if (Room->PortalPoints)
+    TArray<USceneComponent*> Points;
+    Room->MonsterSpawnPoints->GetChildrenComponents(false, Points);
+
+    for (USceneComponent* C : Points)
     {
-        TArray<USceneComponent*> ChildrenComp;
-        Room->PortalPoints->GetChildrenComponents(false, ChildrenComp);
-        for (USceneComponent* C : ChildrenComp)
-        {
-            if (C) PortalCandidatePoints.Add(C->GetComponentTransform());
-        }
-    }
-    // Boss
-    if (Room->BossPoints)
-    {
-        TArray<USceneComponent*> ChildrenComp;
-        Room->BossPoints->GetChildrenComponents(false, ChildrenComp);
-        for (USceneComponent* C : ChildrenComp)
-        {
-            if (C) BossCandidatePoints.Add(C->GetComponentTransform());
-        }
+        UArrowComponent* Arrow = Cast<UArrowComponent>(C);
+        if (!Arrow) continue;
+
+        FMonsterSpawnInfo Info;
+        Info.Transform = Arrow->GetComponentTransform();
+        Info.Tag = (Arrow->ComponentTags.Num() > 0) ? Arrow->ComponentTags[0] : NAME_None;
+
+        MonsterSpawnMarkers.Add(Info);
     }
 }
 
