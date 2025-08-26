@@ -43,6 +43,8 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 	check(BlackboardComponent);
 	check(ControlledEnemy);
 
+	if (ControlledEnemy->GetCurrentBehavior() == EAIBehavior::Die) { return; }
+
 	AActor* TargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(TargetKey.SelectedKeyName));
 	AActor* NoiseTargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(NoiseTargetKey.SelectedKeyName));
 

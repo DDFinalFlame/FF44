@@ -34,8 +34,17 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 
 void AEnemyAIController::OnUnPossess()
 {
+	// BT, BB
+	if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent)) 
+	{
+		BTComp->StopTree(EBTStopMode::Safe);
+	}
+	/* 이렇게 초기화해도 되려나 .. ?**/
+	Blackboard->InitializeBlackboard(*Blackboard->GetBlackboardAsset());
+
 	ControlledEnemy = nullptr;
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+
 	Super::OnUnPossess();
 }
 

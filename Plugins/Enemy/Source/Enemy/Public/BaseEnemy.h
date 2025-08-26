@@ -60,6 +60,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior")
 	FName BehaviorKeyName;
 
+// State ( Behavior )
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Behavior")
 	FEnemyStateConfig BehaviorConfig;
@@ -70,6 +71,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI | Behavior")
 	bool IsCurrentBehaviorEnd = true;
 
+// Patrol
+protected:
 	UPROPERTY(EditAnywhere, Category = "AI | Patrol")
 	TArray<ATargetPoint*> PatrolPoints;
 
@@ -91,9 +94,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat | Weapon");
 	AEnemyBaseWeapon* Weapon;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Hit Reaction")
+	/* Montage **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Montage")
 	UHitReactionDataAsset* HitMontageData;
 
+// Death 연출
+protected:
+	FTimerHandle DissolveTimerHandle;
 public:  
 	ABaseEnemy();  
 
@@ -135,8 +142,15 @@ public:
 	bool CheckCurrentBehavior(EAIBehavior NewBehavior);
 	bool IsCurrentStateInterruptible();
 	FORCEINLINE EAIBehavior GetCurrentBehavior() const { return CurrentBehavior; }
+	/* Death 애니메이션 처리 중 **/
+	void OnDeath();
+	/* Death 애니메이션 종료 **/
+	void EndDeath();
+	/* 월드에서 사라지기 **/
+	void StartDissolve();
 
 // Montage
 public:
 	UAnimMontage* GetHitMontage(EHitDirection Direction) const;
+	UAnimMontage* GetDieMontage() const;
 };

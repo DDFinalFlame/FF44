@@ -10,7 +10,8 @@ enum class EAIBehavior : uint8
 	RangeAttack,
 	Approach,
 	Investigate,
-	Hit
+	Hit,
+	Die
 };
 
 // Enemy Type
