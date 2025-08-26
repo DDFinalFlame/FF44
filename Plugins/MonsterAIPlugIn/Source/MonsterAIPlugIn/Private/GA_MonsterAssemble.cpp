@@ -155,7 +155,7 @@ void UGA_MonsterAssemble::Recover_Start(ACharacter* Chr)
         DesiredLoc.Z = FloorHit.ImpactPoint.Z + Half + StandSnapUpOffset;
 
     // 5) 텔레포트(겹침 무시)
-    Chr->TeleportTo(DesiredLoc, FRotator(0.f, DesiredYaw, 0.f), false, true);
+    //Chr->TeleportTo(DesiredLoc, FRotator(0.f, DesiredYaw, 0.f), false, true);
 
     // 6) 메시를 캡슐에 재부착 + 초기 상대값 복구
     /*Sk->AttachToComponent(Cap, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -215,11 +215,12 @@ void UGA_MonsterAssemble::AssembleStep()
         ++CurrentChainIndex; // 바디 없으면 스킵
     }
 
-    // 모두 스킵됐다면 즉시 마무리
-    StandUpFix(Chr);
-    if (AAIController* AIC = GetAI(Chr))
-        if (AIC->BrainComponent) AIC->BrainComponent->StartLogic();
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+    if (CurrentChainIndex >= AssembleOrder.Num())
+    {
+        // 모든 본 조립 끝: 바로 스냅하지 말고 '일어나기' 페이즈로 전환
+        BeginGetUp(Chr);
+        return;
+    }
 }
 
 void UGA_MonsterAssemble::StartSmoothBlend(const FName& StartBone, float Duration)
@@ -325,7 +326,26 @@ void UGA_MonsterAssemble::StandUpFix(ACharacter* Chr)
     if (FloorHit.IsValidBlockingHit())
         DesiredLoc.Z = FloorHit.ImpactPoint.Z + Half + StandSnapUpOffset;
 
-    Chr->TeleportTo(DesiredLoc, FRotator(0.f, DesiredYaw, 0.f), false, true);
+    const float PosThresh = 1.0f;  // 위치 허용 오차(cm)
+    const float YawThresh = 1.0f;  // 회전 허용 오차(도)
+
+    const FVector CurLoc = Chr->GetActorLocation();
+    const FRotator CurRot = Chr->GetActorRotation();
+
+    const bool bNeedPosSnap = (FVector::DistSquared(CurLoc, DesiredLoc) > PosThresh * PosThresh);
+    const bool bNeedYawSnap = (FMath::Abs(FMath::FindDeltaAngleDegrees(CurRot.Yaw, DesiredYaw)) > YawThresh);
+
+    if (bNeedPosSnap || bNeedYawSnap)
+    {
+        // 오차가 정말 클 때만 스냅
+        Chr->TeleportTo(DesiredLoc, FRotator(0.f, DesiredYaw, 0.f), false, true);
+    }
+    else
+    {
+        // 보통은 부드럽게 세우기(한 프레임 마무리)
+        Chr->SetActorLocation(DesiredLoc, /*bSweep=*/false, nullptr, ETeleportType::None);
+        Chr->SetActorRotation(FRotator(0.f, DesiredYaw, 0.f), ETeleportType::None);
+    }
 
     // 5) 관성/다이나믹스 리셋
     Sk->SetAllPhysicsLinearVelocity(FVector::ZeroVector, false);
@@ -337,6 +357,11 @@ void UGA_MonsterAssemble::StandUpFix(ACharacter* Chr)
     // 6) 이동/회전 규칙 복귀 + 오버랩 갱신
     RestoreRotateFlags(Chr);
     Cap->UpdateOverlaps();
+
+    if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Chr))
+    {
+        MC->SetMonsterState(EMonsterState::CombatReady);
+    }
 }
 
 void UGA_MonsterAssemble::RestoreRotateFlags(ACharacter* Chr)
@@ -347,4 +372,139 @@ void UGA_MonsterAssemble::RestoreRotateFlags(ACharacter* Chr)
     // 평소 선호값으로 복귀(상황에 맞게 바꾸세요)
     Mv->bUseControllerDesiredRotation = false;
     Mv->bOrientRotationToMovement = true;
+}
+
+void UGA_MonsterAssemble::BeginGetUp(ACharacter* Chr)
+{
+    if (!Chr) return;
+    USkeletalMeshComponent* Sk = GetMesh(Chr);
+    UCapsuleComponent* Cap = GetCapsule(Chr);
+    if (!Sk || !Cap) return;
+
+    // 목표 Yaw (Pelvis 기준)
+    float DesiredYaw = Chr->GetActorRotation().Yaw;
+    if (int32 PelvisIdx = Sk->GetBoneIndex(PelvisBone); PelvisIdx != INDEX_NONE)
+    {
+        DesiredYaw = Sk->GetBoneQuaternion(PelvisBone).Rotator().Yaw;
+    }
+
+    // 목표 Loc(Z) = 바닥 위 캡슐 하프 + 오프셋
+    FHitResult FloorHit = TraceFloor(Chr, Chr->GetActorLocation(), FloorTraceDist, FloorTraceChannel);
+    const float Half = Cap->GetScaledCapsuleHalfHeight();
+    FVector DesiredLoc = Chr->GetActorLocation();
+    if (FloorHit.IsValidBlockingHit())
+        DesiredLoc.Z = FloorHit.ImpactPoint.Z + Half + StandSnapUpOffset;
+
+    // 시작/타깃 저장
+    GetUpStartLoc = Chr->GetActorLocation();
+    GetUpTargetLoc = DesiredLoc;
+    GetUpStartYaw = Chr->GetActorRotation().Yaw;
+    GetUpTargetYaw = DesiredYaw;
+
+    // 조립이 끝났으니 물리는 OFF (혹시 남았으면)
+    Sk->SetAllBodiesPhysicsBlendWeight(0.f);
+    Sk->SetAllBodiesSimulatePhysics(false);
+
+    GetUpElapsed = 0.f;
+    GetUpDuration = FMath::Max(0.15f, GetUpTime);
+
+    // 틱 시작
+    Chr->GetWorldTimerManager().SetTimer(TH_GetUpTick, this, &UGA_MonsterAssemble::TickGetUp, TickInterval, true, 0.f);
+}
+
+void UGA_MonsterAssemble::TickGetUp()
+{
+    ACharacter* Chr = OwnerChar.Get();
+    if (!Chr) return;
+
+    const float DT = Chr->GetWorld()->GetDeltaSeconds();
+    GetUpElapsed += DT;
+
+    const float t = FMath::Clamp(GetUpElapsed / GetUpDuration, 0.f, 1.f);
+    // 천천히 올라오게(느린 커브): EaseInOutCubic
+    const float a = (t < 0.5f) ? 4.f * t * t * t : 1.f - FMath::Pow(-2.f * t + 2.f, 3.f) / 2.f;
+
+    // 위치/회전 목표
+    const FVector TargetLoc = FMath::Lerp(GetUpStartLoc, GetUpTargetLoc, a);
+    const float   DeltaYaw = FMath::FindDeltaAngleDegrees(GetUpStartYaw, GetUpTargetYaw);
+    const float   TargetYaw = FMath::UnwindDegrees(GetUpStartYaw + DeltaYaw * a);
+
+    // 부드러운 추종 속도(느리게 하려면 여기 낮추면 됨)
+    const float LocSpeed = 12.f; // ← 8~14 권장 (낮을수록 더 느리게 올라옴)
+    const float RotSpeed = 10.f; // ← 8~12 권장
+
+    const FVector  CurLoc = Chr->GetActorLocation();
+    const FRotator CurRot = Chr->GetActorRotation();
+    const FVector  NewLoc = FMath::VInterpTo(CurLoc, TargetLoc, DT, LocSpeed);
+    const FRotator NewRot = FMath::RInterpTo(CurRot, FRotator(0.f, TargetYaw, 0.f), DT, RotSpeed);
+
+    Chr->SetActorLocation(NewLoc, /*bSweep=*/false, nullptr, ETeleportType::None);
+    Chr->SetActorRotation(NewRot, ETeleportType::None);
+
+    if (t >= 1.f - KINDA_SMALL_NUMBER)
+    {
+        Chr->GetWorldTimerManager().ClearTimer(TH_GetUpTick);
+        FinishGetUp(Chr);
+    }
+}
+
+void UGA_MonsterAssemble::FinishGetUp(ACharacter* Chr)
+{
+    if (!Chr) return;
+
+    USkeletalMeshComponent* Sk = GetMesh(Chr);
+    UCapsuleComponent* Cap = GetCapsule(Chr);
+    UCharacterMovementComponent* Mv = GetMove(Chr);
+    if (!Sk || !Cap || !Mv) return;
+
+    // 미세 오차 보정(큰 오차만 텔레포트)
+    const FVector DesiredLoc = GetUpTargetLoc;
+    const float   DesiredYaw = GetUpTargetYaw;
+
+    const float PosThresh = 1.0f;
+    const float YawThresh = 1.0f;
+    const FVector CurLoc = Chr->GetActorLocation();
+    const FRotator CurRot = Chr->GetActorRotation();
+
+    const bool bNeedPosSnap = (FVector::DistSquared(CurLoc, DesiredLoc) > PosThresh * PosThresh);
+    const bool bNeedYawSnap = (FMath::Abs(FMath::FindDeltaAngleDegrees(CurRot.Yaw, DesiredYaw)) > YawThresh);
+
+    if (bNeedPosSnap || bNeedYawSnap)
+        Chr->TeleportTo(DesiredLoc, FRotator(0.f, DesiredYaw, 0.f), false, true);
+    else
+    {
+        Chr->SetActorLocation(DesiredLoc, false, nullptr, ETeleportType::None);
+        Chr->SetActorRotation(FRotator(0.f, DesiredYaw, 0.f), ETeleportType::None);
+    }
+
+    // (원래 StandUpFix에서 하던 마무리)
+    Sk->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Cap->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    Sk->AttachToComponent(Cap, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Chr))
+    {
+        Sk->SetRelativeLocation(MC->MeshInitRelLoc, false, nullptr, ETeleportType::TeleportPhysics);
+        Sk->SetRelativeRotation(MC->MeshInitRelRot, false, nullptr, ETeleportType::TeleportPhysics);
+        Sk->SetRelativeScale3D(MC->MeshInitRelScale);
+    }
+
+    Sk->SetAllPhysicsLinearVelocity(FVector::ZeroVector, false);
+    Sk->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector, false);
+    Sk->ResetAnimInstanceDynamics(ETeleportType::TeleportPhysics);
+    Sk->ForceClothNextUpdateTeleportAndReset();
+    Sk->RefreshBoneTransforms();
+
+    RestoreRotateFlags(Chr);
+    Cap->UpdateOverlaps();
+
+    if (AAIController* AIC = GetAI(Chr))
+        if (AIC->BrainComponent) AIC->BrainComponent->StartLogic();
+
+    if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Chr))
+    {
+        MC->SetMonsterState(EMonsterState::CombatReady);
+    }
+
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

@@ -87,4 +87,19 @@ protected:
     // 최종 안전 정렬
     void StandUpFix(ACharacter* Chr);
     void RestoreRotateFlags(ACharacter* Chr);
+
+    // === GetUp(일어나기) 페이즈 튜닝 ===
+    UPROPERTY(EditDefaultsOnly, Category = "Assemble")
+    float GetUpTime = 1.6f;    // 바닥에서 완전히 일어서기까지 걸리는 시간
+
+    // === GetUp 상태 ===
+    FVector GetUpStartLoc, GetUpTargetLoc;
+    float   GetUpStartYaw = 0.f, GetUpTargetYaw = 0.f;
+    float   GetUpElapsed = 0.f, GetUpDuration = 0.f;
+    FTimerHandle TH_GetUpTick;
+
+    // 함수 선언
+    void BeginGetUp(ACharacter* Chr);
+    void TickGetUp();
+    void FinishGetUp(ACharacter* Chr);
 };
