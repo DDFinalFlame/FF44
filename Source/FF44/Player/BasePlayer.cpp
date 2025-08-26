@@ -10,8 +10,6 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "GameFramework/GameplayCameraComponent.h"
-#include "GameFramework/GameplayCameraComponentBase.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
@@ -65,36 +63,26 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
-	CameraBoom->TargetArmLength = 200.f;
-	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
-	// 카메라가 늦게 따라오는 설정
-	//CameraBoom->bEnableCameraLag = true;
-	//CameraBoom->bEnableCameraRotationLag = true;
+	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	//CameraBoom->SetupAttachment(RootComponent);
+	//CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
+	//CameraBoom->TargetArmLength = 200.f;
+	//CameraBoom->bUsePawnControlRotation = true;
+	//CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
+	//// 카메라가 늦게 따라오는 설정
+	////CameraBoom->bEnableCameraLag = true;
+	////CameraBoom->bEnableCameraRotationLag = true;
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->bUsePawnControlRotation = false;	
-
-	GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("MainCamera"));
-	GameplayCamera->SetupAttachment(GetMesh());
+	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	//FollowCamera->SetupAttachment(CameraBoom);
+	//FollowCamera->bUsePawnControlRotation = false;	
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
 {
-	if (NewController) 
-	{
-		//GameplayCamera->ActivateCameraForPlayerController(Cast<APlayerController>(NewController), true, EGameplayCameraComponentActivationMode::Push);
 
-		auto old = GetController();
-
-		SetController(NewController);
-	}
 }
 
 void ABasePlayer::BeginPlay()
@@ -161,7 +149,6 @@ void ABasePlayer::BeginPlay()
 
 			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
 		}
-
 	}	
 }
 
