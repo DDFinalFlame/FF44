@@ -96,7 +96,7 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 		}
 		else
 		{
-			if (ControlledEnemy->ChangeState(EAIBehavior::Patrol))
+			if (ControlledEnemy->ChangeState(EAIBehavior::Idle))
 			{
 				SetBehaviorKey(BlackboardComponent, EAIBehavior::Idle);
 			}

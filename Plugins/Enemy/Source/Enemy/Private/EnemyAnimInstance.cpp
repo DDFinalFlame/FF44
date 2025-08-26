@@ -20,6 +20,7 @@ void UEnemyAnimInstance::NativeInitializeAnimation()
 	if (Enemy)
 	{
 		MovementComponent = Enemy->GetCharacterMovement();
+		CurrentBehavior = Enemy->GetCurrentBehavior();
 	}
 
 }
@@ -38,22 +39,13 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		return;
 	}
 
+	/* State 관련 **/
+	CurrentBehavior = Enemy->GetCurrentBehavior();
+
+	/* Movement 관련 **/
 	Velocity = MovementComponent->Velocity;
 	GroundSpeed = Velocity.Size2D();
-
 	bShouldMove = GroundSpeed > 3.0f && MovementComponent->GetCurrentAcceleration() != FVector::ZeroVector;
-
 	bIsFalling = MovementComponent->IsFalling();
-
 	Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, Enemy->GetActorRotation());
 }
-//
-//EAIBehavior UEnemyAnimInstance::GetEnemyState() const
-//{
-//	return Enemy->GetCurrentBehavior();
-//}
-//
-//UAnimMontage* UEnemyAnimInstance::GetDeathMontage() const
-//{
-//	return Enemy->GetDieMontage();
-//}

@@ -21,6 +21,9 @@ protected:
 	ABaseEnemy* Enemy;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
+	EAIBehavior CurrentBehavior;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
 	UCharacterMovementComponent* MovementComponent;
 
 protected:
@@ -44,11 +47,4 @@ public:
 
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
-
-//public:
-//	UFUNCTION(BlueprintCallable, Category = "Enemy")
-//	EAIBehavior GetEnemyState() const;
-//
-//	UFUNCTION(BlueprintCallable, Category = "Enemy | Animation")
-//	UAnimMontage* GetDeathMontage() const;
 };

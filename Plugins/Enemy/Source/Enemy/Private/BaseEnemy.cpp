@@ -171,7 +171,7 @@ void ABaseEnemy::SetState(EAIBehavior NewBehavior)
 
 bool ABaseEnemy::ChangeState(EAIBehavior NewBehavior)
 {
-	if (IsCurrentStateInterruptible() || NewBehavior == EAIBehavior::Die)
+	if (IsCurrentBehaviorEnd || IsCurrentStateInterruptible() || NewBehavior == EAIBehavior::Die)
 	{
 		CurrentBehavior = NewBehavior;
 
@@ -179,6 +179,7 @@ bool ABaseEnemy::ChangeState(EAIBehavior NewBehavior)
 		{
 			if (UBlackboardComponent* BB = MyController->GetBlackboardComponent())
 			{
+				IsCurrentBehaviorEnd = false;
 				BB->SetValueAsEnum(BehaviorKeyName, static_cast<uint8>(CurrentBehavior));
 			}
 		}
@@ -192,6 +193,11 @@ bool ABaseEnemy::ChangeState(EAIBehavior NewBehavior)
 bool ABaseEnemy::IsCurrentStateInterruptible()
 {
 	return BehaviorConfig.CheckIsInterruptible(CurrentBehavior);
+}
+
+void ABaseEnemy::EndCurrentBehavior()
+{
+	IsCurrentBehaviorEnd = true;
 }
 
 void ABaseEnemy::OnDeath()

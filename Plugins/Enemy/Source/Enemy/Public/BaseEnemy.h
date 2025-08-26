@@ -141,6 +141,7 @@ public:
 	bool ChangeState(EAIBehavior NewBehavior);
 	bool CheckCurrentBehavior(EAIBehavior NewBehavior);
 	bool IsCurrentStateInterruptible();
+	void EndCurrentBehavior();
 	FORCEINLINE EAIBehavior GetCurrentBehavior() const { return CurrentBehavior; }
 	/* Death 局聪皋捞记 贸府 吝 **/
 	void OnDeath();
