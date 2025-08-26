@@ -75,34 +75,34 @@ void AFF44FloorManager::StartFloorInternal()
 
 void AFF44FloorManager::HandleDungeonComplete()
 {
-    //if (!Dungeon) return;
+    if (!Dungeon) return;
 
-    //CachedMonsterMarkers = Dungeon->GetMonsterSpawnMarkers();
+    CachedMonsterMarkers = Dungeon->GetMonsterSpawnMarkers();
 
-    //if (!MonsterSpawnerClass)
-    //{
-    //    UE_LOG(LogTemp, Warning, TEXT("FloorManager: MonsterSpawnerClass not set."));
-    //    
-    //    // 스포너가 없어도 게임을 진행하고 싶다면 아래 두 줄 유지
-    //    bFloorReady = true;
-    //    OnFloorReady.Broadcast(CurrentFloor);
-    //    return;
-    //}
+    if (!MonsterSpawnerClass)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("FloorManager: MonsterSpawnerClass not set."));
+        
+        // 스포너가 없어도 게임을 진행하고 싶다면 아래 두 줄 유지
+        bFloorReady = true;
+        OnFloorReady.Broadcast(CurrentFloor);
+        return;
+    }
 
-    //if (!MonsterSpawner)
-    //{
-    //    MonsterSpawner = GetWorld()->SpawnActor<AFF44MonsterSpawner>(MonsterSpawnerClass);
-    //    if (!MonsterSpawner)
-    //    {
-    //        UE_LOG(LogTemp, Warning, TEXT("FloorManager: Failed to spawn MonsterSpawner."));
-    //        bFloorReady = true;
-    //        OnFloorReady.Broadcast(CurrentFloor);
-    //        return;
-    //    }
-    //    MonsterSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleMonsterSpawnComplete);
-    //}
+    if (!MonsterSpawner)
+    {
+        MonsterSpawner = GetWorld()->SpawnActor<AFF44MonsterSpawner>(MonsterSpawnerClass);
+        if (!MonsterSpawner)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("FloorManager: Failed to spawn MonsterSpawner."));
+            bFloorReady = true;
+            OnFloorReady.Broadcast(CurrentFloor);
+            return;
+        }
+        MonsterSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleMonsterSpawnComplete);
+    }
 
-    //MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers /*, SeedForFloor()*/);
+    MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers /*, SeedForFloor()*/);
 }
 
 void AFF44FloorManager::HandleMonsterSpawnComplete()

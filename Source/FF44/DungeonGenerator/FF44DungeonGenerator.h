@@ -4,24 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "MonsterSpawnInfo.h"
 #include "FF44DungeonGenerator.generated.h"
 
 class AFF44StarterRoom;
 class AFF44RoomBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
-
-USTRUCT(BlueprintType)
-struct FMonsterSpawnInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FTransform Transform;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName Tag = NAME_None;
-};
 
 UCLASS()
 class FF44_API AFF44DungeonGenerator : public AActor

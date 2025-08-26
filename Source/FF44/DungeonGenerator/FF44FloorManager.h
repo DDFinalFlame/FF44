@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "MonsterSpawnInfo.h"
 #include "FF44FloorManager.generated.h"
 
 class AFF44DungeonGenerator;
@@ -41,8 +42,8 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Flow|State")
     bool bFloorReady = false;
 
-    //UPROPERTY(BlueprintReadOnly, Category = "Flow|Markers")
-    //TArray<FMonsterSpawnInfo> CachedMonsterMarkers;
+    UPROPERTY(BlueprintReadOnly, Category = "Flow|Markers")
+    TArray<FMonsterSpawnInfo> CachedMonsterMarkers;
 
 public:
     // 외부 이벤트(UI에서 바인딩)

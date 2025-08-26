@@ -4,23 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "MonsterSpawnInfo.h"
 #include "FF44MonsterSpawner.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSpawnComplete);
 
 UCLASS()
 class FF44_API AFF44MonsterSpawner : public AActor
 {
-	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AFF44MonsterSpawner();
+    GENERATED_BODY()
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+public:
+    UPROPERTY(BlueprintAssignable, Category = "Spawner")
+    FSpawnComplete OnSpawnComplete;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+    UPROPERTY(EditAnywhere, Category = "Spawner")
+    TMap<FName, TSubclassOf<APawn>> MonsterMap;
 
+    UFUNCTION(BlueprintCallable, Category = "Spawner")
+    void SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers /*, int32 Seed = 0*/);
 };

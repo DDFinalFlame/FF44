@@ -3,25 +3,25 @@
 
 #include "DungeonGenerator/FF44MonsterSpawner.h"
 
-// Sets default values
-AFF44MonsterSpawner::AFF44MonsterSpawner()
+void AFF44MonsterSpawner::SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers /*, int32 Seed*/)
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        OnSpawnComplete.Broadcast();
+        return;
+    }
 
+    for (const FMonsterSpawnInfo& Info : Markers)
+    {
+        if (const TSubclassOf<APawn>* Found = MonsterMap.Find(Info.Tag))
+        {
+            if (*Found)
+            {
+                World->SpawnActor<APawn>(*Found, Info.Transform);
+            }
+        }
+    }
+
+    OnSpawnComplete.Broadcast();
 }
-
-// Called when the game starts or when spawned
-void AFF44MonsterSpawner::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void AFF44MonsterSpawner::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
