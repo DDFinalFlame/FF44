@@ -25,7 +25,7 @@ protected:
 
 public:
     UPROPERTY(EditAnywhere, Category = "Flow|Classes")
-    TSubclassOf<AFF44DungeonGenerator> DungeonGenClass;
+    TSubclassOf<AFF44DungeonGenerator> DungeonGeneratorClass;
 
     UPROPERTY(EditAnywhere, Category = "Flow|Classes")
     TSubclassOf<AFF44MonsterSpawner> MonsterSpawnerClass;

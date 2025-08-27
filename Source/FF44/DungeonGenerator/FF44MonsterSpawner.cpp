@@ -3,7 +3,7 @@
 
 #include "DungeonGenerator/FF44MonsterSpawner.h"
 
-void AFF44MonsterSpawner::SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers /*, int32 Seed*/)
+void AFF44MonsterSpawner::SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers)
 {
     UWorld* World = GetWorld();
     if (!World)

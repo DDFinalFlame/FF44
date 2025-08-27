@@ -52,13 +52,13 @@ void AFF44FloorManager::StartFloorInternal()
 {
     OnFloorStarted.Broadcast(CurrentFloor);
 
-    if (!DungeonGenClass)
+    if (!DungeonGeneratorClass)
     {
-        UE_LOG(LogTemp, Warning, TEXT("FloorManager: DungeonGenClass not set."));
+        UE_LOG(LogTemp, Warning, TEXT("FloorManager: DungeonGeneratorClass not set."));
         return;
     }
 
-    Dungeon = GetWorld()->SpawnActor<AFF44DungeonGenerator>(DungeonGenClass);
+    Dungeon = GetWorld()->SpawnActor<AFF44DungeonGenerator>(DungeonGeneratorClass);
     if (!Dungeon)
     {
         UE_LOG(LogTemp, Warning, TEXT("FloorManager: Failed to spawn DungeonGenerator."));
@@ -86,6 +86,7 @@ void AFF44FloorManager::HandleDungeonComplete()
         // 스포너가 없어도 게임을 진행하고 싶다면 아래 두 줄 유지
         bFloorReady = true;
         OnFloorReady.Broadcast(CurrentFloor);
+
         return;
     }
 
@@ -95,14 +96,17 @@ void AFF44FloorManager::HandleDungeonComplete()
         if (!MonsterSpawner)
         {
             UE_LOG(LogTemp, Warning, TEXT("FloorManager: Failed to spawn MonsterSpawner."));
+            
+            // 스포너가 없어도 게임을 진행하고 싶다면 아래 두 줄 유지
             bFloorReady = true;
             OnFloorReady.Broadcast(CurrentFloor);
+
             return;
         }
         MonsterSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleMonsterSpawnComplete);
     }
 
-    MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers /*, SeedForFloor()*/);
+    MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers);
 }
 
 void AFF44FloorManager::HandleMonsterSpawnComplete()

@@ -18,9 +18,9 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Spawner")
     FSpawnComplete OnSpawnComplete;
 
-    UPROPERTY(EditAnywhere, Category = "Spawner")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner")
     TMap<FName, TSubclassOf<APawn>> MonsterMap;
 
     UFUNCTION(BlueprintCallable, Category = "Spawner")
-    void SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers /*, int32 Seed = 0*/);
+    void SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers);
 };
