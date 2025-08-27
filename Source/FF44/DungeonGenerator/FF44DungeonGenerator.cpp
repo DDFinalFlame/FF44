@@ -22,11 +22,6 @@ void AFF44DungeonGenerator::BeginPlay()
     SpawnNextRoom();
 }
 
-void AFF44DungeonGenerator::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
 void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
 {
     OutStarter = nullptr;
@@ -70,20 +65,21 @@ void AFF44DungeonGenerator::SpawnNextRoom()
     if (RoomsToSpawn <= 0 && Exits.Num() == 0) return;
     if (Exits.Num() == 0) return;
 
+    // 1) 출구/풀 선택
     SelectedExitPoint = Exits[FMath::RandRange(0, Exits.Num() - 1)];
     const bool bSmallExit = SelectedExitPoint->ComponentHasTag(TEXT("Small"));
-
     const TArray<TSubclassOf<AFF44RoomBase>>& Pool = bSmallExit ? SmallRoomsToBeSpawned : RoomsToBeSpawned;
+
     if (Pool.Num() == 0)
     {
         GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, RoomSpawnInterval, false);
         return;
     }
 
-    // 가중치 쓰려면 아래 두 줄만 교체
+    // 2) 방 스폰
+    // (가중치 사용 시 아래 두 줄 교체)
     // TSubclassOf<AFF44RoomBase> Chosen = PickWeightedRoom(Pool);
     // LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Chosen);
-
     LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Pool[FMath::RandRange(0, Pool.Num() - 1)]);
     if (!LatestSpawnedRoom)
     {
@@ -91,15 +87,16 @@ void AFF44DungeonGenerator::SpawnNextRoom()
         return;
     }
 
+    // 3) 위치/회전(Exit 화살표 보정)
     LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
     FRotator R = SelectedExitPoint->GetComponentRotation();
     R.Yaw += 90.f;
     LatestSpawnedRoom->SetActorRotation(R);
 
+    // 4) 연속 태그 제한 (CrossRoad 연속 금지)
     const AFF44RoomBase* OwnerRoom = Cast<AFF44RoomBase>(SelectedExitPoint->GetOwner());
     const FName PrevTag = OwnerRoom ? OwnerRoom->RoomTypeTag : NAME_None;
     const FName NewTag = LatestSpawnedRoom->RoomTypeTag;
-
     if (PrevTag == FName("CrossRoad") && NewTag == FName("CrossRoad"))
     {
         LatestSpawnedRoom->Destroy();
@@ -107,6 +104,7 @@ void AFF44DungeonGenerator::SpawnNextRoom()
         return;
     }
 
+    // 5) 겹침 검사
     if (RemoveOverlappingRooms())
     {
         LatestSpawnedRoom->Destroy();
@@ -114,12 +112,14 @@ void AFF44DungeonGenerator::SpawnNextRoom()
         return;
     }
 
+    // 6) 새 출구 채집
     TArray<USceneComponent*> NewExits;
     if (LatestSpawnedRoom->ExitPoints)
     {
         LatestSpawnedRoom->ExitPoints->GetChildrenComponents(false, NewExits);
     }
 
+    // 7) 막다른길 방지(아직 붙일 게 남았는데 새 출구가 전혀 없으면 경로 폐기)
     const bool bHaveMoreToConnect = (Exits.Num() > 1) || (RoomsToSpawn > 1);
     if (NewExits.Num() == 0 && bHaveMoreToConnect)
     {
@@ -128,17 +128,18 @@ void AFF44DungeonGenerator::SpawnNextRoom()
         return;
     }
 
+    // 8) 출구 갱신 & 마커 수집
     Exits.Remove(SelectedExitPoint);
     Exits.Append(NewExits);
 
     CollectMonsterMarkersFromRoom(LatestSpawnedRoom);
     CollectInteractableMarkersFromRoom(LatestSpawnedRoom);
 
+    // 9) 카운트/종료 판정
     if (RoomsToSpawn > 0)
     {
         RoomsToSpawn--;
     }
-
     TotalSpawned++;
 
     if (TotalSpawned >= MaxTotalRooms)
@@ -149,8 +150,7 @@ void AFF44DungeonGenerator::SpawnNextRoom()
 
     if (RoomsToSpawn > 0 || Exits.Num() > 0)
     {
-        GetWorld()->GetTimerManager().SetTimer(
-            SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, RoomSpawnInterval, false);
+        GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, RoomSpawnInterval, false);
     }
     else
     {
@@ -186,6 +186,33 @@ void AFF44DungeonGenerator::SealRemainingExits()
     }
 
     Exits.Empty();
+}
+
+bool AFF44DungeonGenerator::IsRoomOverlapping(AFF44RoomBase* Room) const
+{
+    if (!Room || !Room->OverlapFolder) return false;
+
+    TArray<USceneComponent*> Boxes;
+    Room->OverlapFolder->GetChildrenComponents(false, Boxes);
+
+    for (USceneComponent* C : Boxes)
+    {
+        if (UBoxComponent* Box = Cast<UBoxComponent>(C))
+        {
+            const_cast<UBoxComponent*>(Box)->UpdateOverlaps();
+
+            TArray<UPrimitiveComponent*> Hits;
+            Box->GetOverlappingComponents(Hits);
+
+            for (UPrimitiveComponent* Hit : Hits)
+            {
+                if (!Hit) continue;
+                if (Hit->GetOwner() == Room) continue;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 USceneComponent* AFF44DungeonGenerator::SelectGoalExit() const
@@ -256,33 +283,6 @@ void AFF44DungeonGenerator::PlaceFloorGoalAndFinish()
     OnDungeonComplete.Broadcast();
 }
 
-bool AFF44DungeonGenerator::IsRoomOverlapping(AFF44RoomBase* Room) const
-{
-    if (!Room || !Room->OverlapFolder) return false;
-
-    TArray<USceneComponent*> Boxes;
-    Room->OverlapFolder->GetChildrenComponents(false, Boxes);
-
-    for (USceneComponent* C : Boxes)
-    {
-        if (UBoxComponent* Box = Cast<UBoxComponent>(C))
-        {
-            const_cast<UBoxComponent*>(Box)->UpdateOverlaps();
-
-            TArray<UPrimitiveComponent*> Hits;
-            Box->GetOverlappingComponents(Hits);
-
-            for (UPrimitiveComponent* Hit : Hits)
-            {
-                if (!Hit) continue;
-                if (Hit->GetOwner() == Room) continue;
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 void AFF44DungeonGenerator::CollectMonsterMarkersFromRoom(const AFF44RoomBase* Room)
 {
     if (!Room || !Room->MonsterSpawnPoints) return;
@@ -332,7 +332,7 @@ TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<
     {
         if (!*Cls) continue;
         const AFF44RoomBase* CDO = Cls->GetDefaultObject<AFF44RoomBase>();
-        const int32 W = CDO ? FMath::Max(0, CDO->SpawnWeight) : 0; // 음수 방지
+        const int32 W = CDO ? FMath::Max(0, CDO->SpawnWeight) : 0;
         TotalWeight += W;
     }
 
@@ -341,7 +341,7 @@ TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<
         return Pool[FMath::RandRange(0, Pool.Num() - 1)];
     }
 
-    int32 Pick = FMath::RandRange(1, TotalWeight);
+    const int32 Pick = FMath::RandRange(1, TotalWeight);
     int32 Acc = 0;
 
     for (const TSubclassOf<AFF44RoomBase>& Cls : Pool)

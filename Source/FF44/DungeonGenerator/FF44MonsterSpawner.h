@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "MonsterSpawnInfo.h"
+#include "SpawnInfo.h"
 #include "FF44MonsterSpawner.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSpawnComplete);

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "MonsterSpawnInfo.h"
+#include "SpawnInfo.h"
 #include "FF44FloorManager.generated.h"
 
 class AFF44DungeonGenerator;
@@ -16,14 +16,17 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloorEvent, int32, FloorIndex);
 UCLASS()
 class FF44_API AFF44FloorManager : public AActor
 {
-	GENERATED_BODY()
-	
-public:	
-	AFF44FloorManager();
+    GENERATED_BODY()
+
+public:
+    AFF44FloorManager();
 
 protected:
     virtual void BeginPlay() override;
 
+    /* ===========================
+       Config (Class references)
+       =========================== */
 public:
     UPROPERTY(EditAnywhere, Category = "Flow|Classes")
     TSubclassOf<AFF44DungeonGenerator> DungeonGeneratorClass;
@@ -34,12 +37,18 @@ public:
     UPROPERTY(EditAnywhere, Category = "Flow|Classes")
     TSubclassOf<AFF44InteractableSpawner> InteractableSpawnerClass;
 
+    /* ===========================
+       Run settings
+       =========================== */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow|Seed")
     int32 BaseSeed = 0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow|Rules", meta = (ClampMin = "1"))
     int32 FloorsPerBossCycle = 5;
 
+    /* ===========================
+       Runtime state
+       =========================== */
     UPROPERTY(BlueprintReadOnly, Category = "Flow|State")
     int32 CurrentFloor = 1;
 
@@ -52,8 +61,10 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Flow|Markers")
     TArray<FInteractableSpawnInfo> CachedInteractableMarkers;
 
+    /* ===========================
+       Blueprint events
+       =========================== */
 public:
-    // 외부 이벤트(UI에서 바인딩)
     UPROPERTY(BlueprintAssignable, Category = "Flow|Events")
     FFloorEvent OnFloorStarted;
 
@@ -63,6 +74,9 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Flow|Events")
     FFloorEvent OnFloorEnded;
 
+    /* ===========================
+       Public API
+       =========================== */
 public:
     UFUNCTION(BlueprintCallable, Category = "Flow")
     void StartRun(int32 InBaseSeed, int32 StartFloor = 1);
@@ -70,7 +84,11 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Flow")
     void NextFloor();
 
-public:
+    /* ===========================
+       Internals
+       =========================== */
+private:
+    // Active actors (kept as UPROPERTY to prevent GC)
     UPROPERTY()
     AFF44DungeonGenerator* Dungeon = nullptr;
 
@@ -80,6 +98,16 @@ public:
     UPROPERTY()
     AFF44InteractableSpawner* InteractableSpawner = nullptr;
 
+    // Phase flags for parallel completion
+    bool bMonstersDone = false;
+    bool bInteractablesDone = false;
+
+    // Flow helpers
+    void StartFloorInternal();
+    void CleanupFloor();
+    void TryFinishFloorReady();
+
+    // Step handlers
     UFUNCTION()
     void HandleDungeonComplete();
 
@@ -89,15 +117,7 @@ public:
     UFUNCTION()
     void HandleInteractableSpawnComplete();
 
-    void StartFloorInternal();
-    void CleanupFloor();
+    // Inline helpers
     bool IsBossFloor() const { return (CurrentFloor % FloorsPerBossCycle) == 0; }
     int32 SeedForFloor() const { return ::HashCombine(::GetTypeHash(BaseSeed), ::GetTypeHash(CurrentFloor)); }
-
-    // 추가: 두 스텝의 완료 여부만 추적
-    bool bMonstersDone = false;
-    bool bInteractablesDone = false;
-
-    // 완료 체크용 헬퍼
-    void TryFinishFloorReady();
 };

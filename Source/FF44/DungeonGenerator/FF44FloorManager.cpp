@@ -32,6 +32,21 @@ void AFF44FloorManager::NextFloor()
     StartFloorInternal();
 }
 
+void AFF44FloorManager::StartFloorInternal()
+{
+    OnFloorStarted.Broadcast(CurrentFloor);
+
+    if (!DungeonGeneratorClass) return;
+
+    Dungeon = GetWorld()->SpawnActor<AFF44DungeonGenerator>(DungeonGeneratorClass);
+    if (!Dungeon) return;
+
+    Dungeon->bIsBossFloor = IsBossFloor();
+    // 필요한 경우: Dungeon->GenerationSeed = SeedForFloor();
+
+    Dungeon->OnDungeonComplete.AddDynamic(this, &AFF44FloorManager::HandleDungeonComplete);
+}
+
 void AFF44FloorManager::CleanupFloor()
 {
     if (Dungeon)
@@ -55,6 +70,9 @@ void AFF44FloorManager::CleanupFloor()
     bFloorReady = false;
     bMonstersDone = false;
     bInteractablesDone = false;
+
+    CachedMonsterMarkers.Reset();
+    CachedInteractableMarkers.Reset();
 }
 
 void AFF44FloorManager::TryFinishFloorReady()
@@ -64,31 +82,6 @@ void AFF44FloorManager::TryFinishFloorReady()
         bFloorReady = true;
         OnFloorReady.Broadcast(CurrentFloor);
     }
-}
-
-void AFF44FloorManager::StartFloorInternal()
-{
-    OnFloorStarted.Broadcast(CurrentFloor);
-
-    if (!DungeonGeneratorClass)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("FloorManager: DungeonGeneratorClass not set."));
-        return;
-    }
-
-    Dungeon = GetWorld()->SpawnActor<AFF44DungeonGenerator>(DungeonGeneratorClass);
-    if (!Dungeon)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("FloorManager: Failed to spawn DungeonGenerator."));
-        return;
-    }
-
-    Dungeon->bIsBossFloor = IsBossFloor();
-
-    // (선택) 시드 전달이 필요하면 Dungeon 쪽에 프로퍼티/세터 추가해서 SeedForFloor()를 넘겨주면 됨.
-    // Dungeon->GenerationSeed = SeedForFloor();
-
-    Dungeon->OnDungeonComplete.AddDynamic(this, &AFF44FloorManager::HandleDungeonComplete);
 }
 
 void AFF44FloorManager::HandleDungeonComplete()
@@ -106,7 +99,6 @@ void AFF44FloorManager::HandleDungeonComplete()
             MonsterSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleMonsterSpawnComplete);
         }
     }
-
     if (MonsterSpawner && CachedMonsterMarkers.Num() > 0)
     {
         MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers);
@@ -124,7 +116,6 @@ void AFF44FloorManager::HandleDungeonComplete()
             InteractableSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleInteractableSpawnComplete);
         }
     }
-
     if (InteractableSpawner && CachedInteractableMarkers.Num() > 0)
     {
         InteractableSpawner->SpawnFromMarkers(CachedInteractableMarkers, SeedForFloor() + 17);

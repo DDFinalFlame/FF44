@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "MonsterSpawnInfo.h"
+#include "SpawnInfo.h"
 #include "FF44InteractableSpawner.generated.h"
 
 class AFF44InteractableActor;

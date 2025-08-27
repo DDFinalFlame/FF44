@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MonsterSpawnInfo.generated.h"
+#include "SpawnInfo.generated.h"
 
 USTRUCT(BlueprintType)
 struct FMonsterSpawnInfo
