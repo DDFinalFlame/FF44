@@ -25,26 +25,34 @@ void AFF44InteractableSpawner::SpawnFromMarkers(const TArray<FInteractableSpawnI
     {
         const FInteractableSpawnInfo& Info = Markers[i];
 
-        const TArray<TSubclassOf<AFF44InteractableActor>>* Pool = TaggedPools.Find(Info.Tag);
-        if (!Pool) Pool = &DefaultPool;
+        if (const TSubclassOf<AFF44InteractableActor>* TagClass = TaggedPools.Find(Info.Tag))
+        {
+            if (*TagClass)
+            {
+                World->SpawnActor<AFF44InteractableActor>(*TagClass, Info.Transform);
+            }
 
-        const bool bRollNone = (NoneChance > 0.f) && (Rand.FRand() < NoneChance);
-        if (bRollNone && (bApplyNoneWhenPoolEmpty || (Pool->Num() > 0)))
+            continue;
+        }
+
+        if (NoneChance > 0.f && (Rand.FRand() < NoneChance))
         {
             continue;
         }
 
-        if (Pool->Num() == 0)
+        if (DefaultPool.Num() == 0)
         {
+            if (!bApplyNoneWhenPoolEmpty)
+            {
+                continue;
+            }
+
             continue;
         }
 
-        const int32 Idx = Rand.RandRange(0, Pool->Num() - 1);
-        TSubclassOf<AFF44InteractableActor> Picked = (*Pool)[Idx];
-        if (!*Picked)
-        {
-            continue;
-        }
+        const int32 PickIdx = Rand.RandRange(0, DefaultPool.Num() - 1);
+        TSubclassOf<AFF44InteractableActor> Picked = DefaultPool[PickIdx];
+        if (!*Picked) { continue; }
 
         World->SpawnActor<AFF44InteractableActor>(Picked, Info.Transform);
     }

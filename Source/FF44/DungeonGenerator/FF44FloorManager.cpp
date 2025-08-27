@@ -53,6 +53,17 @@ void AFF44FloorManager::CleanupFloor()
     }
 
     bFloorReady = false;
+    bMonstersDone = false;
+    bInteractablesDone = false;
+}
+
+void AFF44FloorManager::TryFinishFloorReady()
+{
+    if (bMonstersDone && bInteractablesDone && !bFloorReady)
+    {
+        bFloorReady = true;
+        OnFloorReady.Broadcast(CurrentFloor);
+    }
 }
 
 void AFF44FloorManager::StartFloorInternal()
@@ -85,6 +96,7 @@ void AFF44FloorManager::HandleDungeonComplete()
     if (!Dungeon) return;
 
     CachedMonsterMarkers = Dungeon->GetMonsterSpawnMarkers();
+    CachedInteractableMarkers = Dungeon->GetInteractableSpawnMarkers();
 
     if (MonsterSpawnerClass && !MonsterSpawner)
     {
@@ -95,21 +107,16 @@ void AFF44FloorManager::HandleDungeonComplete()
         }
     }
 
-    if (MonsterSpawner)
+    if (MonsterSpawner && CachedMonsterMarkers.Num() > 0)
     {
         MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers);
     }
     else
     {
-        HandleMonsterSpawnComplete();
+        bMonstersDone = true;
     }
-}
 
-void AFF44FloorManager::HandleMonsterSpawnComplete()
-{
-    const TArray<FInteractableSpawnInfo>& InterMarkers = Dungeon->GetInteractableSpawnMarkers();
-
-    if (!InteractableSpawner)
+    if (InteractableSpawnerClass && !InteractableSpawner)
     {
         InteractableSpawner = GetWorld()->SpawnActor<AFF44InteractableSpawner>(InteractableSpawnerClass);
         if (InteractableSpawner)
@@ -118,18 +125,26 @@ void AFF44FloorManager::HandleMonsterSpawnComplete()
         }
     }
 
-    if (InteractableSpawner)
+    if (InteractableSpawner && CachedInteractableMarkers.Num() > 0)
     {
-        InteractableSpawner->SpawnFromMarkers(InterMarkers, SeedForFloor() + 17); // Seed »ç¿ë!
+        InteractableSpawner->SpawnFromMarkers(CachedInteractableMarkers, SeedForFloor() + 17);
     }
     else
     {
-        HandleInteractableSpawnComplete();
+        bInteractablesDone = true;
     }
+
+    TryFinishFloorReady();
+}
+
+void AFF44FloorManager::HandleMonsterSpawnComplete()
+{
+    bMonstersDone = true;
+    TryFinishFloorReady();
 }
 
 void AFF44FloorManager::HandleInteractableSpawnComplete()
 {
-    bFloorReady = true;
-    OnFloorReady.Broadcast(CurrentFloor);
+    bInteractablesDone = true;
+    TryFinishFloorReady();
 }

@@ -307,10 +307,10 @@ void AFF44DungeonGenerator::CollectInteractableMarkersFromRoom(const AFF44RoomBa
 {
     if (!Room || !Room->InteractableSpawnPoints) return;
 
-    TArray<USceneComponent*> Children;
-    Room->InteractableSpawnPoints->GetChildrenComponents(false, Children);
+    TArray<USceneComponent*> Points;
+    Room->InteractableSpawnPoints->GetChildrenComponents(false, Points);
 
-    for (USceneComponent* C : Children)
+    for (USceneComponent* C : Points)
     {
         UArrowComponent* Arrow = Cast<UArrowComponent>(C);
         if (!Arrow) continue;

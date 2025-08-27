@@ -27,7 +27,7 @@ public:
     TArray<TSubclassOf<AFF44InteractableActor>> DefaultPool;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Pools")
-    TMap<FName, TArray<TSubclassOf<AFF44InteractableActor>>> TaggedPools;
+    TMap<FName, TSubclassOf<AFF44InteractableActor>> TaggedPools;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Rules", meta = (ClampMin = "0.0", ClampMax = "1.0"))
     float NoneChance = 0.0f;

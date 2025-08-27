@@ -49,6 +49,9 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Flow|Markers")
     TArray<FMonsterSpawnInfo> CachedMonsterMarkers;
 
+    UPROPERTY(BlueprintReadOnly, Category = "Flow|Markers")
+    TArray<FInteractableSpawnInfo> CachedInteractableMarkers;
+
 public:
     // 외부 이벤트(UI에서 바인딩)
     UPROPERTY(BlueprintAssignable, Category = "Flow|Events")
@@ -91,5 +94,10 @@ public:
     bool IsBossFloor() const { return (CurrentFloor % FloorsPerBossCycle) == 0; }
     int32 SeedForFloor() const { return ::HashCombine(::GetTypeHash(BaseSeed), ::GetTypeHash(CurrentFloor)); }
 
+    // 추가: 두 스텝의 완료 여부만 추적
+    bool bMonstersDone = false;
+    bool bInteractablesDone = false;
 
+    // 완료 체크용 헬퍼
+    void TryFinishFloorReady();
 };
