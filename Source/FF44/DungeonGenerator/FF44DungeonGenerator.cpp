@@ -41,7 +41,10 @@ void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
     }
 
     MonsterSpawnMarkers.Empty();
+    InteractableSpawnMarkers.Empty();
+
     CollectMonsterMarkersFromRoom(OutStarter);
+    CollectInteractableMarkersFromRoom(OutStarter);
 }
 
 void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
@@ -129,6 +132,7 @@ void AFF44DungeonGenerator::SpawnNextRoom()
     Exits.Append(NewExits);
 
     CollectMonsterMarkersFromRoom(LatestSpawnedRoom);
+    CollectInteractableMarkersFromRoom(LatestSpawnedRoom);
 
     if (RoomsToSpawn > 0)
     {
@@ -296,6 +300,26 @@ void AFF44DungeonGenerator::CollectMonsterMarkersFromRoom(const AFF44RoomBase* R
         Info.Tag = (Arrow->ComponentTags.Num() > 0) ? Arrow->ComponentTags[0] : NAME_None;
 
         MonsterSpawnMarkers.Add(Info);
+    }
+}
+
+void AFF44DungeonGenerator::CollectInteractableMarkersFromRoom(const AFF44RoomBase* Room)
+{
+    if (!Room || !Room->InteractableSpawnPoints) return;
+
+    TArray<USceneComponent*> Children;
+    Room->InteractableSpawnPoints->GetChildrenComponents(false, Children);
+
+    for (USceneComponent* C : Children)
+    {
+        UArrowComponent* Arrow = Cast<UArrowComponent>(C);
+        if (!Arrow) continue;
+
+        FInteractableSpawnInfo Info;
+        Info.Transform = Arrow->GetComponentTransform();
+        Info.Tag = (Arrow->ComponentTags.Num() > 0) ? Arrow->ComponentTags[0] : NAME_None;
+
+        InteractableSpawnMarkers.Add(Info);
     }
 }
 

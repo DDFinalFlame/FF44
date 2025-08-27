@@ -20,8 +20,8 @@ AFF44RoomBase::AFF44RoomBase()
     Objects = CreateDefaultSubobject<USceneComponent>(TEXT("Objects"));
     Objects->SetupAttachment(RootComponent);
 
-    InteractablePoints = CreateDefaultSubobject<USceneComponent>(TEXT("InteractablePoints"));
-    InteractablePoints->SetupAttachment(RootComponent);
+    InteractableSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("InteractableSpawnPoints"));
+    InteractableSpawnPoints->SetupAttachment(RootComponent);
 
     MonsterSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("MonsterSpawnPoints"));
     MonsterSpawnPoints->SetupAttachment(RootComponent);

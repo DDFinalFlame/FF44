@@ -4,6 +4,7 @@
 #include "DungeonGenerator/FF44FloorManager.h"
 #include "DungeonGenerator/FF44DungeonGenerator.h"
 #include "DungeonGenerator/FF44MonsterSpawner.h"
+#include "DungeonGenerator/FF44InteractableSpawner.h"
 #include "Kismet/GameplayStatics.h"
 
 AFF44FloorManager::AFF44FloorManager()
@@ -45,6 +46,12 @@ void AFF44FloorManager::CleanupFloor()
         MonsterSpawner = nullptr;
     }
 
+    if (InteractableSpawner)
+    {
+        InteractableSpawner->Destroy();
+        InteractableSpawner = nullptr;
+    }
+
     bFloorReady = false;
 }
 
@@ -79,37 +86,49 @@ void AFF44FloorManager::HandleDungeonComplete()
 
     CachedMonsterMarkers = Dungeon->GetMonsterSpawnMarkers();
 
-    if (!MonsterSpawnerClass)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("FloorManager: MonsterSpawnerClass not set."));
-        
-        // 스포너가 없어도 게임을 진행하고 싶다면 아래 두 줄 유지
-        bFloorReady = true;
-        OnFloorReady.Broadcast(CurrentFloor);
-
-        return;
-    }
-
-    if (!MonsterSpawner)
+    if (MonsterSpawnerClass && !MonsterSpawner)
     {
         MonsterSpawner = GetWorld()->SpawnActor<AFF44MonsterSpawner>(MonsterSpawnerClass);
-        if (!MonsterSpawner)
+        if (MonsterSpawner)
         {
-            UE_LOG(LogTemp, Warning, TEXT("FloorManager: Failed to spawn MonsterSpawner."));
-            
-            // 스포너가 없어도 게임을 진행하고 싶다면 아래 두 줄 유지
-            bFloorReady = true;
-            OnFloorReady.Broadcast(CurrentFloor);
-
-            return;
+            MonsterSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleMonsterSpawnComplete);
         }
-        MonsterSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleMonsterSpawnComplete);
     }
 
-    MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers);
+    if (MonsterSpawner)
+    {
+        MonsterSpawner->SpawnFromMarkers(CachedMonsterMarkers);
+    }
+    else
+    {
+        HandleMonsterSpawnComplete();
+    }
 }
 
 void AFF44FloorManager::HandleMonsterSpawnComplete()
+{
+    const TArray<FInteractableSpawnInfo>& InterMarkers = Dungeon->GetInteractableSpawnMarkers();
+
+    if (!InteractableSpawner)
+    {
+        InteractableSpawner = GetWorld()->SpawnActor<AFF44InteractableSpawner>(InteractableSpawnerClass);
+        if (InteractableSpawner)
+        {
+            InteractableSpawner->OnSpawnComplete.AddDynamic(this, &AFF44FloorManager::HandleInteractableSpawnComplete);
+        }
+    }
+
+    if (InteractableSpawner)
+    {
+        InteractableSpawner->SpawnFromMarkers(InterMarkers, SeedForFloor() + 17); // Seed 사용!
+    }
+    else
+    {
+        HandleInteractableSpawnComplete();
+    }
+}
+
+void AFF44FloorManager::HandleInteractableSpawnComplete()
 {
     bFloorReady = true;
     OnFloorReady.Broadcast(CurrentFloor);

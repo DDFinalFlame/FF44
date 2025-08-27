@@ -63,8 +63,14 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Markers")
 	TArray<FMonsterSpawnInfo> MonsterSpawnMarkers;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Dungeon|Markers")
+	TArray<FInteractableSpawnInfo> InteractableSpawnMarkers;
+
 	UFUNCTION(BlueprintCallable, Category = "Dungeon|Markers")
 	const TArray<FMonsterSpawnInfo>& GetMonsterSpawnMarkers() const { return MonsterSpawnMarkers; }
+
+	UFUNCTION(BlueprintCallable, Category = "Dungeon|Markers")
+	const TArray<FInteractableSpawnInfo>& GetInteractableSpawnMarkers() const { return InteractableSpawnMarkers; }
 
 	UPROPERTY(BlueprintReadOnly, Category = "Dungeon")
 	bool bDungeonCompleted = false;
@@ -102,6 +108,7 @@ private:
 	bool IsRoomOverlapping(AFF44RoomBase* Room) const;
 
 	void CollectMonsterMarkersFromRoom(const AFF44RoomBase* Room);
+	void CollectInteractableMarkersFromRoom(const AFF44RoomBase* Room);
 
 	TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
 };

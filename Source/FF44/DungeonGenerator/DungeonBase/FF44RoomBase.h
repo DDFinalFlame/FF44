@@ -27,7 +27,7 @@ public:
     USceneComponent* Objects;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
-    USceneComponent* InteractablePoints;
+    USceneComponent* InteractableSpawnPoints;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* MonsterSpawnPoints;

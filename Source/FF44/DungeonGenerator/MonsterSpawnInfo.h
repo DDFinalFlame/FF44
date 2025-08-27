@@ -16,3 +16,15 @@ struct FMonsterSpawnInfo
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName Tag = NAME_None;
 };
+
+USTRUCT(BlueprintType)
+struct FInteractableSpawnInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FTransform Transform;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName Tag = NAME_None;
+};

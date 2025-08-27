@@ -9,6 +9,7 @@
 
 class AFF44DungeonGenerator;
 class AFF44MonsterSpawner;
+class AFF44InteractableSpawner;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloorEvent, int32, FloorIndex);
 
@@ -29,6 +30,9 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Flow|Classes")
     TSubclassOf<AFF44MonsterSpawner> MonsterSpawnerClass;
+
+    UPROPERTY(EditAnywhere, Category = "Flow|Classes")
+    TSubclassOf<AFF44InteractableSpawner> InteractableSpawnerClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow|Seed")
     int32 BaseSeed = 0;
@@ -70,11 +74,17 @@ public:
     UPROPERTY()
     AFF44MonsterSpawner* MonsterSpawner = nullptr;
 
+    UPROPERTY()
+    AFF44InteractableSpawner* InteractableSpawner = nullptr;
+
     UFUNCTION()
     void HandleDungeonComplete();
 
     UFUNCTION()
     void HandleMonsterSpawnComplete();
+
+    UFUNCTION()
+    void HandleInteractableSpawnComplete();
 
     void StartFloorInternal();
     void CleanupFloor();
