@@ -5,6 +5,8 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Dodge, "Ability.Player.Dodge")
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Attack, "Ability.Player.Attack");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Death, "Ability.Player.Death");
 
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Move_Walk, "State.Player.Move.Walk");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Move_Run, "State.Player.Move.Run");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Weapon_Equip, "State.Player.Weapon.Equip");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Weapon_UnEquip, "State.Player.Weapon.UnEquip");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_HitReacting, "State.Player.HitReacting");

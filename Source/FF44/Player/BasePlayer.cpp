@@ -161,13 +161,15 @@ void ABasePlayer::BeginPlay()
 		return;
 	}
 
+	// Delegate Bind
+	OnPlayerMoveChanged.AddDynamic(this, &ABasePlayer::UpdateMoveType);
 }
 
 void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	CurrentInputDirection = 0;
+	CurrentInputDirection = 0;	
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -292,15 +294,15 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 		AddMovementInput(RightDirection, MovementVector.X);
 
 		if ((GetMovementComponent()->Velocity.Length() > 0.01f) && !IsMontagePlaying())
-			IsMove = true;
+			SetDoInputMoving(true);
 		else
-			IsMove = false;
+			SetDoInputMoving(false);
 	}
 }
 
 void ABasePlayer::StopMove()
 {
-	IsMove = false;
+	SetDoInputMoving(false);
 }
 
 void ABasePlayer::Look(const FInputActionValue& Value)
@@ -327,10 +329,8 @@ void ABasePlayer::Run(const FInputActionValue& Value)
 	else
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 
-	if (IsMove)
-		IsSprinting = true;
-	else
-		IsSprinting = false;
+	if (GetVelocity().Length() > 0.f)
+		SetEnableSprinting(true);
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
@@ -342,7 +342,7 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 	else
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 
-	IsSprinting = false;
+	SetEnableSprinting(false);
 }
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
@@ -435,16 +435,53 @@ void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocati
 	);
 }
 
+void ABasePlayer::UpdateMoveType(bool _OldMoving, bool _OldSprinting)
+{
+	if (_OldMoving == DoInputMoving && _OldSprinting == EnableSprinting) return;
+
+	if (DoInputMoving)
+	{
+		if (EnableSprinting)
+		{
+			AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Move_Run);
+			AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Walk);
+		}
+		else
+		{
+			AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Move_Walk);
+			AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Run);
+		}
+	}
+	else
+	{
+		AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Walk);
+		AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Run);
+	}
+}
+
 bool ABasePlayer::IsMontagePlaying() const
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if(AnimInstance && AnimInstance->IsAnyMontagePlaying())
+	if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
 		return true;
 
 	return false;
 }
 
+void ABasePlayer::SetDoInputMoving(bool _NewValue)
+{
+	auto OldValue = DoInputMoving;
+	DoInputMoving = _NewValue; 
+	OnPlayerMoveChanged.Broadcast(OldValue, EnableSprinting);
+}
+
+void ABasePlayer::SetEnableSprinting(bool _NewValue)
+{
+	auto OldValue = EnableSprinting;
+	EnableSprinting = _NewValue;
+	OnPlayerMoveChanged.Broadcast(DoInputMoving, OldValue);
+}
 void ABasePlayer::PlayerDead()
 {
 	IsDead = true;

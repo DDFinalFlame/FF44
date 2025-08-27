@@ -9,6 +9,8 @@ namespace PlayerTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Death);
 
     // 상태정보
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Move_Walk);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Move_Run);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Weapon_Equip);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Weapon_UnEquip);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_HitReacting);

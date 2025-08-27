@@ -152,7 +152,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual int GetCurrentInputDirection() const { return CurrentInputDirection; }
 
-
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -183,19 +182,30 @@ public:
 	bool IsDead = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	bool IsSprinting = false;
+	bool DoInputMoving = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	bool IsMove = false;
+	bool EnableSprinting = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	float CurrentNoiseLevel = 0.f;
 
-private:
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerMoveChanged, bool, DoInputMoving, bool, EnableSprinting);
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerMoveChanged OnPlayerMoveChanged;
+
+protected:
 	UFUNCTION()
 	void CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity);
 
+	UFUNCTION()
+	void UpdateMoveType(bool _Moving, bool _Sprinting);
+
 	bool IsMontagePlaying() const;
+
+	void SetDoInputMoving(bool _NewValue);
+	void SetEnableSprinting(bool _NewValue);
+
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "State")
