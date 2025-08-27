@@ -16,6 +16,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // Class
+#include "Data/PlayerTags.h"
 #include "BasePlayerAttributeSet.h"
 #include "BasePlayerController.h"
 #include "BasePlayerState.h"
@@ -113,17 +114,7 @@ void ABasePlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Definition Load
-	if (!PlayerDefinition.IsValid())
-		PlayerDefinition.LoadSynchronous();
-
-	UPlayerDefinition* def = PlayerDefinition.Get();
-
-	if(!def)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
-		return;
-	}
+	MetaDataSetup();
 
 	// 나중에 첫 시작에서만 불러오도록 바꾸기
 	// Level 옮길 시에 중복되어 들어갈 수 있음.
@@ -138,16 +129,8 @@ void ABasePlayer::BeginPlay()
 		for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
 			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
 
-		if (AttributeSetClass)
-		{
-			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
-			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
-
-			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
-		}
-
 		// 초기 Ability Tag 설정
-		AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
+		AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_Equip);
 	}
 
 	// Weapon를 월드에 생성 후 바로 장착
@@ -169,13 +152,15 @@ void ABasePlayer::BeginPlay()
 		FRotator ControlRotation = PlayerController->GetControlRotation();
 		ControlRotation.Pitch = -10.f;
 
-		PlayerController->InitUI(AbilitySystem);
+		if (AbilitySystem)
+			PlayerController->InitUI(AbilitySystem);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
 		return;
 	}
+
 }
 
 void ABasePlayer::Tick(float DeltaTime)
@@ -192,6 +177,30 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 
 }
 
+void ABasePlayer::MetaDataSetup()
+{
+	// Definition Load
+	if (!PlayerDefinition.IsValid())
+		PlayerDefinition.LoadSynchronous();
+
+	UPlayerDefinition* def = PlayerDefinition.Get();
+
+	if (!def)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
+		return;
+	}
+
+	if (AbilitySystem&&AttributeSetClass)
+	{
+		auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
+		AttributeSet->InitFromMetaDataTable(def->PlayerMetaDataTable);
+
+		AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+	}
+
+}
+
 void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if(UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -200,6 +209,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		if(MoveAction)
 		{
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABasePlayer::Move);
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ABasePlayer::StopMove);
 		}
 		if(LookAction)
 		{
@@ -280,7 +290,17 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 
  		AddMovementInput(FowardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+
+		if ((GetMovementComponent()->Velocity.Length() > 0.01f) && !IsMontagePlaying())
+			IsMove = true;
+		else
+			IsMove = false;
 	}
+}
+
+void ABasePlayer::StopMove()
+{
+	IsMove = false;
 }
 
 void ABasePlayer::Look(const FInputActionValue& Value)
@@ -306,6 +326,11 @@ void ABasePlayer::Run(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = EquipRunSpeed;
 	else
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+	if (IsMove)
+		IsSprinting = true;
+	else
+		IsSprinting = false;
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
@@ -316,6 +341,8 @@ void ABasePlayer::StopRun(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = EquipWalkSpeed;
 	else
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+	IsSprinting = false;
 }
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
@@ -373,19 +400,9 @@ void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocati
 
 	if (CurrentSpeed <= 0.f)
 	{
-		IsInputMove = false;
 		CurrentNoiseLevel = 0.f;
 		return;
 	}
-
-	UAISense_Hearing::ReportNoiseEvent(
-		GetWorld(),
-		GetActorLocation(),   // NoiseLocation
-		CurrentNoiseLevel,    // Loudness(0~1 권장)
-		this,                 // Instigator(보통 자기 자신)
-		1000.f,               // MaxRange(0이면 무제한, 센서 범위로 제한)
-		FName("Footstep")     // Tag
-	);
 
 	if (FMath::IsNearlyEqual(OldSpeed, CurrentSpeed)) return;
 
@@ -400,15 +417,22 @@ void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocati
 
 	if (IsMontagePlaying())
 	{
-		if (AbilitySystem->HasMatchingGameplayTag(
-			FGameplayTag::RequestGameplayTag(FName("Player.Attack"))))
+		CurrentNoiseLevel = 0.f;
+
+		if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Attack))
 			CurrentNoiseLevel = 1.0f;
-		else if (AbilitySystem->HasMatchingGameplayTag(
-			FGameplayTag::RequestGameplayTag(FName("Player.Dodge"))))
+		else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dodge))
 			CurrentNoiseLevel = 0.8f;
 	}
-	else
-		IsInputMove = true;
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),   // NoiseLocation
+		CurrentNoiseLevel,    // Loudness(0~1 권장)
+		this,                 // Instigator(보통 자기 자신)
+		1000.f,               // MaxRange(0이면 무제한, 센서 범위로 제한)
+		FName("Footstep")     // Tag
+	);
 }
 
 bool ABasePlayer::IsMontagePlaying() const

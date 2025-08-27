@@ -104,8 +104,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	TSoftObjectPtr<UPlayerDefinition> PlayerDefinition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	UDataTable* PlayerMetaDataTable = nullptr;
+private:
+	void MetaDataSetup();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -158,6 +158,7 @@ protected:
 
 	// Movement Actions
 	virtual void Move(const FInputActionValue& Value);
+	virtual void StopMove();
 	virtual void Look(const FInputActionValue& Value);
 	virtual void Run(const FInputActionValue& Value);
 	virtual void StopRun(const FInputActionValue& Value);
@@ -182,7 +183,10 @@ public:
 	bool IsDead = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	bool IsInputMove = false;
+	bool IsSprinting = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool IsMove = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	float CurrentNoiseLevel = 0.f;

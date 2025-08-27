@@ -2,6 +2,7 @@
 #include "GameplayEffectExtension.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Data/PlayerTags.h"
 
 UBasePlayerAttributeSet::UBasePlayerAttributeSet()
 {
@@ -27,6 +28,11 @@ void UBasePlayerAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& _Ol
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBasePlayerAttributeSet, MaxStamina, _OldValue);
 }
 
+void UBasePlayerAttributeSet::OnRep_RegenRateStamina(const FGameplayAttributeData& _OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBasePlayerAttributeSet, RegenRateStamina, _OldValue);
+}
+
 void UBasePlayerAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& _OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBasePlayerAttributeSet, AttackPower, _OldValue);
@@ -45,6 +51,7 @@ void UBasePlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, MaxHP, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, CurrentStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, RegenRateStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBasePlayerAttributeSet, DefencePoint, COND_None, REPNOTIFY_Always);
 }
@@ -65,10 +72,10 @@ void UBasePlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectMod
 			if (Owner)
 			{
 				FGameplayEventData EventData;
-				EventData.EventTag = TAG_Player_Event_Death();
+				EventData.EventTag = PlayerTags::Event_Player_Death;
 				EventData.Instigator = Owner;
 
-				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Owner, TAG_Player_Event_Death(), EventData);
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Owner, PlayerTags::Event_Player_Death, EventData);
 			}
 		}
 	}
