@@ -53,6 +53,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystemComponent")
 	UAbilitySystemComponent* AbilitySystem;
 
+	struct FGameplayEffectContextHandle EffectContext;
+
 	// AbttributeSet
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attribute")
 	TSubclassOf<UBasePlayerAttributeSet> AttributeSetClass;
@@ -71,6 +73,9 @@ protected:
 	TSubclassOf<UGameplayAbility> HitAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> DrinkPotionAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DodgeAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
@@ -82,9 +87,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AbilityTag")
 	FGameplayTag UnEquipWeaponTag;
 
+	// Effects
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TSubclassOf<UGameplayEffect> StaminaRegenEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TSubclassOf<UGameplayEffect> StaminaRunEffect;
+
+
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
-
+	
+protected:
+	virtual void InitializeAbilities();
+	virtual void InitializeEffects();
+	virtual void InitializeGameplayTags();
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///										Cameras										///

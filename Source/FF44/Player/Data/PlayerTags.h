@@ -27,4 +27,7 @@ namespace PlayerTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Death);
 
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Monster_Hit);
+
+    // Stat ฐüทร
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Stat_Player_Stamina_RegenRate);
 }

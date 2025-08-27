@@ -22,3 +22,5 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Hit, "Event.Player.Hit");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Death, "Event.Player.Death");
 
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Monster_Hit, "Event.Monster.Hit");
+
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Stat_Player_Stamina_RegenRate, "Stat.Player.Stamina.RegenRate");

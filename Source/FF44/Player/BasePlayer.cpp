@@ -116,22 +116,11 @@ void ABasePlayer::BeginPlay()
 
 	MetaDataSetup();
 
-	// 나중에 첫 시작에서만 불러오도록 바꾸기
-	// Level 옮길 시에 중복되어 들어갈 수 있음.
-	if (AbilitySystem)
-	{
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+	InitializeAbilities();
+	InitializeEffects();
+	InitializeGameplayTags();
 
-		for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
-			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
 
-		// 초기 Ability Tag 설정
-		AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_Equip);
-	}
 
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
@@ -177,6 +166,60 @@ void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AAc
 										bool bFromSweep, const FHitResult& SweepResult)
 {
 
+}
+
+void ABasePlayer::InitializeAbilities()
+{
+	if (!AbilitySystem) return;
+
+	// 나중에 첫 시작에서만 불러오도록 바꾸기
+	// Level 옮길 시에 중복되어 들어갈 수 있음.
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+
+	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
+}
+
+void ABasePlayer::InitializeEffects()
+{
+	if (!AbilitySystem) return;
+
+	EffectContext = AbilitySystem->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	if (StaminaRegenEffect)
+	{
+		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaRegenEffect, 1, EffectContext);
+		if (Spec.IsValid())
+		{
+			Spec.Data->SetSetByCallerMagnitude(
+				PlayerTags::Stat_Player_Stamina_RegenRate,
+				AbilitySystem->GetSet<UBasePlayerAttributeSet>()->GetRegenRateStamina());
+
+			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+
+	if(StaminaRunEffect)
+	{
+		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaRunEffect, 1, EffectContext);
+		if (Spec.IsValid())
+		{
+			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+}
+
+void ABasePlayer::InitializeGameplayTags()
+{
+	if (!AbilitySystem) return;
+
+	// 초기 Ability Tag 설정
+	AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_Equip);	
 }
 
 void ABasePlayer::MetaDataSetup()
