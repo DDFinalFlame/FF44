@@ -17,6 +17,7 @@
 // Class
 #include "Weapon/BaseWeapon.h"
 #include "BasePlayerAttributeSet.h"
+#include "Perception/AISense_Hearing.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -275,6 +276,15 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 void ABasePlayer::Run(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),   // NoiseLocation
+		1.0f,                 // Loudness(0~1 권장)
+		this,                 // Instigator(보통 자기 자신)
+		0.f,                  // MaxRange(0이면 무제한, 센서 범위로 제한)
+		FName("Footstep")     // Tag
+	);
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)

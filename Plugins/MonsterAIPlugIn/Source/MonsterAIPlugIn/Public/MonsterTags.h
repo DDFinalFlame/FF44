@@ -16,6 +16,8 @@ namespace MonsterTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_NoPawnCollision);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Stunned);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Assembling);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dying);
+    
 
 
     // 이벤트 관련 신호
@@ -35,4 +37,6 @@ namespace MonsterTags
 
     //Cue 태그
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(GC_Impact_Hit);
+
+
 }

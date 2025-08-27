@@ -2,8 +2,8 @@
 #include "EnemyRotationComponent.h"
 #include "MonsterAttributeSet.h"
 #include "GAS/EnemyAttributeSet.h"
-#include "MonsterDefinition.h"
-#include "MonsterStatRow.h"
+#include "Data/MonsterDefinition.h"
+#include "Data/MonsterStatRow.h"
 #include "Weapon/EnemyBaseWeapon.h"
 
 ABaseEnemy::ABaseEnemy()

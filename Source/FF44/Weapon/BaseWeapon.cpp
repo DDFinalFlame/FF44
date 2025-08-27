@@ -6,7 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // Includes
-#include "MonsterCharacter.h"
+#include "Monster/MonsterCharacter.h"
 #include "Player/BasePlayer.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "DrawDebugHelpers.h" 

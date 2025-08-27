@@ -12,6 +12,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_AttackRecover, "State.AttackRecover");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_NoPawnCollision, "State.NoPawnCollision");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Stunned, "State.Stunned");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Assembling, "State.Assembling");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Dying, "State.Dying");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Monster_Hit, "Event.Monster.Hit");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Monster_Death, "Event.Monster.Death");
@@ -26,4 +27,5 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_MoveSpeed, "Data.MoveSpeed");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Defense, "Data.Defense");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Impact_Hit, "GameplayCue.Impact.Hit");
+
 
