@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
+#include "NavigationSystem.h"
 
 AFF44DungeonGenerator::AFF44DungeonGenerator()
 {
@@ -281,6 +282,11 @@ void AFF44DungeonGenerator::PlaceFloorGoalAndFinish()
 
     bDungeonCompleted = true;
     OnDungeonComplete.Broadcast();
+
+    if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld()))
+    {
+        NavSys->Build();
+    }
 }
 
 void AFF44DungeonGenerator::CollectMonsterMarkersFromRoom(const AFF44RoomBase* Room)

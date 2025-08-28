@@ -17,9 +17,6 @@ AFF44RoomBase::AFF44RoomBase()
     Walls = CreateDefaultSubobject<USceneComponent>(TEXT("Walls"));
     Walls->SetupAttachment(RootComponent);
 
-    Objects = CreateDefaultSubobject<USceneComponent>(TEXT("Objects"));
-    Objects->SetupAttachment(RootComponent);
-
     InteractableSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("InteractableSpawnPoints"));
     InteractableSpawnPoints->SetupAttachment(RootComponent);
 
@@ -39,6 +36,13 @@ AFF44RoomBase::AFF44RoomBase()
     Bounds->SetCollisionResponseToAllChannels(ECR_Ignore);
     Bounds->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Overlap);
     Bounds->SetGenerateOverlapEvents(true);
+
+    NavBounds = CreateDefaultSubobject<UBoxComponent>(TEXT("NavBounds"));
+    NavBounds->SetupAttachment(OverlapFolder);
+    NavBounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    NavBounds->SetCollisionResponseToAllChannels(ECR_Ignore);
+    NavBounds->SetCanEverAffectNavigation(true);
+
 }
 
 void AFF44RoomBase::GetFloorMeshes(TArray<USceneComponent*>& OutFloors) const

@@ -24,9 +24,6 @@ public:
     USceneComponent* Walls;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
-    USceneComponent* Objects;
-
-    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* InteractableSpawnPoints;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
@@ -41,6 +38,9 @@ public:
 public:
     UPROPERTY(VisibleAnywhere, Category = "Room|Collision")
     UBoxComponent* Bounds;
+
+    UPROPERTY(VisibleAnywhere, Category = "Room|Collision")
+    UBoxComponent* NavBounds;
 
     UPROPERTY(EditDefaultsOnly, Category = "Room|Meta")
     FName RoomTypeTag;
