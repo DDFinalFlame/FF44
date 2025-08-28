@@ -59,6 +59,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attribute")
 	TSubclassOf<UBasePlayerAttributeSet> AttributeSetClass;
 
+	class UBasePlayerAttributeSet* BaseAttribute;
+
 	// Abilities
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> EquipWeaponAbility;
@@ -176,7 +178,7 @@ protected:
 	virtual void Move(const FInputActionValue& Value);
 	virtual void StopMove();
 	virtual void Look(const FInputActionValue& Value);
-	virtual void Run(const FInputActionValue& Value);
+	virtual void Running(const FInputActionValue& Value);
 	virtual void StopRun(const FInputActionValue& Value);
 	virtual void Dodge(const FInputActionValue& Value);
 
@@ -235,18 +237,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Value											///
 ///////////////////////////////////////////////////////////////////////////////////////////
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
-	float UnEquipWalkSpeed = 150.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
-	float UnEquipRunSpeed = 650.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
-	float EquipWalkSpeed = 100.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Value")
-	float EquipRunSpeed = 600.f;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////

@@ -24,26 +24,12 @@
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
-	// 1) 가장 신뢰되는 경로: ASC에 등록된 AttributeSet에서 읽기
-	const UBasePlayerAttributeSet* FromASC = nullptr;
-	if (AbilitySystem)
+	if (BaseAttribute)
 	{
-		FromASC = AbilitySystem->GetSet<UBasePlayerAttributeSet>();
-		if (FromASC)
-		{
-			const float AP = FromASC->GetAttackPower();
-			return FMath::IsFinite(AP) ? AP : 0.f;
-		}
-	}
-
-	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
-	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
-	{
-		const float AP = Attribute->GetAttackPower();
+		const float AP = BaseAttribute->GetAttackPower();
 		return FMath::IsFinite(AP) ? AP : 0.f;
 	}
 
-	// 3) 최종 폴백
 	return 0.f;
 }
 
@@ -120,8 +106,6 @@ void ABasePlayer::BeginPlay()
 	InitializeEffects();
 	InitializeGameplayTags();
 
-
-
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
 	if (Weapon)
@@ -159,6 +143,16 @@ void ABasePlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CurrentInputDirection = 0;	
+
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Run))
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetRunSpeed();
+	}
+	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Walk))
+	{
+		if (GetCharacterMovement()->Velocity.Length() < BaseAttribute->GetWalkSpeed())
+			GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetWalkSpeed();
+	}
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -173,7 +167,7 @@ void ABasePlayer::InitializeAbilities()
 	if (!AbilitySystem) return;
 
 	// 나중에 첫 시작에서만 불러오도록 바꾸기
-	// Level 옮길 시에 중복되어 들어갈 수 있음.
+	// Level 옮길 시에 중복되어 들어갈 수 있음.		
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
@@ -198,7 +192,7 @@ void ABasePlayer::InitializeEffects()
 		{
 			Spec.Data->SetSetByCallerMagnitude(
 				PlayerTags::Stat_Player_Stamina_RegenRate,
-				AbilitySystem->GetSet<UBasePlayerAttributeSet>()->GetRegenRateStamina());
+				BaseAttribute->GetRegenRateStamina());
 
 			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 		}
@@ -236,12 +230,12 @@ void ABasePlayer::MetaDataSetup()
 		return;
 	}
 
-	if (AbilitySystem&&AttributeSetClass)
+	if (AbilitySystem && AttributeSetClass)
 	{
-		auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
-		AttributeSet->InitFromMetaDataTable(def->PlayerMetaDataTable);
+		BaseAttribute = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);
+		BaseAttribute->InitFromMetaDataTable(def->PlayerMetaDataTable);
 
-		AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+		AbilitySystem->AddAttributeSetSubobject(BaseAttribute);
 	}
 
 }
@@ -262,7 +256,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		}
 		if(SprintAction)
 		{
-			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABasePlayer::Run);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Ongoing, this, &ABasePlayer::Running);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABasePlayer::StopRun);
 		}
 		if(DodgeAction)
@@ -363,14 +357,15 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 	}
 }
 
-void ABasePlayer::Run(const FInputActionValue& Value)
+void ABasePlayer::Running(const FInputActionValue& Value)
 {
-	if (AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
-		GetCharacterMovement()->MaxWalkSpeed = UnEquipRunSpeed;
-	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
-		GetCharacterMovement()->MaxWalkSpeed = EquipRunSpeed;
-	else
-		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+	if (!BaseAttribute) return;
+
+	if (BaseAttribute->GetCurrentStamina() <= 0.f)
+	{
+		SetEnableSprinting(false);
+		return;
+	}
 
 	if (GetVelocity().Length() > 0.f)
 		SetEnableSprinting(true);
@@ -378,13 +373,6 @@ void ABasePlayer::Run(const FInputActionValue& Value)
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
 {
-	if (AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
-		GetCharacterMovement()->MaxWalkSpeed = UnEquipWalkSpeed;
-	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
-		GetCharacterMovement()->MaxWalkSpeed = EquipWalkSpeed;
-	else
-		GetCharacterMovement()->MaxWalkSpeed = 0.f;
-
 	SetEnableSprinting(false);
 }
 
@@ -451,11 +439,11 @@ void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocati
 
 	if(AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
 	{
-		CurrentNoiseLevel = CurrentSpeed / (UnEquipRunSpeed + 200.f);
+		CurrentNoiseLevel = CurrentSpeed / (BaseAttribute->GetRunSpeed() + 200.f);
 	}
 	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
 	{
-		CurrentNoiseLevel = CurrentSpeed / (EquipRunSpeed);
+		CurrentNoiseLevel = CurrentSpeed / (BaseAttribute->GetRunSpeed());
 	}
 
 	if (IsMontagePlaying())
