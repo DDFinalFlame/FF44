@@ -75,13 +75,13 @@ protected:
 	TSubclassOf<UGameplayAbility> HitAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
-	TSubclassOf<UGameplayAbility> DrinkPotionAbility;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DodgeAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DeathAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> PotionAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AbilityTag")
 	FGameplayTag EquipWeaponTag;
@@ -164,6 +164,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* ItemSlot_1Action;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
 	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
 
@@ -186,6 +189,7 @@ protected:
 	virtual void Interact(const FInputActionValue& Value);
 	virtual void LockOn(const FInputActionValue& Value);
 	virtual void ToggleCombat(const FInputActionValue& Value);
+	virtual void ItemSlot_1(const FInputActionValue& Value);
 
 	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);

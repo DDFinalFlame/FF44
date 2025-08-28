@@ -172,6 +172,7 @@ void ABasePlayer::InitializeAbilities()
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(PotionAbility));
 
 	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
@@ -290,6 +291,10 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		{
 			EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ABasePlayer::Skill);
 		}
+		if (ItemSlot_1Action)
+		{
+			EnhancedInputComponent->BindAction(ItemSlot_1Action, ETriggerEvent::Triggered, this, &ABasePlayer::ItemSlot_1);
+		}
 	}
 	else
 	{
@@ -400,6 +405,16 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 		AbilitySystem->TryActivateAbilityByClass(UnEquipWeaponAbility);
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
 		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
+}
+
+void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
+{
+	if (!AbilitySystem) return;
+
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip)) return;
+
+	// 우선 Potion으로
+	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
 }
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
