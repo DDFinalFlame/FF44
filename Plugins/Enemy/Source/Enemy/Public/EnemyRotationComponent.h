@@ -17,7 +17,10 @@ protected:
 	AActor* TargetActor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bShouldRotate = false;
+	FVector TargetLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bShouldRotate = true;
 
 	/* 회전 속도 ( 1초에 180도 회전 )**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rotation")
@@ -27,8 +30,10 @@ public:
 	UEnemyRotationComponent();
 
 public:
-	FORCEINLINE void SetTargetActor(AActor* InActor) { TargetActor = InActor; }
+	FORCEINLINE void SetTargetLocation(const FVector& InLocation) { TargetLocation = InLocation; }
 	FORCEINLINE void ToggleShouldRotate(const bool bRotate) { bShouldRotate = bRotate; }
+	/* WILL BE DEPRECATED **/
+	FORCEINLINE void SetTargetActor(AActor* InActor) { TargetActor = InActor; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -36,5 +41,7 @@ protected:
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+private:
+	bool IsVectorValidForUse(const FVector& Vec, float Tolerance = KINDA_SMALL_NUMBER);
 
 };

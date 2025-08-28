@@ -14,14 +14,4 @@ void UAnimNotify_EnemyDeathEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSe
     {
         Enemy->StartDissolve();
     }
-
-    //// Montage ∏ÿ√ﬂ±‚
-    //if (UAnimInstance* AnimInst = MeshComp->GetAnimInstance())
-    //{
-    //    if (UAnimMontage* CurrentMontage = AnimInst->GetCurrentActiveMontage())
-    //    {
-    //        AnimInst->Montage_Stop(0.0f, CurrentMontage); // ¡ÔΩ√ ∏ÿ√„
-    //    }
-
-    //}
 }

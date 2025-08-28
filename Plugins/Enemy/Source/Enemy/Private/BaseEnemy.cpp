@@ -218,8 +218,12 @@ void ABaseEnemy::OnDeath()
 	{
 		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+
+	/* Rotation 중지 **/
+	RotationComponent->ToggleShouldRotate(false);
 }
 
+// 사용하지 않고 있음. Iron Asset의 Ragdoll 문제
 void ABaseEnemy::EndDeath()
 {
 	FTransform MeshTransform = GetMesh()->GetComponentTransform();

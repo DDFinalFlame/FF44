@@ -26,6 +26,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	if (ControlledEnemy->BehaviorTree)
 	{
 		RunBehaviorTree(ControlledEnemy->BehaviorTree);
+		Blackboard->SetValueAsVector(FName("StartLocation"), ControlledEnemy->GetActorLocation());
 	}
 
 	/* UpdateTarget 타이머 등록 **/
@@ -35,7 +36,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 void AEnemyAIController::OnUnPossess()
 {
 	// BT, BB
-	if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent)) 
+	if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(BrainComponent))
 	{
 		BTComp->StopTree(EBTStopMode::Safe);
 	}
@@ -93,6 +94,22 @@ void AEnemyAIController::UpdateTarget() const
 
 void AEnemyAIController::SetTarget(AActor* NewTarget) const
 {
+	if (NewTarget)
+	{
+		if (UAbilitySystemComponent* ASC = NewTarget->GetComponentByClass<UAbilitySystemComponent>())
+		{
+			FGameplayTag DeathTag = FGameplayTag::RequestGameplayTag(FName("Player.Death"));
+			if (ASC->HasMatchingGameplayTag(DeathTag))
+			{
+				UE_LOG(LogTemp, Log, TEXT("PlayerDeath"));
+				ControlledEnemy->OnDeath();
+				return;
+
+			}
+		}
+
+	}
+
 	if (IsValid(Blackboard))
 	{
 		Blackboard->SetValueAsObject(FName("F_Target"), NewTarget);
@@ -100,7 +117,16 @@ void AEnemyAIController::SetTarget(AActor* NewTarget) const
 
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())
 	{
-		RotationComponent->SetTargetActor(NewTarget);
+		//RotationComponent->SetTargetActor(NewTarget);
+		if (NewTarget)
+		{
+			RotationComponent->SetTargetLocation(NewTarget->GetActorLocation());
+		}
+		//else
+		//{
+		//	FVector V(0, 0, 0);
+		//	RotationComponent->SetTargetLocation(V);
+		//}
 	}
 }
 
@@ -113,6 +139,15 @@ void AEnemyAIController::SetNoiseTarget(AActor* NewTarget) const
 
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())
 	{
-		RotationComponent->SetTargetActor(NewTarget);
+		//RotationComponent->SetTargetActor(NewTarget);
+		if (NewTarget)
+		{
+			RotationComponent->SetTargetLocation(NewTarget->GetActorLocation());
+		}
+		//else
+		//{
+		//	FVector V(0, 0, 0);
+		//	RotationComponent->SetTargetLocation(V);
+		//}
 	}
 }

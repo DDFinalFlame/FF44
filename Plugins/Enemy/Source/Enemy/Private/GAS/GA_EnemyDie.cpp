@@ -36,7 +36,7 @@ void UGA_EnemyDie::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 	/* State **/
 	Enemy->ChangeState(EAIBehavior::Die);
-	//Enemy->OnDeath();
+	Enemy->OnDeath();
 
 	/* 몽타주 종료 처리는 AnimNotify를 통해 **/
 	if (UAnimMontage* Montage = Enemy->GetDieMontage())

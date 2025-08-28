@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"  
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
+#include "EnemyRotationComponent.h"
 #include "Engine/TargetPoint.h"
 
 #include "EnemyStateConfig.h"
@@ -154,4 +155,14 @@ public:
 public:
 	UAnimMontage* GetHitMontage(EHitDirection Direction) const;
 	UAnimMontage* GetDieMontage() const;
+
+// Rotation
+public:
+	FORCEINLINE void SetRotationTarget(const FVector& Location) const
+	{
+		if (RotationComponent)
+		{
+			RotationComponent->SetTargetLocation(Location);	
+		}
+	}
 };

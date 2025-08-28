@@ -45,6 +45,9 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 	if (!TriggerEventData) { return; }
 	const AActor* InstigatorActor = TriggerEventData->Instigator.Get();
+	AttackerLocation = InstigatorActor->GetActorLocation();
+	Enemy->SetRotationTarget(AttackerLocation);
+
 
 	if (!InstigatorActor) { return; }
 	UAbilitySystemComponent* AttackerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<AActor*>(InstigatorActor));
@@ -119,6 +122,7 @@ void UGA_EnemyHit::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	if (ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get()))
 	{
 		Enemy->SetState(EAIBehavior::Patrol);
+		//Enemy->SetRotationTarget(AttackerLocation);
 	}
 
 	/* 어빌리티 종료 **/
