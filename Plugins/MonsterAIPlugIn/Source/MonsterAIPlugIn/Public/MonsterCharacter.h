@@ -28,6 +28,8 @@ enum class EMonsterState : uint8
 	Attack,
 	Hit,
 	Knockback,
+	Ragdoll,
+	Assembling,
 	Dead
 };
 
@@ -217,4 +219,13 @@ private:
 
 public:
 	virtual float GetAttackPower_Implementation() const override;
+
+// 레그돌로 시작되는 몬스터 실행 함수
+protected:
+		void EnterRagdollState();  
+public:
+		FVector  MeshInitRelLoc;
+		FRotator MeshInitRelRot;
+		FVector  MeshInitRelScale;
+
 };
