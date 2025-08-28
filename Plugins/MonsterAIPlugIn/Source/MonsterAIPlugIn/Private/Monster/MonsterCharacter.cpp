@@ -283,6 +283,18 @@ void AMonsterCharacter::SyncStateToBlackboard()
 	}
 }
 
+void AMonsterCharacter::SetTargetActor(FName KeyName, AActor* NewTarget)
+{
+	AAIController* AICon = Cast<AAIController>(GetController());
+	if (!AICon) { SpawnDefaultController(); AICon = Cast<AAIController>(GetController()); }
+	if (!AICon) return;
+
+	if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+	{
+		BB->SetValueAsObject(KeyName, NewTarget);
+	}
+}
+
 void AMonsterCharacter::FinishAmbush()
 {
 	// BT 태스크나 AnimNotify에서 호출: 기습 끝 → 일반 루트로

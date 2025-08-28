@@ -10,6 +10,7 @@ class UAnimMontage;
 class USoundBase;
 class AActor;
 class UMonsterAttributeSet;
+class AMonsterCharacter;
 
 UCLASS()
 class MONSTERAIPLUGIN_API UGA_BossPhase1 : public UGameplayAbility
@@ -82,4 +83,21 @@ protected:
         const FGameplayAbilityActorInfo* Info,
         const FGameplayAbilityActivationInfo ActivationInfo,
         bool bReplicateEndAbility, bool bWasCancelled) override;
+
+
+protected:
+    // --- 미니언 초기화 재시도용 ---
+    void EnqueueMinionInit(AMonsterCharacter* MC);
+    void ProcessPendingMinionInits();
+    bool TrySetupMinionBlackboard(AMonsterCharacter* MC, AActor* Player);
+    AActor* GetPhaseTargetPlayer() const;
+
+    /** 스폰 대기열 (BB/AIController 준비 안 됐을 때 재시도) */
+    TArray<TWeakObjectPtr<AMonsterCharacter>> PendingInitMinions;
+
+    /** 대기열 처리 타이머 */
+    FTimerHandle MinionInitTimerHandle;
+
+    /** 공격/전투 상태로 세팅할 값(실프로젝트 Enum에 맞게 수정) */
+    uint8 DesiredMinionState = (uint8)3;
 };

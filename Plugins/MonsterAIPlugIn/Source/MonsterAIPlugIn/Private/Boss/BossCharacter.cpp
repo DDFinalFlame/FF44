@@ -2,7 +2,9 @@
 
 
 #include "Boss/BossCharacter.h"
-
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+static const FName KEY_BossState = TEXT("BossState");
 
 ABossCharacter::ABossCharacter()
 {
@@ -42,5 +44,42 @@ void ABossCharacter::ActivatePhaseWatcherOnce()
         // 보스 DA에 GA_BossPhase1이 이미 Granted 되어 있어야 함
         AbilitySystemComponent->TryActivateAbilityByClass(Phase1AbilityClass);
         bPhaseWatcherActivated = true;
+    }
+}
+
+
+void ABossCharacter::SetBossState_EBB(uint8 NewState)
+{
+    if (!HasAuthority()) return;
+    AAIController* AICon = Cast<AAIController>(GetController());
+    if (!AICon) return;
+    UBlackboardComponent* BB = AICon->GetBlackboardComponent();
+    if (!BB) return;
+
+    BB->SetValueAsEnum(KEY_BossState, NewState);
+}
+
+void ABossCharacter::SetBossState_Name(FName BBKeyName, uint8 NewState)
+{
+    if (!HasAuthority()) return;
+    AAIController* AICon = Cast<AAIController>(GetController());
+    if (!AICon) return;
+    if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+    {
+        BB->SetValueAsEnum(BBKeyName, NewState);
+    }
+}
+
+
+void ABossCharacter::SetBlackboardTargetActor(FName BBKeyName, AActor* NewTarget)
+{
+   // if (!HasAuthority()) return;
+
+    AAIController* AICon = Cast<AAIController>(GetController());
+    if (!AICon) return;
+
+    if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+    {
+        BB->SetValueAsObject(BBKeyName, NewTarget);
     }
 }

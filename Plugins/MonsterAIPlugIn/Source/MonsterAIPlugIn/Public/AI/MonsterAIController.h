@@ -62,10 +62,10 @@ protected:
 
     // 시야/청각 기본값(에디터에서 수정 가능)
     UPROPERTY(EditAnywhere, Category = "AI|Perception")
-    float SightRadius = 200.f;
+    float SightRadius = 1000.f;
 
     UPROPERTY(EditAnywhere, Category = "AI|Perception")
-    float LoseSightRadius = 300.f;
+    float LoseSightRadius = 1500.f;
 
     UPROPERTY(EditAnywhere, Category = "AI|Perception")
     float PeripheralVisionAngle = 90.f; // 총 FOV 각도

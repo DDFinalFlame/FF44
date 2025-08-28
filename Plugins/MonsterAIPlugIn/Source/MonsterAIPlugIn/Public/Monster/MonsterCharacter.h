@@ -65,6 +65,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	EMonsterState StartState = EMonsterState::Patrol;
 
+	UFUNCTION(BlueprintCallable)
+	void SetTargetActor(FName KeyName, AActor* NewTarget);
+
 	// 기습 종료 후 일반 루프로 전환
 	UFUNCTION(BlueprintCallable, Category = "AI")
 	void FinishAmbush();  // AmbushReady -> CombatReady 로 전환

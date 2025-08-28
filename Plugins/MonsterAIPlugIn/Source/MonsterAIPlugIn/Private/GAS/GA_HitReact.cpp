@@ -10,6 +10,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "MonsterTags.h"
 #include "TimerManager.h" 
+#include "Boss/BossCharacter.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UGA_HitReact::UGA_HitReact()
 {
@@ -89,6 +92,27 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Info->AvatarActor.Get()))
         {
             MC->SetMonsterState(EMonsterState::Hit); 
+
+            if (ABossCharacter* Boss = Cast<ABossCharacter>(MC))
+            {
+                AAIController* AICon = Cast<AAIController>(Boss->GetController());
+                if (AICon)
+                {
+                    UBlackboardComponent* BB = AICon->GetBlackboardComponent();
+                    if (BB)
+                    {
+                        static const FName KEY_BossState(TEXT("BossState"));
+                        static const FName KEY_PrevBossState(TEXT("PrevBossState"));
+
+                        // 현재 상태를 Prev로 저장
+                        uint8 Cur = BB->GetValueAsEnum(KEY_BossState);
+                        BB->SetValueAsEnum(KEY_PrevBossState, Cur);
+
+                        // Hit로 전환
+                        BB->SetValueAsEnum(KEY_BossState, (uint8)EBossState_BB::Hit);
+                    }
+                }
+            }
         }
     }
 
