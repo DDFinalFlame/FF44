@@ -40,4 +40,10 @@ private:
 
     // 래그돌 진입(프로파일/물리/애님 정지)
     void EnterRagdoll(ACharacter* Chr);
+
+protected:
+    UPROPERTY()
+    bool bSentBossNotify = false;
+
+    void NotifyBossMinionDied(class ACharacter* DeadChr);
 };

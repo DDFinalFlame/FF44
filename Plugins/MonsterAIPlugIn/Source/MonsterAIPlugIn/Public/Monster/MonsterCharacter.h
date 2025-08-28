@@ -35,7 +35,7 @@ enum class EMonsterState : uint8
 
 
 UCLASS()
-class MONSTERAIPLUGIN_API AMonsterCharacter : public ACharacter, 
+class MONSTERAIPLUGIN_API AMonsterCharacter : public ACharacter,
 	public IAbilitySystemInterface, public IAttackStatProvider
 {
 	GENERATED_BODY()
@@ -63,7 +63,7 @@ public:
 	EMonsterState GetMonsterState() const { return CurrentState; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	EMonsterState StartState = EMonsterState::Patrol; 
+	EMonsterState StartState = EMonsterState::Patrol;
 
 	// 기습 종료 후 일반 루프로 전환
 	UFUNCTION(BlueprintCallable, Category = "AI")
@@ -73,12 +73,12 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	
-	// =========================
-    //  1) 데이터/스탯/정의 로딩
-    // =========================
 
-    /** 몬스터 정의(Definition에 따라서 사용) */
+	// =========================
+	//  1) 데이터/스탯/정의 로딩
+	// =========================
+
+	/** 몬스터 정의(Definition에 따라서 사용) */
 	UPROPERTY(EditAnywhere, Category = "Monster|Data")
 	TSoftObjectPtr<UMonsterDefinition> MonsterDefinition;
 
@@ -95,10 +95,10 @@ protected:
 	float DefaultWalkSpeed = 0.f;          // DT에서 받은 기본 이동속도 캐시
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Ambush")
-	float AmbushSpeedRate = 3.0f;          
+	float AmbushSpeedRate = 3.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Ambush")
-	float AttackSpeedRate = 2.0f;          
+	float AttackSpeedRate = 2.0f;
 
 	// 헬퍼
 	UFUNCTION(BlueprintCallable, Category = "AI|Ambush")
@@ -135,7 +135,7 @@ protected:
 	//void UpdateTransition_PatrolToCombatReady();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State")
-	float DetectDistanceCache = 0.f; 
+	float DetectDistanceCache = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|State")
 	float FallbackDetectDistance = 800.f;
@@ -176,39 +176,50 @@ public:
 	void EndAttackWindow();   // bAttackActive=false
 
 protected:
-		// BP에서 무기 클래스를 지정
-		UPROPERTY(EditAnywhere, Category = "Weapon")
-		TSubclassOf<AMonsterBaseWeapon> WeaponClass;
+	// BP에서 무기 클래스를 지정
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TSubclassOf<AMonsterBaseWeapon> WeaponClass;
 
-		// 런타임에 스폰된 무기 인스턴스
-		UPROPERTY()
-		AMonsterBaseWeapon* Weapon = nullptr;
+	// 런타임에 스폰된 무기 인스턴스
+	UPROPERTY()
+	AMonsterBaseWeapon* Weapon = nullptr;
 
 public:
-		// 필요하면 접근자
-		FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }
-		void PushAttackCollision();
-		void PopAttackCollision();
+	// 필요하면 접근자
+	FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }
+	void PushAttackCollision();
+	void PopAttackCollision();
 
 private:
-		int32 AttackCollisionDepth = 0;
-		UPROPERTY(EditDefaultsOnly, Category = "Collision")
-		FName DefaultProfile = TEXT("Monster_Default");
-		UPROPERTY(EditDefaultsOnly, Category = "Collision")
-		FName AttackingProfile = TEXT("Monster_Attacking");
+	int32 AttackCollisionDepth = 0;
+	UPROPERTY(EditDefaultsOnly, Category = "Collision")
+	FName DefaultProfile = TEXT("Monster_Default");
+	UPROPERTY(EditDefaultsOnly, Category = "Collision")
+	FName AttackingProfile = TEXT("Monster_Attacking");
 
-		void ApplyCollisionProfile();
+	void ApplyCollisionProfile();
 
 
 public:
 	virtual float GetAttackPower_Implementation() const override;
 
-// 레그돌로 시작되는 몬스터 실행 함수
+	// 레그돌로 시작되는 몬스터 실행 함수
 protected:
-		void EnterRagdollState();  
+	void EnterRagdollState();
 public:
-		FVector  MeshInitRelLoc;
-		FRotator MeshInitRelRot;
-		FVector  MeshInitRelScale;
+	FVector  MeshInitRelLoc;
+	FRotator MeshInitRelRot;
+	FVector  MeshInitRelScale;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	AActor* OwnerBoss = nullptr;
+
+	UFUNCTION(BlueprintCallable)
+	void SetOwnerBoss(AActor* InBoss) { OwnerBoss = InBoss; }
+
+	UFUNCTION(BlueprintPure)
+	AActor* GetOwnerBoss() const { return OwnerBoss; }
+
 
 };

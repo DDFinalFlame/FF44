@@ -11,6 +11,9 @@ class UBossArenaComponent;
 class UBossCutsceneComponent;
 class UBossPartsComponent;
 class UBossRewardComponent;
+class UAbilitySystemComponent;
+class UGameplayEffect;
+
 
 UCLASS()
 class MONSTERAIPLUGIN_API ABossCharacter : public AMonsterCharacter
@@ -20,8 +23,14 @@ public:
     ABossCharacter();
 
 protected:
-    virtual void BeginPlay() override;
+    virtual void BeginPlay() override; 
 
+    UPROPERTY(EditDefaultsOnly, Category = "Boss|GA")
+    TSubclassOf<class UGameplayAbility> Phase1AbilityClass; // = UGA_BossPhase1
+
+    bool bPhaseWatcherActivated = false;
+
+    void ActivatePhaseWatcherOnce();  // GA_BossPhase1을 한 번 켜서 HP 80% 대기 시작
 public:
     //UFUNCTION(BlueprintCallable)
     //void StartBossIntro();

@@ -1,6 +1,7 @@
 #include "GAS/GA_MonsterDeath.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AIController.h"
@@ -181,6 +182,8 @@ void UGA_MonsterDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     {
         EnterRagdoll(Chr);
         Chr->SetLifeSpan(5.f);
+
+        NotifyBossMinionDied(Chr);
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }
 }
@@ -202,6 +205,7 @@ void UGA_MonsterDeath::OnMontageEnded()
     if (Chr)
     {
         // 몽타주 끝난 후 래그돌 진입(연출 → 물리)
+        NotifyBossMinionDied(Chr);
         //EnterRagdoll(Chr);
         //if (USkeletalMeshComponent* Sk = Chr->GetMesh())
         //{
@@ -219,4 +223,30 @@ void UGA_MonsterDeath::EndAbility(const FGameplayAbilitySpecHandle Handle,
     bool bReplicateEndAbility, bool bWasCancelled)
 {
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+
+void UGA_MonsterDeath::NotifyBossMinionDied(ACharacter* DeadChr)
+{
+    if (bSentBossNotify || !DeadChr) return;
+
+    AActor* BossActor = nullptr;
+
+    if (const AMonsterCharacter* MC = Cast<AMonsterCharacter>(DeadChr))
+    {
+        BossActor = MC->GetOwnerBoss();  // 소환 시 주입한 보스
+    }
+
+    if (BossActor)
+    {
+        FGameplayEventData Data;
+        Data.EventTag = MonsterTags::Event_Minion_Died;
+        Data.Instigator = DeadChr;      // 누가 죽었는지
+        Data.Target = BossActor;    // 보스
+
+        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+            BossActor, MonsterTags::Event_Minion_Died, Data);
+
+        bSentBossNotify = true;
+    }
 }

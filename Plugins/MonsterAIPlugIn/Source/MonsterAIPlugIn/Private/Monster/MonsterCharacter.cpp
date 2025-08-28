@@ -21,6 +21,7 @@
 #include "Components/CapsuleComponent.h"
 #include "MonsterTags.h"
 
+
 AMonsterCharacter::AMonsterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -443,3 +444,4 @@ void AMonsterCharacter::EnterRagdollState()
 
 	SetMonsterState(EMonsterState::Ragdoll);
 }
+
