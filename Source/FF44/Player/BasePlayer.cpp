@@ -111,7 +111,7 @@ void ABasePlayer::BeginPlay()
 	if (Weapon)
 	{
 		Weapon->SetOwner(this);
-		EquipWeapon();
+		UnEquipWeapon();
 	}
 	else 
 	{
@@ -150,8 +150,7 @@ void ABasePlayer::Tick(float DeltaTime)
 	}
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Walk))
 	{
-		if (GetCharacterMovement()->Velocity.Length() < BaseAttribute->GetWalkSpeed())
-			GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetWalkSpeed();
+		GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetWalkSpeed();
 	}
 }
 
@@ -213,7 +212,7 @@ void ABasePlayer::InitializeGameplayTags()
 	if (!AbilitySystem) return;
 
 	// 초기 Ability Tag 설정
-	AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_Equip);	
+	AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_UnEquip);	
 }
 
 void ABasePlayer::MetaDataSetup()
@@ -397,11 +396,10 @@ void ABasePlayer::LockOn(const FInputActionValue& Value)
 
 void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 {
-	// Change State
-
-	// PlayMontage
-	
-	// Attach Socket
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
+		AbilitySystem->TryActivateAbilityByClass(UnEquipWeaponAbility);
+	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
+		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
 }
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
