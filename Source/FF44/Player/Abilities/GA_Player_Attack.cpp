@@ -5,11 +5,12 @@
 #include "Player/BasePlayer.h"
 #include "Weapon/BaseWeapon.h"
 #include "MonsterTags.h"
+#include "Player/Data/PlayerTags.h"
 
 UGA_Player_Attack::UGA_Player_Attack()
 {
-	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Attack"));
-	ActivationRequiredTags.AddTag(FGameplayTag::RequestGameplayTag("Player.Weapon.Equip"));
+	AbilityTags.AddTag(PlayerTags::Ability_Player_Attack);
+	ActivationRequiredTags.AddTag(PlayerTags::State_Player_Weapon_Equip);
 }
 
 void UGA_Player_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
