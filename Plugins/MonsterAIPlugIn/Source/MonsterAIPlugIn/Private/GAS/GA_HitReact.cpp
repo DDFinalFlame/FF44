@@ -14,6 +14,9 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
+static const FName KEY_BossState(TEXT("BossState"));
+static const FName KEY_PrevBossState(TEXT("PrevBossState"));
+
 UGA_HitReact::UGA_HitReact()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -101,8 +104,7 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                     UBlackboardComponent* BB = AICon->GetBlackboardComponent();
                     if (BB)
                     {
-                        static const FName KEY_BossState(TEXT("BossState"));
-                        static const FName KEY_PrevBossState(TEXT("PrevBossState"));
+
 
                         // 현재 상태를 Prev로 저장
                         uint8 Cur = BB->GetValueAsEnum(KEY_BossState);

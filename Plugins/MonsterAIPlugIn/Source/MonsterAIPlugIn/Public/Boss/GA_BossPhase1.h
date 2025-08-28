@@ -100,4 +100,28 @@ protected:
 
     /** 공격/전투 상태로 세팅할 값(실프로젝트 Enum에 맞게 수정) */
     uint8 DesiredMinionState = (uint8)3;
+
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    TSubclassOf<AActor> FallingRockClass;            // 바위 액터(BP/CPP)
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    int32 RocksPerCastMin = 3;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    int32 RocksPerCastMax = 6;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    float SpawnHeight = 1200.f;                      // 지면 위 스폰 높이
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    float PlayerAreaRadiusMin = 300.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    float PlayerAreaRadiusMax = 700.f;
+
+
+    // 시각용: 바위 자동 제거
+    UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
+    float RockLifeSeconds = 6.f;
 };

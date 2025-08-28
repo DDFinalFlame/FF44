@@ -22,6 +22,13 @@
 static const FName KEY_TargetActor(TEXT("TargetActor"));
 static const FName KEY_MonsterState(TEXT("MonsterState"));
 
+static FVector RandomPointInAnnulus2D(const FVector& Center, float Rmin, float Rmax)
+{
+    const float R = FMath::Sqrt(FMath::FRandRange(Rmin * Rmin, Rmax * Rmax));
+    const float Theta = FMath::FRandRange(0.f, 2 * PI);
+    return Center + FVector(R * FMath::Cos(Theta), R * FMath::Sin(Theta), 0.f);
+}
+
 UGA_BossPhase1::UGA_BossPhase1()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -321,6 +328,33 @@ void UGA_BossPhase1::DoCastOnce()
             this, NAME_None, CastLoopMontage, 1.f, NAME_None, false))
         {
             Task->ReadyForActivation();
+        }
+
+        if (!FallingRockClass) return;
+
+        UWorld* World = GetWorld();
+        AActor* Player = GetPhaseTargetPlayer();
+        if (!World || !Player) return;
+
+        int32 numRocks = FMath::Clamp(FMath::RandRange(RocksPerCastMin, RocksPerCastMax), 1, 50);
+        FVector playerLoc = Player->GetActorLocation();
+
+        for (int32 i = 0; i < numRocks; ++i)
+        {
+            // 플레이어 기준 랜덤 오프셋(수평)
+            FVector groundXY = RandomPointInAnnulus2D(playerLoc, PlayerAreaRadiusMin, PlayerAreaRadiusMax);
+            // 위에서 떨어지게 스폰 위치 설정
+            FVector spawnLoc = FVector(groundXY.X, groundXY.Y, playerLoc.Z + SpawnHeight);
+
+            FTransform T(FRotator::ZeroRotator, spawnLoc);
+            AActor* rock = World->SpawnActorDeferred<AActor>(
+                FallingRockClass, T, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+            if (rock)
+            {
+                rock->FinishSpawning(T);
+                if (RockLifeSeconds > 0.f) rock->SetLifeSpan(RockLifeSeconds);
+            }
         }
     }
 
