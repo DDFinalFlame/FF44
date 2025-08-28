@@ -15,6 +15,7 @@ public class FF44 : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
+			"NavigationSystem",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
