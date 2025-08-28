@@ -4,25 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "GA_EnemyHit.generated.h"
+#include "GA_EnemyDie.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ENEMY_API UGA_EnemyHit : public UGameplayAbility
+class ENEMY_API UGA_EnemyDie : public UGameplayAbility
 {
 	GENERATED_BODY()
+
 public:
-	UGA_EnemyHit();
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EventTag")
-	FGameplayTag EventTag;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	TSubclassOf<UGameplayEffect> HitEffect;
-
-	FVector AttackerLocation;
+	UGA_EnemyDie();
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;

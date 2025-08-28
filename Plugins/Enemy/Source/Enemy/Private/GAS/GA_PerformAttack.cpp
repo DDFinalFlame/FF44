@@ -62,4 +62,10 @@ void UGA_PerformAttack::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo
 void UGA_PerformAttack::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+
+    ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get());
+    if (Enemy)
+    {
+	    Enemy->EndCurrentBehavior();
+    }
 }

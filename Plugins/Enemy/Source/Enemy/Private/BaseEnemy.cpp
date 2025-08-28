@@ -1,10 +1,20 @@
 #include "BaseEnemy.h"
+
+#include "AIController.h"
 #include "EnemyRotationComponent.h"
+#include "HitReactionDataAsset.h"
 #include "MonsterAttributeSet.h"
-#include "GAS/EnemyAttributeSet.h"
 #include "MonsterDefinition.h"
 #include "MonsterStatRow.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon/EnemyBaseWeapon.h"
+
+#include "Materials/MaterialParameterCollection.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
+
+class AAIController;
 
 ABaseEnemy::ABaseEnemy()
 {
@@ -154,3 +164,165 @@ void ABaseEnemy::DeactivateWeaponCollision()
 	Weapon->DeactivateCollision();
 }
 
+void ABaseEnemy::SetState(EAIBehavior NewBehavior)
+{
+	CurrentBehavior = NewBehavior;
+}
+
+bool ABaseEnemy::ChangeState(EAIBehavior NewBehavior)
+{
+	if (IsCurrentBehaviorEnd || IsCurrentStateInterruptible() || NewBehavior == EAIBehavior::Die)
+	{
+		CurrentBehavior = NewBehavior;
+
+		if (AAIController* MyController = Cast<AAIController>(GetController()))
+		{
+			if (UBlackboardComponent* BB = MyController->GetBlackboardComponent())
+			{
+				IsCurrentBehaviorEnd = false;
+				BB->SetValueAsEnum(BehaviorKeyName, static_cast<uint8>(CurrentBehavior));
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool ABaseEnemy::IsCurrentStateInterruptible()
+{
+	return BehaviorConfig.CheckIsInterruptible(CurrentBehavior);
+}
+
+void ABaseEnemy::EndCurrentBehavior()
+{
+	IsCurrentBehaviorEnd = true;
+}
+
+void ABaseEnemy::OnDeath()
+{
+	/* AI Controller 중단 **/
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->GetBrainComponent()->StopLogic(TEXT("Death"));
+		AIController->StopMovement();
+		AIController->UnPossess();
+	}
+
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+
+	/* 캡슐 비활성화 **/
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	/* Rotation 중지 **/
+	RotationComponent->ToggleShouldRotate(false);
+}
+
+// 사용하지 않고 있음. Iron Asset의 Ragdoll 문제
+void ABaseEnemy::EndDeath()
+{
+	FTransform MeshTransform = GetMesh()->GetComponentTransform();
+	GetMesh()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	GetMesh()->SetWorldTransform(MeshTransform);
+
+	/* Mesh Ragdoll 처리 **/
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		MeshComponent->SetCollisionProfileName("Ragdoll");
+		//MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		MeshComponent->SetSimulatePhysics(true);
+	}
+
+	/* 서서히 사라지도록 **/
+	StartDissolve();
+
+}
+
+void ABaseEnemy::StartDissolve()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp) return;
+
+	int32 MaterialCount = MeshComp->GetNumMaterials();
+	TArray<UMaterialInstanceDynamic*> DynMats;
+
+	for (int32 i = 0; i < MaterialCount; ++i)
+	{
+		UMaterialInstanceDynamic* DynMat = MeshComp->CreateAndSetMaterialInstanceDynamic(i);
+		if (DynMat)
+		{
+			DynMats.Add(DynMat);
+		}
+	}
+
+	float Duration = 3.0f;
+	float StepTime = 0.05f;
+	float Step = StepTime / Duration;
+	float CurrentAmount = 0.f;
+
+	GetWorldTimerManager().SetTimer(
+		DissolveTimerHandle,
+		[this, DynMats, Step, CurrentAmount]() mutable
+		{
+			CurrentAmount += Step;
+
+			for (UMaterialInstanceDynamic* Mat : DynMats)
+			{
+				if (Mat)
+				{
+					Mat->SetScalarParameterValue(FName("Dissolve"), CurrentAmount);
+				}
+			}
+
+			if (CurrentAmount >= 1.0f)
+			{
+				GetWorldTimerManager().ClearTimer(DissolveTimerHandle);
+				Destroy();
+			}
+		},
+		StepTime,
+		true
+	);
+}
+
+UAnimMontage* ABaseEnemy::GetHitMontage(EHitDirection Direction) const
+{
+	if (HitMontageData)
+	{
+		UAnimMontage* Montage = HitMontageData->GetHitMontage(EnemyType, Direction);
+		if (Montage)
+		{
+			return Montage;
+		}
+	}
+
+	return nullptr;
+}
+
+UAnimMontage* ABaseEnemy::GetDieMontage() const
+{
+	if (HitMontageData)
+	{
+		UAnimMontage* Montage = HitMontageData->GetDieMontage(EnemyType);
+		if (Montage)
+		{
+			return Montage;
+		}
+	}
+
+	return nullptr;
+}
+
+bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior) 
+{
+	if (CurrentBehavior == NewBehavior)
+	{
+		return true;
+	}
+	return false;
+}

@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnemyDefine.h"
 #include "Animation/AnimInstance.h"
 #include "EnemyAnimInstance.generated.h"
 
+class ABaseEnemy;
 class UCharacterMovementComponent;
 /**
  * 
@@ -16,7 +18,10 @@ class ENEMY_API UEnemyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
-	ACharacter* Character;
+	ABaseEnemy* Enemy;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
+	EAIBehavior CurrentBehavior;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "References")
 	UCharacterMovementComponent* MovementComponent;
