@@ -7,6 +7,10 @@
 #include "BasePlayerController.generated.h"
 
 class UInputMappingContext;
+class UAbilitySystemComponent;
+class UBasePlayerAttributeSet;
+
+class UBasePlayerHUDWidget;
 
 UCLASS()
 class FF44_API ABasePlayerController : public APlayerController
@@ -18,4 +22,16 @@ protected:
 	TArray<UInputMappingContext*> InputMappingContexts;
 
 	virtual void SetupInputComponent() override;
+
+///////////////////////////////////////////////////////////////////////////////////////
+///										UI											///
+///////////////////////////////////////////////////////////////////////////////////////
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void InitUI(UAbilitySystemComponent* _AbilitySystem);
 };

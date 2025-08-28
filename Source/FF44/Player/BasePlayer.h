@@ -35,6 +35,7 @@ public:
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
@@ -52,9 +53,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystemComponent")
 	UAbilitySystemComponent* AbilitySystem;
 
+	struct FGameplayEffectContextHandle EffectContext;
+
 	// AbttributeSet
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attribute")
 	TSubclassOf<UBasePlayerAttributeSet> AttributeSetClass;
+
+	class UBasePlayerAttributeSet* BaseAttribute;
 
 	// Abilities
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
@@ -75,9 +80,30 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DeathAbility;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> PotionAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AbilityTag")
+	FGameplayTag EquipWeaponTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AbilityTag")
+	FGameplayTag UnEquipWeaponTag;
+
+	// Effects
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TSubclassOf<UGameplayEffect> StaminaRegenEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TSubclassOf<UGameplayEffect> StaminaRunEffect;
+
+
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
-
+	
+protected:
+	virtual void InitializeAbilities();
+	virtual void InitializeEffects();
+	virtual void InitializeGameplayTags();
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///										Cameras										///
@@ -97,13 +123,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	TSoftObjectPtr<UPlayerDefinition> PlayerDefinition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	UDataTable* PlayerMetaDataTable = nullptr;
+private:
+	void MetaDataSetup();
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Input											///
 ///////////////////////////////////////////////////////////////////////////////////////////
-
 protected:
 	// Movement Actions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
@@ -138,6 +164,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* ItemSlot_1Action;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
 	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
 
@@ -145,14 +174,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual int GetCurrentInputDirection() const { return CurrentInputDirection; }
 
-
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// Movement Actions
 	virtual void Move(const FInputActionValue& Value);
+	virtual void StopMove();
 	virtual void Look(const FInputActionValue& Value);
-	virtual void Run(const FInputActionValue& Value);
+	virtual void Running(const FInputActionValue& Value);
 	virtual void StopRun(const FInputActionValue& Value);
 	virtual void Dodge(const FInputActionValue& Value);
 
@@ -160,6 +189,7 @@ protected:
 	virtual void Interact(const FInputActionValue& Value);
 	virtual void LockOn(const FInputActionValue& Value);
 	virtual void ToggleCombat(const FInputActionValue& Value);
+	virtual void ItemSlot_1(const FInputActionValue& Value);
 
 	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);
@@ -167,16 +197,52 @@ protected:
 	virtual void Skill(const FInputActionValue& Value);
 
 
-///////////////////////////////////////////////////////////////////////////////////////
-///										UI											///
-///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///										State											///
+///////////////////////////////////////////////////////////////////////////////////////////
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool IsDead = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool DoInputMoving = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool EnableSprinting = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	float CurrentNoiseLevel = 0.f;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerMoveChanged, bool, DoInputMoving, bool, EnableSprinting);
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerMoveChanged OnPlayerMoveChanged;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
+	UFUNCTION()
+	void CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity);
 
-private:
-	void InitPlayerUI();
+	UFUNCTION()
+	void UpdateMoveType(bool _Moving, bool _Sprinting);
+
+	bool IsMontagePlaying() const;
+
+	void SetDoInputMoving(bool _NewValue);
+	void SetEnableSprinting(bool _NewValue);
+
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void PlayerDead();
+
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void PlayerAlive();
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///										Value											///
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										Weapons											///
