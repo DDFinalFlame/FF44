@@ -1,0 +1,9 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "DungeonGenerator/DungeonBase/FF44Tunnel.h"
+
+AFF44Tunnel::AFF44Tunnel()
+{
+	RoomTypeTag = "Tunnel";
+}
