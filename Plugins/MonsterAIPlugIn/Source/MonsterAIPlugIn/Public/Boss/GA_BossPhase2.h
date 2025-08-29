@@ -17,6 +17,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Trigger", meta = (ClampMin = "0.0", ClampMax = "1.0"))
     float StartHpRatioThreshold = 0.40f;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|End")
+    float EndHpRatioThreshold = 0.20f;
+
     // ===== 연출/무적 =====
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Invuln")
     TSubclassOf<UGameplayEffect> GE_Phase2Invuln;
@@ -67,6 +70,23 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Platform")
     FGameplayTag Tag_PlatformTouched;  // 예: Event.Boss.PlatformTouched
 
+    // 2페이즈 생기는 엑터
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|WeakPoint")
+    TSubclassOf<AActor> WeakPointClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|WeakPoint")
+    int32 WeakPointSpawnCount = 3;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|WeakPoint")
+    float WeakPointSpawnRadius = 1000.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|WeakPoint")
+    float WeakPointDamageToBoss = -10.f; // 하나 부술 때 보스에게 줄 피해
+    // 보스 HP를 실제로 깎을 때 사용할 GE (SetByCaller: Data.Damage 사용 권장)
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|WeakPoint")
+    TSubclassOf<UGameplayEffect> GE_WeakPointDamageToBoss;
+
+
     // 내부 상태
     bool bPhaseStarted = false;
     FActiveGameplayEffectHandle InvulnHandle;
@@ -80,8 +100,9 @@ protected:
 
     bool bStartingPhase2 = false;
     bool bSmashInProgress = false;
-    bool bEnding = false;
-    bool bWaitingForLand = false;
+    bool bShouldEndAfterCurrentSmash = false; // 임계 도달 후 현재 스매시 종료 대기
+    bool bEnding = false;                     // 엔딩 시퀀스 중복 방지
+    bool bWaitingForLand = false;             // 착지 대기
 
 
     // === Ability overrides ===
@@ -112,21 +133,15 @@ protected:
     UFUNCTION() void OnSmashMontageFinished();
 
     //// 종료 시퀀스
-    //UFUNCTION() void BeginEndSequence();
-    //UFUNCTION() void PlayEndMontageAndFinish();
-    //UFUNCTION() void ForceLandIfStuck();
+    UFUNCTION() void BeginEndSequence();
+    UFUNCTION() void PlayEndMontageAndFinish();
 
-    //UFUNCTION() void OnEndMontageFinished();
+
+    //// 스폰/이벤트 핸들러
+    void SpawnWeakPoints();
+    UFUNCTION() void OnWeakPointDestroyedEvent(FGameplayEventData Payload);
 
     // === Phase 본 로직 ===
     void StartPhase();
-    //void DoJumpUp();         // 점프 시작(몽타주/Launch)
-    //void WaitForSmash();     // 착지 시점 대기
-    //void OnSmashed();        // 충격파 생성 & 데미지
-    //void BindPlatformTouch(); // 발판 터치 이벤트 수신
-    //void OnPlatformTouched(const FGameplayEventData& Payload);
-    //bool AreAllPlatformsTouched() const;
 
-    // 유틸
-    //void ApplyInvuln(bool bEnable);
 };

@@ -17,10 +17,8 @@
 
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Data/staticName.h"
 
-
-static const FName KEY_TargetActor(TEXT("TargetActor"));
-static const FName KEY_MonsterState(TEXT("MonsterState"));
 
 static FVector RandomPointInAnnulus2D(const FVector& Center, float Rmin, float Rmax)
 {

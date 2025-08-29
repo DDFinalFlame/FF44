@@ -40,6 +40,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_PhaseStart, "Event.Boss.PhaseStar
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Minion_Died, "Event.Minion.Died");           // 소환몹 사망 → 보스 알림
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_PhaseEnd, "Event.Boss.PhaseEnd");       // 소환몹 전멸 후 보스 다음 패턴
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_Land, "Event.Boss.Land");		   // 보스 바닥 착지
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_P2_WeakPointDestroyed, "Event.Boss.Phase2.WeakPointDestroyed");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_InvulnShield, "GameplayCue.Boss.InvulnShield"); // 무적시 쉴드/이펙트
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_Summon, "GameplayCue.Boss.Summon");             // 소환 시 VFX/SFX
@@ -47,3 +48,4 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_ChannelCast, "GameplayCue.Boss.Chann
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Boss_Phase, "Data.Boss.Phase");          // 현재 페이즈 인덱스
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Boss_SummonCount, "Data.Boss.SummonCount"); // 소환몹 수량
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Damage, "Data.Boss.Damage");

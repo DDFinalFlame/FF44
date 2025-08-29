@@ -53,10 +53,12 @@ namespace MonsterTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_PhaseEnd);       // 페이즈 종료
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Minion_Died);         // 소환몹 사망 알림
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_Land);         // 바닥 착지 이벤트
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_P2_WeakPointDestroyed); //석상 뿌셔짐
 
     // 보스 전용 Data (선택적)
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Boss_Phase);           // 현재 페이즈
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Boss_SummonCount);     // 소환몹 수량
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Damage);               //SetbyCaller용
 
 
     // 보스 전용 Cue
