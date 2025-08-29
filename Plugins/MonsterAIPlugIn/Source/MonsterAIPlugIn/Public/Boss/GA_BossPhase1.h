@@ -28,6 +28,10 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Boss|Montage")
     UAnimMontage* StartMontage = nullptr;                      // 시작 연출 몽타주
 
+    UPROPERTY(EditDefaultsOnly, Category = "Boss|Montage")
+    UAnimMontage* EndMontage = nullptr;
+
+
     UPROPERTY(EditDefaultsOnly, Category = "Boss|Audio")
     USoundBase* StartSound = nullptr;                          // 시작 사운드
 
@@ -56,6 +60,7 @@ protected:
     FActiveGameplayEffectHandle InvulnHandle;
     int32  AliveMinionCount = 0;
     bool   bPhaseStarted = false;
+    bool bEnding = false;
 
     FTimerHandle CastTimerHandle;
     FDelegateHandle HPChangeHandle;                            // HP 변화 감시 핸들
@@ -63,8 +68,12 @@ protected:
     // ========= 내부 함수 =========
     void StartPhase();                                         // 무적/연출/소환/루프 시작
     int32 SpawnMinions(AActor* Boss);
-    void StartCastTick();                                      // 캐스팅 루프 시작
-    void DoCastOnce();                                         // 1회 캐스팅
+    UFUNCTION()    void BeginStartSequence();
+    UFUNCTION()    void PlayStartMontageThenStartCast();    // 시작몽타쥬
+    UFUNCTION()    void StartCastTick();                    // 캐스팅 루프 시작
+    UFUNCTION()    void BeginEndSequence();                 // 캐스트/몽타주 정리 시작
+    UFUNCTION()    void PlayEndMontageAndFinish();          // End 몽타주 재생 → 끝나면 EndAbility
+    void DoCastOnce();                                      // 1회 캐스팅
 
     void BindHPThresholdWatch();
     void UnbindHPThresholdWatch();
@@ -124,4 +133,6 @@ protected:
     // 시각용: 바위 자동 제거
     UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
     float RockLifeSeconds = 6.f;
+
+
 };

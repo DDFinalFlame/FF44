@@ -39,6 +39,7 @@ UGA_BossPhase1::UGA_BossPhase1()
 
     ActivationBlockedTags.AddTag(MonsterTags::State_Dying);
     ActivationBlockedTags.AddTag(MonsterTags::State_Dead);
+    BlockAbilitiesWithTag.AddTag(MonsterTags::Ability_HitReact);
 }
 
 void UGA_BossPhase1::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -117,6 +118,14 @@ void UGA_BossPhase1::StartPhase()
 {
     if (bPhaseStarted) return;
     bPhaseStarted = true;
+    ////피격모션 X
+    //if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+    //{
+    //    FGameplayTagContainer CancelTags;
+    //    CancelTags.AddTag(MonsterTags::Ability_HitReact);
+    //    ASC->CancelAbilities(&CancelTags);
+    //}
+
 
     UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
     AActor* Boss = GetAvatarActorFromActorInfo();
@@ -125,6 +134,11 @@ void UGA_BossPhase1::StartPhase()
         K2_EndAbility();
         return;
     }
+
+    Boss->GetWorldTimerManager().SetTimerForNextTick(this, &UGA_BossPhase1::BeginStartSequence);
+    
+
+
 
     // A) 무적 GE 적용 (쉴드 GCN 자동 실행)
     if (GE_BossInvuln)
@@ -136,14 +150,14 @@ void UGA_BossPhase1::StartPhase()
     }
 
     // B) 시작 연출: 몽타주 + 사운드
-    if (StartMontage)
-    {
-        if (auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-            this, NAME_None, StartMontage, 1.f, NAME_None, false))
-        {
-            Task->ReadyForActivation();
-        }
-    }
+    //if (StartMontage)
+    //{
+    //    if (auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+    //        this, NAME_None, StartMontage, 1.f, NAME_None, false))
+    //    {
+    //        Task->ReadyForActivation();
+    //    }
+    //}
     if (StartSound)
     {
         if (ACharacter* Char = Cast<ACharacter>(Boss))
@@ -316,7 +330,7 @@ void UGA_BossPhase1::StartCastTick()
         [this]() { DoCastOnce(); },
         CastInterval,
         true,
-        CastInterval * 0.5f // 초기 지연
+        CastInterval // 초기 지연
     );
 }
 
@@ -367,15 +381,17 @@ void UGA_BossPhase1::OnMinionDiedEvent(FGameplayEventData Payload)
 
     if (AliveMinionCount == 0)
     {
-        if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
-        {
-            if (InvulnHandle.IsValid())
-            {
-                ASC->RemoveActiveGameplayEffect(InvulnHandle); // 무적 해제(쉴드 GCN 자동 Off)
-                InvulnHandle.Invalidate();
-            }
-        }
-        K2_EndAbility();
+        //무적상태해제 및 endAbility
+        //if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+        //{
+        //    if (InvulnHandle.IsValid())
+        //    {
+        //        ASC->RemoveActiveGameplayEffect(InvulnHandle); // 무적 해제(쉴드 GCN 자동 Off)
+        //        InvulnHandle.Invalidate();
+        //    }
+        //}
+        //K2_EndAbility();
+        BeginEndSequence();
     }
 }
 
@@ -408,4 +424,115 @@ void UGA_BossPhase1::EndAbility(const FGameplayAbilitySpecHandle Handle,
     }
 
     Super::EndAbility(Handle, Info, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+
+void UGA_BossPhase1::BeginStartSequence()
+{
+    // 1) Hit GA 취소
+    UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+    if (ASC)
+    {
+        FGameplayTagContainer CancelTags;
+        CancelTags.AddTag(MonsterTags::Ability_HitReact);
+        ASC->CancelAbilities(&CancelTags);
+    }
+
+    // 2) 혹시 남은 몽타주 정지(그룹 또는 전체)
+    ACharacter* C = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+    if (C && C->GetMesh())
+    {
+        UAnimInstance* Anim = C->GetMesh()->GetAnimInstance();
+        if (Anim)
+        {
+            // 가장 확실: 전체 정지(필요 시 그룹만 정지로 바꾸세요)
+            Anim->StopAllMontages(0.10f);
+            // 또는: Anim->Montage_StopGroupByName(0.10f, FName("DefaultGroup"));
+        }
+    }
+
+    if (AActor* Boss = GetAvatarActorFromActorInfo())
+    {
+        Boss->GetWorldTimerManager().SetTimerForNextTick(this, &UGA_BossPhase1::PlayStartMontageThenStartCast);
+    }
+}
+
+void UGA_BossPhase1::PlayStartMontageThenStartCast()
+{
+    if (!StartMontage)
+    {
+        StartCastTick();
+        return;
+    }
+
+    if (auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+        this, NAME_None, StartMontage, 1.f, NAME_None, /*bStopWhenAbilityEnds=*/false))
+    {
+        Task->OnCompleted.AddDynamic(this, &UGA_BossPhase1::StartCastTick);
+        Task->OnBlendOut.AddDynamic(this, &UGA_BossPhase1::StartCastTick);
+        Task->OnInterrupted.AddDynamic(this, &UGA_BossPhase1::StartCastTick);
+        Task->OnCancelled.AddDynamic(this, &UGA_BossPhase1::StartCastTick);
+        Task->ReadyForActivation();
+    }
+    else
+    {
+        // 안전망
+        StartCastTick();
+    }
+}
+
+
+void UGA_BossPhase1::BeginEndSequence()
+{
+    if (bEnding) return;
+    bEnding = true;
+
+    AActor* Boss = GetAvatarActorFromActorInfo();
+
+    // 1) 캐스팅 루프 중단
+    if (Boss)
+    {
+        Boss->GetWorldTimerManager().ClearTimer(CastTimerHandle);
+    }
+
+    // 2) 피격/기타 GA가 끊지 못하게 HitReact 등 취소(선택)
+    if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+    {
+        FGameplayTagContainer CancelTags;
+        CancelTags.AddTag(MonsterTags::Ability_HitReact);
+        ASC->CancelAbilities(&CancelTags);
+    }
+
+    // 3) 진행 중인 몽타주 정지(캐스트 루프 몽타주 등)
+    if (ACharacter* C = Cast<ACharacter>(Boss))
+    {
+        if (UAnimInstance* Anim = C->GetMesh() ? C->GetMesh()->GetAnimInstance() : nullptr)
+        {
+            Anim->StopAllMontages(0.10f); // 필요하면 그룹만 정지로 바꿔도 OK
+        }
+    }
+
+    // 4) End 몽타주 재생(없으면 바로 종료)
+    PlayEndMontageAndFinish();
+}
+
+void UGA_BossPhase1::PlayEndMontageAndFinish()
+{
+    if (EndMontage)
+    {
+        if (auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+            this, NAME_None, EndMontage, 1.f, NAME_None, /*bStopWhenAbilityEnds=*/false))
+        {
+            // 어떤 경우든 끝나면 Ability 종료
+            Task->OnCompleted.AddDynamic(this, &UGA_BossPhase1::K2_EndAbility);
+            Task->OnBlendOut.AddDynamic(this, &UGA_BossPhase1::K2_EndAbility);
+            Task->OnInterrupted.AddDynamic(this, &UGA_BossPhase1::K2_EndAbility);
+            Task->OnCancelled.AddDynamic(this, &UGA_BossPhase1::K2_EndAbility);
+            Task->ReadyForActivation();
+            return;
+        }
+    }
+
+    // EndMontage가 없거나 Task 생성 실패 시 안전망
+    K2_EndAbility();
 }

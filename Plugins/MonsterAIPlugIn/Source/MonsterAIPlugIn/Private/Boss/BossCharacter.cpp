@@ -3,7 +3,9 @@
 
 #include "Boss/BossCharacter.h"
 #include "AIController.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "MonsterTags.h"
 static const FName KEY_BossState = TEXT("BossState");
 
 ABossCharacter::ABossCharacter()
@@ -39,10 +41,17 @@ void ABossCharacter::ActivatePhaseWatcherOnce()
         return;
     }
 
-    if (!bPhaseWatcherActivated && Phase1AbilityClass)
+    if (!bPhaseWatcherActivated)
     {
-        // 보스 DA에 GA_BossPhase1이 이미 Granted 되어 있어야 함
-        AbilitySystemComponent->TryActivateAbilityByClass(Phase1AbilityClass);
+        if (Phase1AbilityClass)
+        {
+            AbilitySystemComponent->TryActivateAbilityByClass(Phase1AbilityClass);
+        }
+
+        if (Phase2AbilityClass)
+        {
+            AbilitySystemComponent->TryActivateAbilityByClass(Phase2AbilityClass);
+        }
         bPhaseWatcherActivated = true;
     }
 }
@@ -82,4 +91,18 @@ void ABossCharacter::SetBlackboardTargetActor(FName BBKeyName, AActor* NewTarget
     {
         BB->SetValueAsObject(BBKeyName, NewTarget);
     }
+}
+
+
+void ABossCharacter::Landed(const FHitResult& Hit)
+{
+    Super::Landed(Hit);
+
+    // 디버그
+    UE_LOG(LogTemp, Warning, TEXT("Boss Landed!"));
+
+    // Phase2 GA에서 기다리는 착지 이벤트 송신
+    FGameplayEventData Data;
+    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+        this, MonsterTags::Event_Boss_Land, Data);
 }

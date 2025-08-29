@@ -44,6 +44,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Boss|GA")
     TSubclassOf<class UGameplayAbility> Phase1AbilityClass; // = UGA_BossPhase1
 
+    UPROPERTY(EditDefaultsOnly, Category = "Boss|GA")
+    TSubclassOf<UGameplayAbility> Phase2AbilityClass;
+
     bool bPhaseWatcherActivated = false;
 
     void ActivatePhaseWatcherOnce();  // GA_BossPhase1을 한 번 켜서 HP 80% 대기 시작
@@ -55,10 +58,11 @@ public:
     UFUNCTION(BlueprintCallable)
     void SetBossState_Name(FName BBKeyName, uint8 NewState); // 필요 시 키이름 지정
 
-    UFUNCTION(BlueprintCallable)
-    void SetBlackboardTargetActor(FName BBKeyName, AActor* NewTarget);
+    virtual void Landed(const FHitResult& Hit) override;
 
 public:
+    UFUNCTION(BlueprintCallable)
+    void SetBlackboardTargetActor(FName BBKeyName, AActor* NewTarget);
     //UFUNCTION(BlueprintCallable)
     //void StartBossIntro();
 

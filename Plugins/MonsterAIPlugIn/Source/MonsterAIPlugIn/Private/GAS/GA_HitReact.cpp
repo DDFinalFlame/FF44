@@ -27,7 +27,7 @@ UGA_HitReact::UGA_HitReact()
         Tags.AddTag(MonsterTags::Ability_HitReact);
         SetAssetTags(Tags);
     }
-
+    AbilityTags.AddTag(MonsterTags::Ability_HitReact);
     ActivationOwnedTags.AddTag(MonsterTags::State_HitReacting);
 
     CancelAbilitiesWithTag.AddTag(MonsterTags::Ability_Attack);
@@ -41,6 +41,7 @@ UGA_HitReact::UGA_HitReact()
     ActivationBlockedTags.AddTag(MonsterTags::State_Dying);
     ActivationBlockedTags.AddTag(MonsterTags::State_Dead);
     ActivationBlockedTags.AddTag(MonsterTags::State_Boss_Invuln);
+    ActivationBlockedTags.AddTag(MonsterTags::Ability_Boss_PhaseStart);
 
     // 기본 값(헤더에도 선언 필요)
     RetryDelaySeconds = 0.02f;
