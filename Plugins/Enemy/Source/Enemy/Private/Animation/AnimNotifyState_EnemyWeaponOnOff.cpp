@@ -34,6 +34,17 @@ void UAnimNotifyState_EnemyWeaponOnOff::NotifyEnd(USkeletalMeshComponent* MeshCo
 	{
 		if (IEnemyWeaponControl* WeaponControl = Cast<IEnemyWeaponControl>(OwnerActor))
 		{
+			if (HasCombo)
+			{
+				if (WeaponControl->IsAttackSuccessful())
+				{
+					if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+					{
+						AnimInstance->Montage_SetNextSection(CurrentSectionName, NextSectionName);
+					}
+				}
+			}
+
 			WeaponControl->DeactivateWeaponCollision();
 		}
 	}

@@ -45,6 +45,11 @@ protected:
 	TArray<AActor*> AlreadyHitActors;
 
 	bool bIsCollisionEnabeld = false;
+
+	/* 플레이어 충돌 시에만 True, 끄고 켤 때 무조건 False 초기화 **/
+	UPROPERTY(VisibleAnywhere)
+	bool bIsAttackSuccessful = false;
+
 public:	
 	UEnemyWeaponCollisionComponent();
 
@@ -60,6 +65,9 @@ public:
 	/* 충돌 On/Off **/
 	void ActivateCollision();
 	void DeactivateCollision();
+
+	/* 충돌 결과 Getter **/
+	FORCEINLINE bool IsAttackSuccessful() const { return bIsAttackSuccessful; }
 
 	///* 충돌 시 호출 함수 **/
 	//UFUNCTION()

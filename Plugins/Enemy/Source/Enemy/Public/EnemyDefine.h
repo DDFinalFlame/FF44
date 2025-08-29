@@ -19,7 +19,8 @@ UENUM(BlueprintType)
 enum class EEnemyType : uint8
 {
 	Iron UMETA(DisplayName = "Iron"),
-	Archer UMETA(DisplayName = "Archer")
+	Archer UMETA(DisplayName = "Archer"),
+	Sevarog UMETA(DisplayName = "Sevarog")
 };
 
 // Get FName By Enum

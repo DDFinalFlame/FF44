@@ -164,6 +164,11 @@ void ABaseEnemy::DeactivateWeaponCollision()
 	Weapon->DeactivateCollision();
 }
 
+bool ABaseEnemy::IsAttackSuccessful()
+{
+	return Weapon->IsAttackSuccessful();
+}
+
 void ABaseEnemy::SetState(EAIBehavior NewBehavior)
 {
 	CurrentBehavior = NewBehavior;

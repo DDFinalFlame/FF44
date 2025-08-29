@@ -135,6 +135,7 @@ public:
 public:
 	virtual void ActivateWeaponCollision() override;
 	virtual void DeactivateWeaponCollision() override;
+	virtual bool IsAttackSuccessful() override;
 
 // AI - State
 public:

@@ -41,9 +41,21 @@ void UGA_PerformAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     /* 몽타주 끝날 때 델리게이트 연결 **/
     FOnMontageEnded MontageDelegate;
     MontageDelegate.BindUObject(this, &UGA_PerformAttack::OnMontageEnded);
-    AnimInstance->Montage_Play(AttackAnimMontage);
-    AnimInstance->Montage_SetEndDelegate(MontageDelegate, AttackAnimMontage);
 
+	FOnMontageBlendedInEnded MontageBlendedInDeletage;
+    MontageBlendedInDeletage.BindUObject(this, &UGA_PerformAttack::OnMontageBlendedIn);
+
+    FOnMontageBlendingOutStarted MontageBlendedOutDeletage;
+    MontageBlendedOutDeletage.BindUObject(this, &UGA_PerformAttack::OnMontageBlendedOut);
+
+
+    FAlphaBlendArgs AlphaBlendArgs;
+    AlphaBlendArgs.BlendTime = BlendingTime;
+
+    AnimInstance->Montage_PlayWithBlendIn(AttackAnimMontage, AlphaBlendArgs);
+    AnimInstance->Montage_SetEndDelegate(MontageDelegate, AttackAnimMontage);
+    AnimInstance->Montage_SetBlendedInDelegate(MontageBlendedInDeletage, AttackAnimMontage);
+    AnimInstance->Montage_SetBlendingOutDelegate(MontageBlendedOutDeletage, AttackAnimMontage);
     /* **/
 
 }
@@ -61,6 +73,8 @@ void UGA_PerformAttack::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo
 
 void UGA_PerformAttack::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
+    UE_LOG(LogTemp, Log, TEXT("OnMontageEnded"));
+
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 
     ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get());
@@ -68,4 +82,15 @@ void UGA_PerformAttack::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
     {
 	    Enemy->EndCurrentBehavior();
     }
+}
+
+void UGA_PerformAttack::OnMontageBlendedIn(UAnimMontage* Montage)
+{
+    UE_LOG(LogTemp, Log, TEXT("OnMontageBlendedIn"));
+}
+
+void UGA_PerformAttack::OnMontageBlendedOut(UAnimMontage* Montage, bool bSth)
+{
+    UE_LOG(LogTemp, Log, TEXT("OnMontageBlendedOut"));
+
 }
