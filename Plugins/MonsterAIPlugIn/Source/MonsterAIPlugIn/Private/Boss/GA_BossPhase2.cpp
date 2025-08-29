@@ -9,10 +9,10 @@
 #include "Animation/AnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-static const FName SEC_Start("Start");
-static const FName SEC_Loop("Loop");
-static const FName SEC_End("End");
+#include "Data/staticName.h"
+//static const FName SEC_Start("Start");
+//static const FName SEC_Loop("Loop");
+//static const FName SEC_End("End");
 
 UGA_BossPhase2::UGA_BossPhase2()
 {
@@ -113,7 +113,7 @@ void UGA_BossPhase2::StartPhase()
     {
         Boss->GetWorldTimerManager().SetTimer(
             SmashTimerHandle, this, &UGA_BossPhase2::SmashTick,
-            SmashInterval, true, 0.25f/*시작 딜레이*/);
+            SmashInterval, true, 1.f/*시작 딜레이*/);
     }
 }
 
@@ -182,7 +182,7 @@ void UGA_BossPhase2::OnLandEvent(FGameplayEventData Payload)
         }
     }
 
-    // 충격파 스폰(선택)
+    // 충격파 스폰
     if (ShockwaveActorClass)
     {
         FTransform T(C->GetActorRotation(), C->GetActorLocation());

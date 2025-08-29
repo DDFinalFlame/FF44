@@ -13,9 +13,9 @@
 #include "Boss/BossCharacter.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Data/staticName.h"
 
-static const FName KEY_BossState(TEXT("BossState"));
-static const FName KEY_PrevBossState(TEXT("PrevBossState"));
+
 
 UGA_HitReact::UGA_HitReact()
 {

@@ -6,7 +6,8 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "MonsterTags.h"
-static const FName KEY_BossState = TEXT("BossState");
+#include "Data/staticName.h"
+
 
 ABossCharacter::ABossCharacter()
 {
