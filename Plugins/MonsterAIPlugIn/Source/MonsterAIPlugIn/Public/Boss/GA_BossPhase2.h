@@ -23,10 +23,14 @@ protected:
 
 
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Montage")
-    UAnimMontage* PhaseStartMontage = nullptr;       // 페이즈 시작 연출
+    UAnimMontage* StartMontage = nullptr;       // 페이즈 시작 연출
+
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|Start")
+    USoundBase* StartSound = nullptr;
+
 
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Montage")
-    UAnimMontage* PhaseEndMontage = nullptr;       // 페이즈 종료 연출
+    UAnimMontage* EndMontage = nullptr;       // 페이즈 종료 연출
 
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Montage")
     UAnimMontage* GroundSmashMontage = nullptr;  // 점프 몽타쥬
@@ -74,6 +78,7 @@ protected:
     FTimerHandle SmashTimerHandle;
     FTimerHandle LandFailSafeTimer;
 
+    bool bStartingPhase2 = false;
     bool bSmashInProgress = false;
     bool bEnding = false;
     bool bWaitingForLand = false;
@@ -97,9 +102,9 @@ protected:
 
 
     //// 시작/끝 시퀀스
-    //UFUNCTION() void BeginStartSequence();
-    //UFUNCTION() void PlayStartMontageThenStartLoop();
-    //UFUNCTION() void StartSmashLoop();   // 타이머만 세팅
+    UFUNCTION() void BeginStartSequence();
+    UFUNCTION() void PlayStartMontageThenStartSmash();     // Start 몽타주 재생 후 루프 시작
+    UFUNCTION() void StartSmashLoop();                     // SmashTick 타이머 시작
 
     // 루프 동작(네가 이미 구현한 것)
     UFUNCTION() void SmashTick();

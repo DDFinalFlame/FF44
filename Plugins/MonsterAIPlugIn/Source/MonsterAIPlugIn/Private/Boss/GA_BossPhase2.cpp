@@ -10,6 +10,9 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Data/staticName.h"
+
+#include "Kismet/GameplayStatics.h"           
+#include "Components/SkeletalMeshComponent.h" 
 //static const FName SEC_Start("Start");
 //static const FName SEC_Loop("Loop");
 //static const FName SEC_End("End");
@@ -109,12 +112,7 @@ void UGA_BossPhase2::StartPhase()
         BossCharacter->SetBossState_EBB((uint8)EBossState_BB::InPhase2);
     }
 
-    if (AActor* Boss = GetAvatarActorFromActorInfo())
-    {
-        Boss->GetWorldTimerManager().SetTimer(
-            SmashTimerHandle, this, &UGA_BossPhase2::SmashTick,
-            SmashInterval, true, 1.f/*시작 딜레이*/);
-    }
+    BeginStartSequence();
 }
 
 void UGA_BossPhase2::EndAbility(const FGameplayAbilitySpecHandle Handle,
@@ -127,6 +125,17 @@ void UGA_BossPhase2::EndAbility(const FGameplayAbilitySpecHandle Handle,
         Boss->GetWorldTimerManager().ClearTimer(SmashTimerHandle);
     }
     bSmashInProgress = false;
+    bStartingPhase2 = false;
+
+    // 진행 중인 시작/스매시 몽타주가 있다면 안전하게 중지
+    if (ACharacter* C = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+    {
+        if (UAnimInstance* Anim = C->GetMesh() ? C->GetMesh()->GetAnimInstance() : nullptr)
+        {
+            Anim->StopAllMontages(0.10f);
+        }
+    }
+
 
     UnbindHPThresholdWatch();
     Super::EndAbility(Handle, Info, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -195,4 +204,86 @@ void UGA_BossPhase2::OnSmashMontageFinished()
 {
     bSmashInProgress = false;
     // 여기서 아무 것도 안 해도 타이머가 다음 2.5초에 다시 SmashTick을 호출
+}
+
+void UGA_BossPhase2::BeginStartSequence()
+{
+    if (bStartingPhase2) return;
+    bStartingPhase2 = true;
+
+    // 1) Hit GA 취소
+    if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+    {
+        FGameplayTagContainer CancelTags;
+        CancelTags.AddTag(MonsterTags::Ability_HitReact);
+        ASC->CancelAbilities(&CancelTags);
+    }
+
+    // 2) 진행 중인 몽타주 정지(안전)
+    if (ACharacter* C = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+    {
+        if (UAnimInstance* Anim = C->GetMesh() ? C->GetMesh()->GetAnimInstance() : nullptr)
+        {
+            Anim->StopAllMontages(0.10f);
+        }
+    }
+
+    // 3) 시작 사운드(선택)
+    if (StartSound)
+    {
+        if (ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+        {
+            UGameplayStatics::SpawnSoundAttached(StartSound, Char->GetMesh());
+        }
+        else if (AActor* Boss = GetAvatarActorFromActorInfo())
+        {
+            UGameplayStatics::PlaySoundAtLocation(Boss, StartSound, Boss->GetActorLocation());
+        }
+    }
+
+    // 4) 다음 틱에서 Start 몽타주 처리
+    if (AActor* Boss = GetAvatarActorFromActorInfo())
+    {
+        Boss->GetWorldTimerManager().SetTimerForNextTick(this, &UGA_BossPhase2::PlayStartMontageThenStartSmash);
+    }
+}
+
+void UGA_BossPhase2::PlayStartMontageThenStartSmash()
+{
+    // StartMontage 미설정이면 바로 루프 시작
+    if (!StartMontage)
+    {
+        StartSmashLoop();
+        return;
+    }
+
+    if (auto* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+        this, NAME_None, StartMontage, 1.f, NAME_None, /*bStopWhenAbilityEnds=*/false))
+    {
+        // 어떤 종료 케이스든 Smash 루프로 진입
+        Task->OnCompleted.AddDynamic(this, &UGA_BossPhase2::StartSmashLoop);
+        Task->OnBlendOut.AddDynamic(this, &UGA_BossPhase2::StartSmashLoop);
+        Task->OnInterrupted.AddDynamic(this, &UGA_BossPhase2::StartSmashLoop);
+        Task->OnCancelled.AddDynamic(this, &UGA_BossPhase2::StartSmashLoop);
+        Task->ReadyForActivation();
+    }
+    else
+    {
+        // 안전망
+        StartSmashLoop();
+    }
+}
+
+void UGA_BossPhase2::StartSmashLoop()
+{
+    // 이미 타이머가 있다면 중복 방지
+    if (AActor* Boss = GetAvatarActorFromActorInfo())
+    {
+        if (!Boss->GetWorldTimerManager().IsTimerActive(SmashTimerHandle))
+        {
+            Boss->GetWorldTimerManager().SetTimer(
+                SmashTimerHandle, this, &UGA_BossPhase2::SmashTick,
+                SmashInterval, true, 1.f /*초기 지연*/);
+        }
+    }
 }
