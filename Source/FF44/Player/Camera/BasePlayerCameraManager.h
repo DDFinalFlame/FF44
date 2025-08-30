@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/TimelineComponent.h"
 
-#include "CameraManager.generated.h"
+#include "BasePlayerCameraManager.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
@@ -20,23 +20,22 @@ enum class ECameraMode : uint8
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class FF44_API UCameraManager : public UActorComponent
+class FF44_API UBasePlayerCameraManager : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
-	UCameraManager();
+	UBasePlayerCameraManager();
 
 protected:
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-public:
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Timeline)
 	ECameraMode CurrentCameraMode = ECameraMode::Default;
 		
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UCameraComponent* FollowCamera;
 
@@ -49,22 +48,34 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UArrowComponent* CameraZoomInLook;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraRightMoveLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraLeftMoveLook;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Timeline)
 	UCurveFloat* CameraChangeCurve;
 
 	FTimeline DefaultTimeline;
 	FTimeline ZoomInTimeline;
 
+	FTimeline MoveRightTimeline;
+	FTimeline MoveLeftTimeline;
+
 public:
-	UFUNCTION(BlueprintCallable, Category = "CameraChange")
-	void ChangeDefaultCamera();
-
-	UFUNCTION(BlueprintCallable, Category = "CameraChange")
-	void ChangeZoomInCamera();
-
+	// Call Functions
 	UFUNCTION(BlueprintCallable, Category = "CameraChange")
 	void SetCameraMode(ECameraMode _NewMode);
 
+	UFUNCTION(BlueprintCallable, Category = "CameraMove")
+	void MoveCameraRight();
+
+	UFUNCTION(BlueprintCallable, Category = "CameraMove")
+	void MoveCameraLeft();
+
+public:
+	// Getters
 	UFUNCTION(BlueprintCallable, Category = "CameraChange")
 	ECameraMode GetCurrentCameraMode() const { return CurrentCameraMode; }
 
@@ -72,11 +83,12 @@ public:
 	bool IsCameraChanging() const { return DefaultTimeline.IsPlaying() || ZoomInTimeline.IsPlaying(); }
 
 protected:
+	// Delegate Functions
 	UFUNCTION()	void OnDefaultUpdate(float _Value);
 	UFUNCTION()	void OnDefaultFinished();
 	UFUNCTION()	void OnZoomInUpdate(float _Value);
 	UFUNCTION()	void OnZoomInFinished();
 
 private:
-	void LerpCameraBoomSocketOffset(const FVector& _Target, float _Value);
+	void LerpCameraOffset(const FVector& _TargetPos, const FRotator& _TargetRot, float _Value);
 };

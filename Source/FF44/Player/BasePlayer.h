@@ -110,8 +110,8 @@ protected:
 ///										Cameras										///
 ///////////////////////////////////////////////////////////////////////////////////////
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-	class UCameraManager* CameraManager;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	TObjectPtr<class UBasePlayerCameraManager> BaseCameraManager;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UCameraComponent* FollowCamera;
@@ -124,6 +124,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UArrowComponent* CameraZoomInLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraRightMoveLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraLeftMoveLook;
 
 public:
 	void ZeroControllerPitch();

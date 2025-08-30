@@ -21,7 +21,7 @@
 #include "BasePlayerAttributeSet.h"
 #include "BasePlayerController.h"
 #include "BasePlayerState.h"
-#include "Camera/CameraManager.h"
+#include "Camera/BasePlayerCameraManager.h"
 #include "Weapon/BaseWeapon.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
@@ -58,21 +58,28 @@ ABasePlayer::ABasePlayer()
 
 	OnCharacterMovementUpdated.AddDynamic(this, &ABasePlayer::CharacterMovementUpdated);
 
+	// 카메라 봄
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 0.f, 80.f)));
 	CameraBoom->TargetArmLength = 200.f;
 
+	// 실제 카메라
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom);
 
+	// Camera Offset 설정용 Arrow
 	CameraDefaultLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraDefaultLook"));
 	CameraDefaultLook->SetupAttachment(RootComponent);
-
 	CameraZoomInLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraZoomInLook"));
 	CameraZoomInLook->SetupAttachment(RootComponent);
+	CameraRightMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraRightMoveLook"));
+	CameraRightMoveLook->SetupAttachment(RootComponent);
+	CameraLeftMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraLeftMoveLook"));
+	CameraLeftMoveLook->SetupAttachment(RootComponent);
 
-	CameraManager = CreateDefaultSubobject<UCameraManager>(TEXT("CameraManager"));
+	// Camera Logic 처리는 여기서
+	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
@@ -140,6 +147,24 @@ void ABasePlayer::BeginPlay()
 
 	// Delegate Bind
 	OnPlayerMoveChanged.AddDynamic(this, &ABasePlayer::UpdateMoveType);
+
+	//// Components가 제대로 생성되었는지 확인
+	//TArray<UActorComponent*> All;
+	//GetComponents(All);
+
+	//UE_LOG(LogTemp, Warning, TEXT("== %s Components (%d) =="), *GetName(), All.Num());
+	//for (UActorComponent* C : All)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT(" - %s (%s) Reg=%d"),
+	//		*C->GetName(), *C->GetClass()->GetName(), C->IsRegistered());
+	//}
+
+	//// 혹시 포인터만 비었는지 교차검증
+	//if (!BaseCameraManager)
+	//{
+	//	BaseCameraManager = FindComponentByClass<UBasePlayerCameraManager>();
+	//	UE_LOG(LogTemp, Warning, TEXT("FindComponentByClass => %s"), *GetNameSafe(BaseCameraManager));
+	//}
 }
 
 void ABasePlayer::Tick(float DeltaTime)
@@ -369,13 +394,12 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 	{
 		FRotator ControlRotation = Controller->GetControlRotation();
 
-		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Yaw: %f, Pitch: %f"), ControlRotation.Yaw, ControlRotation.Pitch), true, true, FLinearColor::Green, 0.1f);
-
 		float NewPitch = ControlRotation.Pitch;
 		float NewYaw = ControlRotation.Yaw;
 
-		if (!CameraManager->IsCameraChanging())
-			NewPitch -= LookAxisVector.Y;
+		if (BaseCameraManager)
+			if (!BaseCameraManager->IsCameraChanging())
+				NewPitch -= LookAxisVector.Y;
 		NewYaw += LookAxisVector.X;
 
 		Controller->SetControlRotation(FRotator(NewPitch, NewYaw, 0.f));
@@ -415,13 +439,13 @@ void ABasePlayer::Interact(const FInputActionValue& Value)
 
 void ABasePlayer::LockOn(const FInputActionValue& Value)
 {
-	if(CameraManager->CurrentCameraMode == ECameraMode::Default)
+	if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Default)
 	{
-		CameraManager->SetCameraMode(ECameraMode::ZoomIn);
+		BaseCameraManager->SetCameraMode(ECameraMode::ZoomIn);
 	}
-	else if(CameraManager->CurrentCameraMode == ECameraMode::ZoomIn)
+	else if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::ZoomIn)
 	{
-		CameraManager->SetCameraMode(ECameraMode::Default);
+		BaseCameraManager->SetCameraMode(ECameraMode::Default);
 	}
 }
 
