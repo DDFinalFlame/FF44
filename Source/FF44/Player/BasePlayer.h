@@ -13,6 +13,7 @@ class AActor;
 class ABaseWeapon;
 class UCameraComponent;
 class USpringArmComponent;
+class UArrowComponent;
 class UInputAction;
 class UGameplayAbility;
 
@@ -108,12 +109,24 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////
 ///										Cameras										///
 ///////////////////////////////////////////////////////////////////////////////////////
-//protected:
-//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-//	UCameraComponent* FollowCamera;
-//
-//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-//	USpringArmComponent* CameraBoom;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	class UCameraManager* CameraManager;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UCameraComponent* FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	USpringArmComponent* CameraBoom;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraDefaultLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraZoomInLook;
+
+public:
+	void ZeroControllerPitch();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////

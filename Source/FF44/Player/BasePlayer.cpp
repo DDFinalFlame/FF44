@@ -8,6 +8,7 @@
 #include "Components/InputComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/ArrowComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
@@ -20,6 +21,7 @@
 #include "BasePlayerAttributeSet.h"
 #include "BasePlayerController.h"
 #include "BasePlayerState.h"
+#include "Camera/CameraManager.h"
 #include "Weapon/BaseWeapon.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
@@ -56,19 +58,21 @@ ABasePlayer::ABasePlayer()
 
 	OnCharacterMovementUpdated.AddDynamic(this, &ABasePlayer::CharacterMovementUpdated);
 
-	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	//CameraBoom->SetupAttachment(RootComponent);
-	//CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
-	//CameraBoom->TargetArmLength = 200.f;
-	//CameraBoom->bUsePawnControlRotation = true;
-	//CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
-	//// 카메라가 늦게 따라오는 설정
-	////CameraBoom->bEnableCameraLag = true;
-	////CameraBoom->bEnableCameraRotationLag = true;
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 0.f, 80.f)));
+	CameraBoom->TargetArmLength = 200.f;
 
-	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	//FollowCamera->SetupAttachment(CameraBoom);
-	//FollowCamera->bUsePawnControlRotation = false;		
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	FollowCamera->SetupAttachment(CameraBoom);
+
+	CameraDefaultLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraDefaultLook"));
+	CameraDefaultLook->SetupAttachment(RootComponent);
+
+	CameraZoomInLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraZoomInLook"));
+	CameraZoomInLook->SetupAttachment(RootComponent);
+
+	CameraManager = CreateDefaultSubobject<UCameraManager>(TEXT("CameraManager"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
@@ -121,12 +125,12 @@ void ABasePlayer::BeginPlay()
 
 	// Player Controller Set
 	if (ABasePlayerController* PlayerController = Cast<ABasePlayerController>(GetController()))
-	{
-		FRotator ControlRotation = PlayerController->GetControlRotation();
-		ControlRotation.Pitch = -10.f;
-
+	{		
 		if (AbilitySystem)
 			PlayerController->InitUI(AbilitySystem);
+
+		PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+		PlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
 	}
 	else
 	{
@@ -143,6 +147,8 @@ void ABasePlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CurrentInputDirection = 0;	
+
+	if (!AbilitySystem) return;
 
 	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Run))
 	{
@@ -216,6 +222,15 @@ void ABasePlayer::InitializeGameplayTags()
 	AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_UnEquip);	
 }
 
+void ABasePlayer::ZeroControllerPitch()
+{
+	if (Controller)
+	{
+		FRotator ControlRotation = Controller->GetControlRotation();
+		Controller->SetControlRotation(FRotator(0.f, ControlRotation.Yaw, 0.f));
+	}
+}
+
 void ABasePlayer::MetaDataSetup()
 {
 	// Definition Load
@@ -271,7 +286,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		}
 		if(LockOnAction)
 		{
-			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Triggered, this, &ABasePlayer::LockOn);
+			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ABasePlayer::LockOn);
 		}
 		if(ToggleCombatAction)
 		{
@@ -349,13 +364,19 @@ void ABasePlayer::StopMove()
 void ABasePlayer::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
+	
 	if (Controller)
 	{
 		FRotator ControlRotation = Controller->GetControlRotation();
 
-		float NewPitch = FMath::Clamp(ControlRotation.Pitch - LookAxisVector.Y, -40.f, 30.f);
-		float NewYaw = ControlRotation.Yaw + LookAxisVector.X;
+		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Yaw: %f, Pitch: %f"), ControlRotation.Yaw, ControlRotation.Pitch), true, true, FLinearColor::Green, 0.1f);
+
+		float NewPitch = ControlRotation.Pitch;
+		float NewYaw = ControlRotation.Yaw;
+
+		if (!CameraManager->IsCameraChanging())
+			NewPitch -= LookAxisVector.Y;
+		NewYaw += LookAxisVector.X;
 
 		Controller->SetControlRotation(FRotator(NewPitch, NewYaw, 0.f));
 	}
@@ -394,9 +415,14 @@ void ABasePlayer::Interact(const FInputActionValue& Value)
 
 void ABasePlayer::LockOn(const FInputActionValue& Value)
 {
-	// Change State
-
-	// Camera Lock-On Logic
+	if(CameraManager->CurrentCameraMode == ECameraMode::Default)
+	{
+		CameraManager->SetCameraMode(ECameraMode::ZoomIn);
+	}
+	else if(CameraManager->CurrentCameraMode == ECameraMode::ZoomIn)
+	{
+		CameraManager->SetCameraMode(ECameraMode::Default);
+	}
 }
 
 void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
