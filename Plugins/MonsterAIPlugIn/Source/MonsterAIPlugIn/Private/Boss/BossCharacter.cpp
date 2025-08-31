@@ -7,6 +7,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "MonsterTags.h"
 #include "Data/staticName.h"
+#include "Boss/BossMeleeWeapon.h"
 
 
 ABossCharacter::ABossCharacter()
@@ -20,6 +21,7 @@ void ABossCharacter::BeginPlay()
 
     if (HasAuthority())
     {
+        SpawnAndAttachWeapons();
         ActivatePhaseWatcherOnce();
     }
 
@@ -106,4 +108,46 @@ void ABossCharacter::Landed(const FHitResult& Hit)
     FGameplayEventData Data;
     UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
         this, MonsterTags::Event_Boss_Land, Data);
+}
+
+void ABossCharacter::SpawnAndAttachWeapons()
+{
+    if (!HasAuthority()) return;
+    if (Weapon || !WeaponClass) return;
+
+    // 메시/소켓 준비가 늦을 수 있으니 체크 후 지연 재시도
+    if (!GetMesh())
+    {
+        GetWorldTimerManager().SetTimerForNextTick(this, &ABossCharacter::SpawnAndAttachWeapons);
+        return;
+    }
+
+    // 소켓 존재성 검사 (하나라도 없으면 다음 틱 재시도)
+    for (const FName& SocketName : WeaponAttachSocketNames)
+    {
+        if (!GetMesh()->DoesSocketExist(SocketName))
+        {
+            GetWorldTimerManager().SetTimerForNextTick(this, &ABossCharacter::SpawnAndAttachWeapons);
+            return;
+        }
+    }
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    Params.Instigator = this;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    for (const FName& SocketName : WeaponAttachSocketNames)
+    {
+        AMonsterBaseWeapon* NewWeapon =
+            GetWorld()->SpawnActor<AMonsterBaseWeapon>(WeaponClass, FTransform::Identity, Params);
+        if (!NewWeapon) continue;
+
+        // 베이스 무기의 Init: 소켓에 부착 + 소유자 바인딩
+        NewWeapon->Init(this, GetMesh(), SocketName);
+
+        // 베이스에 등록 → Begin/EndAttackWindow가 자동으로 ‘모든 무기’ 제어
+        RegisterWeapon(NewWeapon);
+    }
+
 }

@@ -1,5 +1,5 @@
 #include "Weapon/SwordWeapon.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/BoxComponent.h"
 
 ASwordWeapon::ASwordWeapon()

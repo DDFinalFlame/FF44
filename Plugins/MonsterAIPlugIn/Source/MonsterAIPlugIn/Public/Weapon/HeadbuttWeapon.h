@@ -14,6 +14,8 @@ class MONSTERAIPLUGIN_API AHeadbuttWeapon : public AMonsterBaseWeapon
 public:
     AHeadbuttWeapon();
 
+
+
 protected:
     UPROPERTY(VisibleAnywhere)
     UBoxComponent* HeadHitbox = nullptr;

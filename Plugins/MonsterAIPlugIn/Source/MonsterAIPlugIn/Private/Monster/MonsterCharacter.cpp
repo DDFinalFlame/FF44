@@ -20,6 +20,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "MonsterTags.h"
+#include "Weapon/MonsterBaseWeapon.h"
 
 
 AMonsterCharacter::AMonsterCharacter()
@@ -375,15 +376,67 @@ void AMonsterCharacter::BeginAttackWindow()
 {
 	bAttackActive = true;
 	HitActorsThisSwing.Reset();
-	ActivateAttackHitbox(true);
+	TArray<AMonsterBaseWeapon*> Equips;
+	GetEquippedWeapons(Equips);
+
+	if (Equips.Num() > 0)
+	{
+		// 무기 기반 판정
+		if (HasAuthority())
+		{
+			for (AMonsterBaseWeapon* W : Equips)
+				if (W) W->BeginAttackWindow();
+		}
+	}
+	else
+	{
+		// 레거시: 캐릭터 자체 히트박스
+		ActivateAttackHitbox(true);
+	}
 }
 
 void AMonsterCharacter::EndAttackWindow()
 {
-	ActivateAttackHitbox(false);
+	TArray<AMonsterBaseWeapon*> Equips;
+	GetEquippedWeapons(Equips);
+
+	if (Equips.Num() > 0)
+	{
+		if (HasAuthority())
+		{
+			for (AMonsterBaseWeapon* W : Equips)
+				if (W) W->EndAttackWindow();
+		}
+	}
+	else
+	{
+		ActivateAttackHitbox(false);
+	}
+
 	bAttackActive = false;
 	HitActorsThisSwing.Reset();
 }
+
+void AMonsterCharacter::RegisterWeapon(AMonsterBaseWeapon* NewWeapon)
+{
+	if (!NewWeapon) return;
+	Weapons.AddUnique(NewWeapon);
+
+	// 하위 호환: 기존 코드가 Weapon만 참조해도 동작하도록 첫 등록 시 세팅
+	if (!Weapon) Weapon = NewWeapon;
+}
+
+void AMonsterCharacter::GetEquippedWeapons(TArray<AMonsterBaseWeapon*>& OutWeapons) const
+{
+	// 다무기 우선
+	for (AMonsterBaseWeapon* W : Weapons)
+		if (W) OutWeapons.Add(W);
+
+	// 그래도 없으면(구 몬스터) 단일 무기 포인터 사용
+	if (OutWeapons.Num() == 0 && Weapon)
+		OutWeapons.Add(Weapon);
+}
+
 
 void AMonsterCharacter::PushAttackCollision()
 {

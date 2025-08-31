@@ -187,6 +187,19 @@ protected:
 	UPROPERTY()
 	AMonsterBaseWeapon* Weapon = nullptr;
 
+	// 두개 이상의 무기를 장착
+	UPROPERTY()
+	TArray<AMonsterBaseWeapon*> Weapons;
+
+	// [추가] 파생이 무기 스폰 후 등록하는 헬퍼
+public:
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void RegisterWeapon(AMonsterBaseWeapon* NewWeapon);
+
+protected:
+	// [추가] 베이스에서 “장착 무기 목록”을 얻는 훅 (보스가 오버라이드해도 됨)
+	virtual void GetEquippedWeapons(TArray<AMonsterBaseWeapon*>& OutWeapons) const;
+
 public:
 	// 필요하면 접근자
 	FORCEINLINE AMonsterBaseWeapon* GetWeapon() const { return Weapon; }

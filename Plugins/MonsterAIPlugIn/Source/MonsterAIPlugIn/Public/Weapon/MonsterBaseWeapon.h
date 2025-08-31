@@ -23,6 +23,7 @@ public:
 	AMonsterBaseWeapon();
 
 	void Init(AMonsterCharacter* InOwner, USkeletalMeshComponent* AttachTo, FName Socket);
+    virtual void Tick(float DeltaSeconds) override;
 
 	// 공격창 On/Off (AnimNotify에서 호출)
 	UFUNCTION(BlueprintCallable)
@@ -31,6 +32,9 @@ public:
 	virtual void EndAttackWindow();
 
 protected:
+    UPROPERTY(EditAnywhere, Category = "Debug")
+    bool bDebugDrawHitbox = true;
+
     UPROPERTY()
     AMonsterCharacter* OwnerMonster = nullptr;
 

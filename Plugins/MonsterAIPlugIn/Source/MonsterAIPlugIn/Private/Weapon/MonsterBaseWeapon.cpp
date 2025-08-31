@@ -10,13 +10,19 @@
 #include "Monster/MonsterCharacter.h"
 #include "MonsterTags.h"
 
+
+// 디버깅용
+#include "DrawDebugHelpers.h"
+
 // Sets default values
 AMonsterBaseWeapon::AMonsterBaseWeapon()
 {
     bReplicates = true;
     SetReplicateMovement(true);
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
 }
+
+
 
 void AMonsterBaseWeapon::Init(AMonsterCharacter* InOwner, USkeletalMeshComponent* AttachTo, FName Socket)
 {
@@ -33,6 +39,42 @@ void AMonsterBaseWeapon::Init(AMonsterCharacter* InOwner, USkeletalMeshComponent
     {
         // 몬스터 Actor가 Destroy될 때 같이 정리
         InOwner->OnDestroyed.AddDynamic(this, &AMonsterBaseWeapon::OnOwnerDestroyed);
+    }
+
+    for (auto* C : Hitboxes)
+    {
+        if (auto* Shape = Cast<UShapeComponent>(C))
+        {
+            Shape->ShapeColor = FColor::Red;
+#if WITH_EDITOR
+            Shape->bDrawOnlyIfSelected = false;   // 에디터에서 선택 안 해도 그림
+#endif
+            Shape->SetHiddenInGame(!bDebugDrawHitbox);
+            Shape->SetVisibility(bDebugDrawHitbox, true);
+        }
+    }
+}
+
+void AMonsterBaseWeapon::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    if (bDebugDrawHitbox)
+    {
+        for (auto* C : Hitboxes)
+        {
+            if (auto* Box = Cast<UBoxComponent>(C))
+            {
+                DrawDebugBox(
+                    GetWorld(),
+                    Box->GetComponentLocation(),
+                    Box->GetUnscaledBoxExtent(),
+                    Box->GetComponentQuat(),
+                    bActive ? FColor::Green : FColor::Red,
+                    false, 0.f, 0, 1.5f
+                );
+            }
+        }
     }
 }
 
@@ -62,6 +104,9 @@ void AMonsterBaseWeapon::BeginAttackWindow()
     HitActorsThisSwing.Reset();
     SetHitboxEnable(true);
 
+    for (auto* C : Hitboxes)
+        if (C)
+            C->UpdateOverlaps();
     //UE_LOG(LogTemp, Warning, TEXT("Hitbox enable"));
 }
 

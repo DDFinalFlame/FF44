@@ -21,7 +21,8 @@ enum class EBossState_BB : uint8
 };
 
 
-
+class AMonsterBaseWeapon;
+class ABossMeleeWeapon;
 class UBossPhaseComponent;
 class UBossArenaComponent;
 class UBossCutsceneComponent;
@@ -37,9 +38,19 @@ class MONSTERAIPLUGIN_API ABossCharacter : public AMonsterCharacter
     GENERATED_BODY()
 public:
     ABossCharacter();
+    virtual void BeginPlay() override; 
 
 protected:
-    virtual void BeginPlay() override; 
+
+    // 무기 스폰/장착 유틸
+    void SpawnAndAttachWeapons();
+
+    // 여러 소켓 사용
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+    TArray<FName> WeaponAttachSocketNames = { FName(TEXT("Muzzle_01")), FName(TEXT("Muzzle_02")) };
+
+
+protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Boss|GA")
     TSubclassOf<class UGameplayAbility> Phase1AbilityClass; // = UGA_BossPhase1
