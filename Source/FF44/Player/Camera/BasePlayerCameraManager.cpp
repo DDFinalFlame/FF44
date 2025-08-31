@@ -36,6 +36,11 @@ void UBasePlayerCameraManager::BeginPlay()
 
 	FollowCamera->bUsePawnControlRotation = false;
 
+	CameraBoomSocketLocation = CameraBoom->GetRelativeLocation();
+	CameraBoomSocketLocation.X -= CameraBoom->TargetArmLength;
+
+	CameraBoom->SocketOffset = CameraDefaultLook->GetRelativeLocation() - CameraBoomSocketLocation;
+
 	if (CameraChangeCurve)
 	{
 		FOnTimelineFloat   UpdateDefault;
@@ -118,7 +123,7 @@ void UBasePlayerCameraManager::MoveCameraLeft()
 
 void UBasePlayerCameraManager::OnDefaultUpdate(float _Value)
 {
-	auto TargetPos = FVector::ZeroVector;
+	auto TargetPos = -CameraBoomSocketLocation + CameraDefaultLook->GetRelativeLocation();
 	auto TargetRot = CameraDefaultLook->GetRelativeRotation();
 	LerpCameraOffset(TargetPos, TargetRot, _Value);
 }
@@ -132,7 +137,7 @@ void UBasePlayerCameraManager::OnDefaultFinished()
 
 void UBasePlayerCameraManager::OnZoomInUpdate(float _Value)
 {
-	auto TargetPos = -CameraDefaultLook->GetRelativeLocation() + CameraZoomInLook->GetRelativeLocation();
+	auto TargetPos = -CameraBoomSocketLocation + CameraZoomInLook->GetRelativeLocation();
 	auto TargetRot = CameraZoomInLook->GetRelativeRotation();
 	LerpCameraOffset(TargetPos, TargetRot, _Value);
 }

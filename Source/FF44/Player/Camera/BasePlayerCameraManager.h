@@ -33,8 +33,11 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Timeline)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Value")
 	ECameraMode CurrentCameraMode = ECameraMode::Default;
+
+	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Value")
+	FVector CameraBoomSocketLocation;
 		
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UCameraComponent* FollowCamera;
