@@ -37,12 +37,6 @@ AFF44RoomBase::AFF44RoomBase()
     Bounds->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Overlap);
     Bounds->SetGenerateOverlapEvents(true);
 
-    NavBounds = CreateDefaultSubobject<UBoxComponent>(TEXT("NavBounds"));
-    NavBounds->SetupAttachment(OverlapFolder);
-    NavBounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    NavBounds->SetCollisionResponseToAllChannels(ECR_Ignore);
-    NavBounds->SetCanEverAffectNavigation(true);
-
 }
 
 void AFF44RoomBase::GetFloorMeshes(TArray<USceneComponent*>& OutFloors) const

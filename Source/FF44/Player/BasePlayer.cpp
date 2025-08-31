@@ -21,6 +21,8 @@
 #include "BasePlayerController.h"
 #include "BasePlayerState.h"
 #include "Weapon/BaseWeapon.h"
+#include "Interactable/FF44Interactable.h"
+#include "DrawDebugHelpers.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -152,6 +154,9 @@ void ABasePlayer::Tick(float DeltaTime)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetWalkSpeed();
 	}
+
+	// Interactable
+	UpdateClosestInteractable();
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -387,9 +392,13 @@ void ABasePlayer::Dodge(const FInputActionValue& Value)
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
 {
-	// Change State
-
-	// PlayMontage
+	if (AActor* Cur = FocusedInteractable.Get())
+	{
+		if (IFF44Interactable::Execute_CanInteract(Cur, this))
+		{
+			IFF44Interactable::Execute_Interact(Cur, this);
+		}
+	}
 }
 
 void ABasePlayer::LockOn(const FInputActionValue& Value)
@@ -526,6 +535,7 @@ void ABasePlayer::SetEnableSprinting(bool _NewValue)
 	EnableSprinting = _NewValue;
 	OnPlayerMoveChanged.Broadcast(DoInputMoving, OldValue);
 }
+
 void ABasePlayer::PlayerDead()
 {
 	IsDead = true;
@@ -582,3 +592,72 @@ void ABasePlayer::UnEquipWeapon()
 
 	AttachWeapon(UnEquipSocket);
 }
+
+void ABasePlayer::NotifyInteractableInRange(AActor* Interactable, bool bEnter)
+{
+	if (!Interactable) return;
+
+	if (bEnter)
+	{
+		NearbyInteractables.AddUnique(Interactable);
+	}
+	else
+	{
+		NearbyInteractables.RemoveSingleSwap(Interactable);
+		if (FocusedInteractable.Get() == Interactable)
+		{
+			IFF44Interactable::Execute_OnUnfocus(Interactable, this);
+			FocusedInteractable = nullptr;
+		}
+	}
+}
+
+void ABasePlayer::UpdateClosestInteractable()
+{
+	AActor* NewFocus = nullptr;
+
+	const FVector MyLoc = GetActorLocation();
+	float BestScore = TNumericLimits<float>::Max();
+
+	NearbyInteractables.RemoveAll([](const TWeakObjectPtr<AActor>& P) { return !P.IsValid(); });
+
+	for (const TWeakObjectPtr<AActor>& Weak : NearbyInteractables)
+	{
+		AActor* A = Weak.Get();
+		if (!A) continue;
+
+		if (!A->GetClass()->ImplementsInterface(UFF44Interactable::StaticClass()))
+			continue;
+
+		if (!IFF44Interactable::Execute_CanInteract(A, this))
+			continue;
+
+		const float D = FVector::Dist2D(MyLoc, A->GetActorLocation());
+		if (D < BestScore)
+		{
+			BestScore = D;
+			NewFocus = A;
+		}
+	}
+
+	if (FocusedInteractable.Get() != NewFocus)
+	{
+		if (AActor* Prev = FocusedInteractable.Get())
+		{
+			IFF44Interactable::Execute_OnUnfocus(Prev, this);
+		}
+		FocusedInteractable = NewFocus;
+		if (AActor* Cur = FocusedInteractable.Get())
+		{
+			IFF44Interactable::Execute_OnFocus(Cur, this);
+		}
+	}
+
+#if WITH_EDITOR
+	if (AActor* Cur = FocusedInteractable.Get())
+	{
+		DrawDebugSphere(GetWorld(), Cur->GetActorLocation(), 25.f, 12, FColor::Green, false, 0.f, 0, 1.f);
+	}
+#endif
+}
+
