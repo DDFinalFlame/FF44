@@ -18,6 +18,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Data/staticName.h"
+#include "Boss/FallingRockActor.h"
 
 
 static FVector RandomPointInAnnulus2D(const FVector& Center, float Rmin, float Rmax)
@@ -359,13 +360,27 @@ void UGA_BossPhase1::DoCastOnce()
             FVector spawnLoc = FVector(groundXY.X, groundXY.Y, playerLoc.Z + SpawnHeight);
 
             FTransform T(FRotator::ZeroRotator, spawnLoc);
-            AActor* rock = World->SpawnActorDeferred<AActor>(
-                FallingRockClass, T, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+            AFallingRockActor* rock = World->SpawnActorDeferred<AFallingRockActor>(
+                FallingRockClass,
+                T,
+                GetAvatarActorFromActorInfo(),                            // Owner = 보스
+                Cast<APawn>(GetAvatarActorFromActorInfo()),               // Instigator = 보스Pawn
+                ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
             if (rock)
             {
-                rock->FinishSpawning(T);
+                // 바위에 보스 Instigator 설정
+                rock->SetDamageInstigator(GetAvatarActorFromActorInfo());
+
+                // 데미지 세팅
+                rock->DamageMagnitude = RockDamage;                       // Phase1에 정의해둔 값
+                rock->ByCallerDamageTag = MonsterTags::Data_Drop_Damage;
+
+                // 라이프타임
                 if (RockLifeSeconds > 0.f) rock->SetLifeSpan(RockLifeSeconds);
+
+                rock->FinishSpawning(T);
             }
         }
     }

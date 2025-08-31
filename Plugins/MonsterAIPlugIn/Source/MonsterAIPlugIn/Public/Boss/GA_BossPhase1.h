@@ -134,5 +134,8 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
     float RockLifeSeconds = 6.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase1|Rock")
+    float RockDamage = 20.f;
+
 
 };

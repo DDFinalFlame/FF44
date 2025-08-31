@@ -59,6 +59,7 @@ namespace MonsterTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Boss_Phase);           // 현재 페이즈
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Boss_SummonCount);     // 소환몹 수량
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Damage);               //SetbyCaller용
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Drop_Damage);               //SetbyCaller용
 
 
     // 보스 전용 Cue

@@ -1,9 +1,15 @@
 
 #include "Boss/FallingRockActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
+#include "GameplayEffect.h"
+#include "MonsterTags.h"
 
 AFallingRockActor::AFallingRockActor()
 {
@@ -28,10 +34,22 @@ AFallingRockActor::AFallingRockActor()
 
     // Hit 이벤트 수신 (블로킹 충돌)
     Mesh->SetNotifyRigidBodyCollision(true);
-
-    // 델리게이트 바인딩
     Mesh->OnComponentHit.AddDynamic(this, &AFallingRockActor::OnMeshHit);
-    Mesh->OnComponentBeginOverlap.AddDynamic(this, &AFallingRockActor::OnMeshBeginOverlap);
+
+    HitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
+    HitBox->SetupAttachment(Mesh);
+    HitBox->SetBoxExtent(FVector(40.f));           // 필요에 맞게 조절
+    HitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    HitBox->SetCollisionObjectType(ECC_WorldDynamic);
+    HitBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+    HitBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    HitBox->OnComponentBeginOverlap.AddDynamic(this, &AFallingRockActor::OnHitBoxBeginOverlap);
+    // 기본 ByCaller 태그
+    if (!ByCallerDamageTag.IsValid())
+    {
+        // 프로젝트에서 쓰는 데이터 태그명으로 바꾸세요. (예: "Data.Damage")
+        ByCallerDamageTag = MonsterTags::Data_Drop_Damage;
+    }
 }
 
 void AFallingRockActor::BeginPlay()
@@ -48,6 +66,12 @@ void AFallingRockActor::BeginPlay()
     {
         Mesh->SetPhysicsLinearVelocity(FVector(0.f, 0.f, -InitialDownSpeed));
     }
+}
+
+void AFallingRockActor::SetDamageInstigator(AActor* InInstigator)
+{
+    DamageInstigator = InInstigator;
+    SetOwner(InInstigator); // 컨텍스트 추적에 유용
 }
 
 void AFallingRockActor::OnMeshHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
@@ -84,25 +108,86 @@ void AFallingRockActor::OnMeshHit(UPrimitiveComponent* HitComp, AActor* OtherAct
     }
 }
 
-void AFallingRockActor::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
     bool bFromSweep, const FHitResult& SweepResult)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[Rock] Overlap with %s (Auth=%d)"),
+        *GetNameSafe(OtherActor), HasAuthority() ? 1 : 0);
+
+    if (!HasAuthority()) return;               // 서버에서만 처리
     if (!OtherActor || OtherActor == this) return;
+    if (ShouldIgnore(OtherActor)) return;
 
-    // 캐릭터/플레이어 감지 ? 여기서 데미지 or GameplayEvent 등을 보낼 수 있습니다.
-    // 예시(일반 데미지):
-    // UGameplayStatics::ApplyDamage(OtherActor, 10.f, nullptr, this, UDamageType::StaticClass());
+    if (bOncePerActor)
+    {
+        if (AlreadyHitSet.Contains(OtherActor)) return;
+        AlreadyHitSet.Add(OtherActor);
+    }
 
-    // GAS 이벤트로 알리고 싶다면(프로젝트 태그에 맞춰 수정):
-    // #include "AbilitySystemBlueprintLibrary.h"
-    // #include "GameplayTagContainer.h"
-    // FGameplayEventData Payload;
-    // Payload.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Boss.RockHit"));
-    // Payload.Instigator = this;
-    // Payload.Target = OtherActor;
-    // UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
+    ApplyDamageTo(OtherActor, SweepResult);
 
-    // 필요 시, 플레이어에 맞으면 자신 파괴:
+    // 1회용 판정이면 여기서 바로 파괴해도 됨(선택)
     // Destroy();
+}
+
+
+bool AFallingRockActor::ShouldIgnore(AActor* OtherActor) const
+{
+    if (!OtherActor) return true;
+
+    // 자기편/소환주 무시 로직 예시
+    if (bIgnoreOwnerAndInstigatorTeam)
+    {
+        if (OtherActor == GetOwner()) return true;
+        if (DamageInstigator.IsValid() && OtherActor == DamageInstigator.Get()) return true;
+
+        // 팀 시스템이 있다면 여기에서 팀 비교하여 같은 팀이면 무시
+        // e.g., IGenericTeamAgentInterface* etc...
+    }
+
+    return false;
+}
+
+UAbilitySystemComponent* AFallingRockActor::GetASCFromActor(AActor* Actor) const
+{
+    if (!Actor) return nullptr;
+
+    // 표준 접근
+    return UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor);
+}
+
+
+
+void AFallingRockActor::ApplyDamageTo(AActor* Target, const FHitResult& OptionalHit)
+{
+    if (!GE_Damage) return;
+
+    UAbilitySystemComponent* TargetASC = GetASCFromActor(Target);
+    if (!TargetASC) return;
+
+    // 타겟 ASC 기준으로 컨텍스트 생성
+    FGameplayEffectContextHandle Ctx = TargetASC->MakeEffectContext();
+    // Instigator: 바위의 주인(보스) 또는 이 액터 자신
+    AActor* InstigatorActor = DamageInstigator.IsValid() ? DamageInstigator.Get() : this;
+    APawn* InstigatorPawn = Cast<APawn>(InstigatorActor);
+    AController* InstigatorController = InstigatorPawn ? InstigatorPawn->GetController() : nullptr;
+
+    Ctx.AddInstigator(InstigatorActor, InstigatorController);
+    Ctx.AddSourceObject(this);
+    if (OptionalHit.bBlockingHit || OptionalHit.bStartPenetrating || OptionalHit.Component.IsValid())
+    {
+        Ctx.AddHitResult(OptionalHit);
+    }
+
+    FGameplayEffectSpecHandle Spec = TargetASC->MakeOutgoingSpec(GE_Damage, /*Level=*/1.f, Ctx);
+    if (!Spec.IsValid()) return;
+
+    // ByCaller 지원
+    if (ByCallerDamageTag.IsValid())
+    {
+        Spec.Data->SetSetByCallerMagnitude(ByCallerDamageTag, DamageMagnitude);
+    }
+
+    TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 }

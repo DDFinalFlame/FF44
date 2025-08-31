@@ -29,7 +29,9 @@ public class MonsterAIPlugIn : ModuleRules
                 "GameplayAbilities",   //GAS 핵심 모듈
 				"GameplayTags",        //태그 시스템
 				"GameplayTasks",       //Task 기반 시스템
-			}
+				"GeometryCollectionEngine",
+				"FieldSystemEngine",
+            }
 			);
 			
 		
