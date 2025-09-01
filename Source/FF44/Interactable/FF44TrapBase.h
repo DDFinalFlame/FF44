@@ -6,6 +6,8 @@
 #include "Interactable/FF44InteractableActor.h"
 #include "FF44TrapBase.generated.h"
 
+class UBoxComponent;
+
 UCLASS()
 class FF44_API AFF44TrapBase : public AFF44InteractableActor
 {
@@ -14,20 +16,43 @@ class FF44_API AFF44TrapBase : public AFF44InteractableActor
 public:
     AFF44TrapBase();
 
+protected:
+    virtual void BeginPlay() override;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Trigger")
+    UBoxComponent* TriggerBox;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Trigger")
+    bool bUseTriggerBox = true;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap")
     bool bArmed = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap")
-    bool bCanBeDisarmed = true;
+    UPROPERTY(BlueprintReadOnly, Category = "Trap")
+    bool bActive = false;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap")
-    bool bReArmable = false;
+protected:
+    UFUNCTION()
+    void OnTriggerEnter(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+        bool bFromSweep, const FHitResult& Sweep);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Damage")
-    float Damage = 10.f;
+    UFUNCTION()
+    void OnTriggerExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Damage")
-    TSubclassOf<UDamageType> DamageTypeClass;
+    UFUNCTION(BlueprintCallable, Category = "Trap")
+    virtual void SetActive(bool bInActive);
+
+    UFUNCTION(BlueprintCallable, Category = "Trap")
+    void SetArmed(bool bInArmed);
+
+public:
+    virtual bool CanInteract_Implementation(AActor* Interactor) const override;
+    virtual void Interact_Implementation(AActor* Interactor) override;
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Trap")
+    void BP_OnTriggered();
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Trap")
     void BP_OnArmed();
@@ -35,10 +60,9 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "Trap")
     void BP_OnDisarmed();
 
-    // 인터랙션: 해체
-    virtual bool CanInteract_Implementation(AActor* Interactor) const override;
-    virtual void Interact_Implementation(AActor* Interactor) override;
+    UFUNCTION(BlueprintImplementableEvent, Category = "Trap")
+    void BP_OnActivate();
 
-    UFUNCTION(BlueprintCallable, Category = "Trap")
-    void SetArmed(bool bInArmed);
+    UFUNCTION(BlueprintImplementableEvent, Category = "Trap")
+    void BP_OnDeactivate();
 };

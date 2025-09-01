@@ -6,8 +6,9 @@
 #include "Interactable/FF44TrapBase.h"
 #include "FF44FireTrap.generated.h"
 
-class UBoxComponent;
 class UParticleSystemComponent;
+class UBoxComponent;
+class UDamageType;
 
 UCLASS()
 class FF44_API AFF44FireTrap : public AFF44TrapBase
@@ -20,45 +21,26 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Components")
-    UBoxComponent* DamageArea;
+    virtual void SetActive(bool bInActive) override;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Components")
-    USceneComponent* FXRoot;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Components")
-    UParticleSystemComponent* FireEffect;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Cycle")
-    float ActiveTime = 2.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Cycle")
-    float InactiveTime = 2.0f;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Trap|Cycle")
-    bool bActive = false;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Damage")
-    float PerActorDamageCooldown = 0.5f;
-
-private:
-    FTimerHandle CycleTimerHandle;
-
-    TMap<TWeakObjectPtr<AActor>, float> LastHitTime;
-
-    void StartCycle();
-    void SetActive(bool bInActive);
-    void OnCycleTick();
-
-    // Overlap
     UFUNCTION()
     void OnDamageAreaBegin(UPrimitiveComponent* Overlapped, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIdx, bool bFromSweep,
-        const FHitResult& Sweep);
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIdx, bool bFromSweep, const FHitResult& Sweep);
 
     UFUNCTION()
     void OnDamageAreaEnd(UPrimitiveComponent* Overlapped, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIdx);
 
-    virtual void Interact_Implementation(AActor* Interactor) override;
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Fire")
+    UBoxComponent* DamageArea;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Fire")
+    UParticleSystemComponent* FireEffect;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Fire")
+    float Damage = 10.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Fire")
+    TSubclassOf<UDamageType> DamageTypeClass;
 };
