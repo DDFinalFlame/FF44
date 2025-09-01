@@ -16,15 +16,13 @@ class ENEMY_API UGA_EnemyHit : public UGameplayAbility
 public:
 	UGA_EnemyHit();
 protected:
-	/* attack 유형별 설정 **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
-	TObjectPtr<UAnimMontage> HitAnimMontage;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EventTag")
 	FGameplayTag EventTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	TSubclassOf<UGameplayEffect> HitEffect;
+
+	FVector AttackerLocation;
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "BT/BTService_SelectBehavior.h"
 #include "EnemyAIController.generated.h"
 
 class ABaseEnemy;

@@ -4,29 +4,34 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "GenericTeamAgentInterface.h" 
 #include "BasePlayerController.generated.h"
 
 class UInputMappingContext;
+class UAbilitySystemComponent;
+class UBasePlayerAttributeSet;
+
+class UBasePlayerHUDWidget;
 
 UCLASS()
-class FF44_API ABasePlayerController : public APlayerController, public IGenericTeamAgentInterface
+class FF44_API ABasePlayerController : public APlayerController
 {
 	GENERATED_BODY()
-
+	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputMapping")
 	TArray<UInputMappingContext*> InputMappingContexts;
 
 	virtual void SetupInputComponent() override;
 
-private:
-	FGenericTeamId PlayerTeamId = FGenericTeamId(0);
+///////////////////////////////////////////////////////////////////////////////////////
+///										UI											///
+///////////////////////////////////////////////////////////////////////////////////////
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
 
 public:
-	// 인터페이스 구현(override)
-	virtual FGenericTeamId GetGenericTeamId() const override { return PlayerTeamId; }
-
-	// 필요하면 바꾸는 함수도 제공
-	FORCEINLINE void SetPlayerTeamId(uint8 Id) { PlayerTeamId = FGenericTeamId(Id); }
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void InitUI(UAbilitySystemComponent* _AbilitySystem);
 };

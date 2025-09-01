@@ -3,6 +3,10 @@
 #include "Engine/LocalPlayer.h"
 #include "GenericTeamAgentInterface.h"
 #include "InputMappingContext.h"
+#include "AbilitySystemComponent.h"
+#include "BasePlayerAttributeSet.h"
+
+#include "UI/BasePlayerHUDWidget.h"
 
 
 void ABasePlayerController::SetupInputComponent()
@@ -16,4 +20,13 @@ void ABasePlayerController::SetupInputComponent()
 			Subsystem->AddMappingContext(CurrentContext, 0);
 		}
 	}
+}
+
+void ABasePlayerController::InitUI(UAbilitySystemComponent* _AbilitySystem)
+{
+	if (!PlayerHUDClass) return;
+	auto HUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
+	HUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+
+	HUD->AddToViewport();
 }

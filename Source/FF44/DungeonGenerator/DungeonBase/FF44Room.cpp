@@ -1,0 +1,9 @@
+ // Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "DungeonGenerator/DungeonBase/FF44Room.h"
+
+AFF44Room::AFF44Room()
+{
+	RoomTypeTag = "Room";
+}

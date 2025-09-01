@@ -16,21 +16,21 @@ UBTService_SelectBehavior::UBTService_SelectBehavior()
 void UBTService_SelectBehavior::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	Super::OnBecomeRelevant(OwnerComp, NodeMemory);
-
-	APawn* ControlledPawn = OwnerComp.GetAIOwner()->GetPawn();
-	if (!ControlledPawn)
-	{
-		return;
-	}
-
-	ControlledEnemy = Cast<ABaseEnemy>(ControlledPawn);
 }
 
 void UBTService_SelectBehavior::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	UpdateBehavior(OwnerComp.GetBlackboardComponent());
+	if (APawn* ControlledPawn = OwnerComp.GetAIOwner()->GetPawn())
+	{
+		if (ABaseEnemy* ControlledEnemy = Cast<ABaseEnemy>(ControlledPawn))
+		{
+			UpdateBehavior(OwnerComp.GetBlackboardComponent(), ControlledEnemy);
+
+		}
+		return;
+	}
 }
 
 void UBTService_SelectBehavior::SetBehaviorKey(UBlackboardComponent* BlackboardComponent, EAIBehavior Behavior) const
@@ -38,16 +38,15 @@ void UBTService_SelectBehavior::SetBehaviorKey(UBlackboardComponent* BlackboardC
 	BlackboardComponent->SetValueAsEnum(BehaviorKey.SelectedKeyName, static_cast<uint8>(Behavior));
 }
 
-void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardComponent)
+void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardComponent, ABaseEnemy* ControlledEnemy)
 {
 	check(BlackboardComponent);
 	check(ControlledEnemy);
 
-	if (IsHit()) { return; }
+	if (ControlledEnemy->GetCurrentBehavior() == EAIBehavior::Die) { return; }
 
 	AActor* TargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(TargetKey.SelectedKeyName));
 	AActor* NoiseTargetActor = Cast<AActor>(BlackboardComponent->GetValueAsObject(NoiseTargetKey.SelectedKeyName));
-
 
 	if (IsValid(TargetActor))
 	{
@@ -56,47 +55,51 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 		/* 공격 범위 안쪽이면 **/
 		if (Distance <= MeleeAttackRangeDistance)
 		{
-			SetBehaviorKey(BlackboardComponent, EAIBehavior::MeleeAttack);
+			if (ControlledEnemy->ChangeState(EAIBehavior::MeleeAttack))
+			{
+				SetBehaviorKey(BlackboardComponent, EAIBehavior::MeleeAttack);
+			}
 		}
 		else if (Distance <= AttackRangeDistance)
 		{
-			SetBehaviorKey(BlackboardComponent, EAIBehavior::RangeAttack);
+			if (ControlledEnemy->ChangeState(EAIBehavior::RangeAttack))
+			{
+				SetBehaviorKey(BlackboardComponent, EAIBehavior::RangeAttack);
+			}
 		}
 		/* 아직 멀다 **/
 		else
 		{
-			SetBehaviorKey(BlackboardComponent, EAIBehavior::Approach);
+			if (ControlledEnemy->ChangeState(EAIBehavior::Approach))
+			{
+				SetBehaviorKey(BlackboardComponent, EAIBehavior::Approach);
+
+			}
 		}
 	}
 	else if (IsValid(NoiseTargetActor))
 	{
-		SetBehaviorKey(BlackboardComponent, EAIBehavior::Investigate);
+		if (ControlledEnemy->ChangeState(EAIBehavior::Investigate))
+		{
+			SetBehaviorKey(BlackboardComponent, EAIBehavior::Investigate);
+		}
 	}
 	else
 	{
 		/* Patrol Point 가 있다면 **/
 		if (ControlledEnemy->GetPatrolPoint() != nullptr)
 		{
-			SetBehaviorKey(BlackboardComponent, EAIBehavior::Patrol);
+			if (ControlledEnemy->ChangeState(EAIBehavior::Patrol))
+			{
+				SetBehaviorKey(BlackboardComponent, EAIBehavior::Patrol);
+			}
 		}
 		else
 		{
-			SetBehaviorKey(BlackboardComponent, EAIBehavior::Idle);
+  			if (ControlledEnemy->ChangeState(EAIBehavior::Idle))
+			{
+				SetBehaviorKey(BlackboardComponent, EAIBehavior::Idle);
+			}
 		}
 	}
-}
-
-bool UBTService_SelectBehavior::IsHit()
-{
-	UAbilitySystemComponent* ASC = ControlledEnemy->FindComponentByClass<UAbilitySystemComponent>();
-	if (!ASC) { return false; }
-
-	FGameplayTag HitTag = FGameplayTag::RequestGameplayTag("Enemy.State.Hit");
-
-	if (ASC->HasMatchingGameplayTag(HitTag))
-	{
-		return true;
-	}
-
-	return false;
 }
