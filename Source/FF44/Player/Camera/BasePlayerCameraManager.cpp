@@ -20,7 +20,8 @@ void UBasePlayerCameraManager::OnRegister()
 	
 	CameraBoom = NewObject<USpringArmComponent>(GetOwner(), USpringArmComponent::StaticClass(), TEXT("SpringArm"));
 	FollowCamera = NewObject<UCameraComponent>(GetOwner(), UCameraComponent::StaticClass(), TEXT("Camera"));
-	CameraDefaultLook = NewObject<UArrowComponent>(GetOwner(), UArrowComponent::StaticClass(), TEXT("CameraDefaultLook"));		
+	CameraUnEquipLook = NewObject<UArrowComponent>(GetOwner(), UArrowComponent::StaticClass(), TEXT("CameraUnequipLook"));
+	CameraEquipLook = NewObject<UArrowComponent>(GetOwner(), UArrowComponent::StaticClass(), TEXT("CameraEquipLook"));
 	CameraZoomInLook = NewObject<UArrowComponent>(GetOwner(), UArrowComponent::StaticClass(), TEXT("CameraZoomInLook"));
 	CameraRightMoveLook = NewObject<UArrowComponent>(GetOwner(), UArrowComponent::StaticClass(), TEXT("CameraRightMoveLook"));
 	CameraLeftMoveLook = NewObject<UArrowComponent>(GetOwner(), UArrowComponent::StaticClass(), TEXT("CameraLeftMoveLook"));
@@ -39,20 +40,31 @@ void UBasePlayerCameraManager::BeginPlay()
 	CameraBoomSocketLocation = CameraBoom->GetRelativeLocation();
 	CameraBoomSocketLocation.X -= CameraBoom->TargetArmLength;
 
-	CameraBoom->SocketOffset = CameraDefaultLook->GetRelativeLocation() - CameraBoomSocketLocation;
+	CameraBoom->SocketOffset = CameraUnEquipLook->GetRelativeLocation() - CameraBoomSocketLocation;
 
 	if (CameraChangeCurve)
 	{
-		FOnTimelineFloat   UpdateDefault;
-		FOnTimelineEvent   FinishedDefault;
+		FOnTimelineFloat   UpdateUnEquip;
+		FOnTimelineEvent   FinishedUnEquip;
 
-		UpdateDefault.BindUFunction(this, FName("OnDefaultUpdate"));
-		FinishedDefault.BindUFunction(this, FName("OnDefaultFinished"));
+		UpdateUnEquip.BindUFunction(this, FName("OnUnEquipUpdate"));
+		FinishedUnEquip.BindUFunction(this, FName("OnUnEquipFinished"));
 
-		DefaultTimeline.AddInterpFloat(CameraChangeCurve, UpdateDefault);             // 트랙 추가
-		DefaultTimeline.SetTimelineFinishedFunc(FinishedDefault);                     // 완료 델리게이트
-		DefaultTimeline.SetTimelineLengthMode(ETimelineLengthMode::TL_LastKeyFrame);
-		DefaultTimeline.SetLooping(false);
+		UnEquipTimeline.AddInterpFloat(CameraChangeCurve, UpdateUnEquip);             // 트랙 추가
+		UnEquipTimeline.SetTimelineFinishedFunc(FinishedUnEquip);                     // 완료 델리게이트
+		UnEquipTimeline.SetTimelineLengthMode(ETimelineLengthMode::TL_LastKeyFrame);
+		UnEquipTimeline.SetLooping(false);
+
+		FOnTimelineFloat   UpdateEquip;
+		FOnTimelineEvent   FinishedEquip;
+
+		UpdateEquip.BindUFunction(this, FName("OnEquipUpdate"));
+		FinishedEquip.BindUFunction(this, FName("OnEquipFinished"));
+
+		EquipTimeline.AddInterpFloat(CameraChangeCurve, UpdateEquip);             // 트랙 추가
+		EquipTimeline.SetTimelineFinishedFunc(FinishedEquip);                     // 완료 델리게이트
+		EquipTimeline.SetTimelineLengthMode(ETimelineLengthMode::TL_LastKeyFrame);
+		EquipTimeline.SetLooping(false);
 
 		FOnTimelineFloat   UpdateZoomIn;
 		FOnTimelineEvent   FinishedZoomIn;
@@ -71,34 +83,36 @@ void UBasePlayerCameraManager::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	DefaultTimeline.TickTimeline(DeltaTime);
+	UnEquipTimeline.TickTimeline(DeltaTime);
+	EquipTimeline.TickTimeline(DeltaTime);
 	ZoomInTimeline.TickTimeline(DeltaTime);
 }
 
 void UBasePlayerCameraManager::SetCameraMode(ECameraMode _NewMode)
 {
 	if (CurrentCameraMode == _NewMode ||
-		DefaultTimeline.IsPlaying() ||
+		UnEquipTimeline.IsPlaying()||
+		EquipTimeline.IsPlaying() ||
 		ZoomInTimeline.IsPlaying())
 		return;
 
 	switch (_NewMode)
 	{
-	case ECameraMode::Default:
+	case ECameraMode::UnEquip:
 	{
-		DefaultTimeline.PlayFromStart();
+		UnEquipTimeline.PlayFromStart();
+	}
+		break;
 
-		if (ZoomInTimeline.IsPlaying())
-			ZoomInTimeline.Stop();
+	case ECameraMode::Equip:
+	{
+		EquipTimeline.PlayFromStart();
 	}
 		break;
 
 	case ECameraMode::ZoomIn:
 	{
 		ZoomInTimeline.PlayFromStart();
-
-		if (DefaultTimeline.IsPlaying())
-			DefaultTimeline.Stop();
 	}
 		break;
 
@@ -109,30 +123,44 @@ void UBasePlayerCameraManager::SetCameraMode(ECameraMode _NewMode)
 
 void UBasePlayerCameraManager::MoveCameraRight()
 {
-	if (CurrentCameraMode != ECameraMode::Default) return;
+	if (CurrentCameraMode != ECameraMode::Equip) return;
 
 
 }
 
 void UBasePlayerCameraManager::MoveCameraLeft()
 {
-	if (CurrentCameraMode != ECameraMode::Default) return;
+	if (CurrentCameraMode != ECameraMode::Equip) return;
 
 
 }
 
-void UBasePlayerCameraManager::OnDefaultUpdate(float _Value)
+void UBasePlayerCameraManager::OnUnEquipUpdate(float _Value)
 {
-	auto TargetPos = -CameraBoomSocketLocation + CameraDefaultLook->GetRelativeLocation();
-	auto TargetRot = CameraDefaultLook->GetRelativeRotation();
+	auto TargetPos = -CameraBoomSocketLocation + CameraUnEquipLook->GetRelativeLocation();
+	auto TargetRot = CameraUnEquipLook->GetRelativeRotation();
 	LerpCameraOffset(TargetPos, TargetRot, _Value);
 }
 
-void UBasePlayerCameraManager::OnDefaultFinished()
+void UBasePlayerCameraManager::OnUnEquipFinished()
 {
 	Cast<ABasePlayer>(GetOwner())->ZeroControllerPitch();
 
-	CurrentCameraMode = ECameraMode::Default;
+	CurrentCameraMode = ECameraMode::UnEquip;
+}
+
+void UBasePlayerCameraManager::OnEquipUpdate(float _Value)
+{
+	auto TargetPos = -CameraBoomSocketLocation + CameraEquipLook->GetRelativeLocation();
+	auto TargetRot = CameraEquipLook->GetRelativeRotation();
+	LerpCameraOffset(TargetPos, TargetRot, _Value);
+}
+
+void UBasePlayerCameraManager::OnEquipFinished()
+{
+	Cast<ABasePlayer>(GetOwner())->ZeroControllerPitch();
+
+	CurrentCameraMode = ECameraMode::Equip;
 }
 
 void UBasePlayerCameraManager::OnZoomInUpdate(float _Value)

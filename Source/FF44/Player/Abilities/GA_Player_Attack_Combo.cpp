@@ -6,6 +6,8 @@
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameplayTagContainer.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 #include "Player/BasePlayer.h"
 #include "Weapon/BaseWeapon.h"
@@ -14,6 +16,10 @@ void UGA_Player_Attack_Combo::CommitExecute(const FGameplayAbilitySpecHandle Han
                                             const FGameplayAbilityActorInfo* ActorInfo, 
                                             const FGameplayAbilityActivationInfo ActivationInfo)
 {
+    UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+
+    ASC->AddGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Attack")));
+
     if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
     {
         AnimInst->OnPlayMontageNotifyBegin.AddDynamic(this, &UGA_Player_Attack_Combo::OnEnableAttack);
@@ -51,6 +57,9 @@ void UGA_Player_Attack_Combo::EndAbility(const FGameplayAbilitySpecHandle Handle
     {
         AnimInst->OnPlayMontageNotifyBegin.RemoveDynamic(this, &UGA_Player_Attack_Combo::OnEnableAttack);
         AnimInst->OnPlayMontageNotifyEnd.RemoveDynamic(this, &UGA_Player_Attack_Combo::OnDisableAttack);
+
+        UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+        ASC->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Attack")));        
     }
 
     GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(ComboEnabledTag);
@@ -65,6 +74,18 @@ void UGA_Player_Attack_Combo::OnEnableAttack(FName NotifyName, const FBranchingP
         if (OwnerWeapon)
         {
             OwnerWeapon->GetWeaponCollision()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+            UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+            FGameplayCueParameters Params; // 필요 시 위치/노멀/히트결과 등 채우기
+            ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Attack")), Params);
+
+            UGameplayStatics::PlaySound2D(
+                this,                  // WorldContextObject (AActor/ UActorComponent면 this)
+                AttackSound,           // USoundBase*
+                1.0f,                  // VolumeMultiplier
+                1.0f,                  // PitchMultiplier
+                0.0f                   // StartTime(초)
+            );
         }
     }
 

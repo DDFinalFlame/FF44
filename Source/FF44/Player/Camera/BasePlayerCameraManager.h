@@ -15,8 +15,9 @@ class UArrowComponent;
 UENUM(BlueprintType)
 enum class ECameraMode : uint8
 {
-	Default  UMETA(DisplayName = "Default"),
-	ZoomIn   UMETA(DisplayName = "Zoom In"),
+	UnEquip UMETA(DisplayName = "UnEquip"),
+	Equip	UMETA(DisplayName = "Equip"),
+	ZoomIn  UMETA(DisplayName = "Zoom In"),
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -34,7 +35,7 @@ protected:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Value")
-	ECameraMode CurrentCameraMode = ECameraMode::Default;
+	ECameraMode CurrentCameraMode = ECameraMode::UnEquip;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Value")
 	FVector CameraBoomSocketLocation;
@@ -46,7 +47,10 @@ protected:
 	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-	UArrowComponent* CameraDefaultLook;
+	UArrowComponent* CameraUnEquipLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraEquipLook;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UArrowComponent* CameraZoomInLook;
@@ -60,7 +64,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Timeline)
 	UCurveFloat* CameraChangeCurve;
 
-	FTimeline DefaultTimeline;
+	FTimeline UnEquipTimeline;
+	FTimeline EquipTimeline;
 	FTimeline ZoomInTimeline;
 
 	FTimeline MoveRightTimeline;
@@ -83,12 +88,14 @@ public:
 	ECameraMode GetCurrentCameraMode() const { return CurrentCameraMode; }
 
 	UFUNCTION(BlueprintCallable, Category = "CameraChange")
-	bool IsCameraChanging() const { return DefaultTimeline.IsPlaying() || ZoomInTimeline.IsPlaying(); }
+	bool IsCameraChanging() const { return EquipTimeline.IsPlaying() || ZoomInTimeline.IsPlaying(); }
 
 protected:
 	// Delegate Functions
-	UFUNCTION()	void OnDefaultUpdate(float _Value);
-	UFUNCTION()	void OnDefaultFinished();
+	UFUNCTION()	void OnUnEquipUpdate(float _Value);
+	UFUNCTION()	void OnUnEquipFinished();
+	UFUNCTION()	void OnEquipUpdate(float _Value);
+	UFUNCTION()	void OnEquipFinished();
 	UFUNCTION()	void OnZoomInUpdate(float _Value);
 	UFUNCTION()	void OnZoomInFinished();
 

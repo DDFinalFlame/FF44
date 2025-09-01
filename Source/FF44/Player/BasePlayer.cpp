@@ -56,6 +56,9 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
+
 	OnCharacterMovementUpdated.AddDynamic(this, &ABasePlayer::CharacterMovementUpdated);
 
 	// 카메라 봄
@@ -69,8 +72,10 @@ ABasePlayer::ABasePlayer()
 	FollowCamera->SetupAttachment(CameraBoom);
 
 	// Camera Offset 설정용 Arrow
-	CameraDefaultLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraDefaultLook"));
-	CameraDefaultLook->SetupAttachment(RootComponent);
+	CameraUnequipLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraUnequipLook"));
+	CameraUnequipLook->SetupAttachment(RootComponent);
+	CameraEquipLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraEquipLook"));
+	CameraEquipLook->SetupAttachment(RootComponent);
 	CameraZoomInLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraZoomInLook"));
 	CameraZoomInLook->SetupAttachment(RootComponent);
 	CameraRightMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraRightMoveLook"));
@@ -439,13 +444,13 @@ void ABasePlayer::Interact(const FInputActionValue& Value)
 
 void ABasePlayer::LockOn(const FInputActionValue& Value)
 {
-	if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Default)
+	if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Equip)
 	{
 		BaseCameraManager->SetCameraMode(ECameraMode::ZoomIn);
 	}
 	else if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::ZoomIn)
 	{
-		BaseCameraManager->SetCameraMode(ECameraMode::Default);
+		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
 	}
 }
 
@@ -455,6 +460,15 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 		AbilitySystem->TryActivateAbilityByClass(UnEquipWeaponAbility);
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
 		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
+
+	if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::UnEquip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
+	}
+	else if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Equip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::UnEquip);
+	}
 }
 
 void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)

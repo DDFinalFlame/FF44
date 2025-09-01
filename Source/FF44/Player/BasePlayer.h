@@ -120,7 +120,10 @@ protected:
 	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-	UArrowComponent* CameraDefaultLook;
+	UArrowComponent* CameraUnequipLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraEquipLook;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	UArrowComponent* CameraZoomInLook;
@@ -133,6 +136,7 @@ protected:
 
 public:
 	void ZeroControllerPitch();
+	class UBasePlayerCameraManager* GetCameraManager() { return BaseCameraManager; }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
