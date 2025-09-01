@@ -14,6 +14,7 @@
 #include "GeometryCollection/GeometryCollectionComponent.h"
 #include "Field/FieldSystemComponent.h"
 #include "Field/FieldSystemObjects.h"
+#include "DrawDebugHelpers.h"
 
 static bool IsGroundHit(const FChaosPhysicsCollisionInfo& Info)
 {
@@ -42,12 +43,13 @@ AFallingRockActor::AFallingRockActor()
     GeoComp->SetEnableGravity(true);
 
     // 프랙처/물리 이벤트 수신
+    GeoComp->bNotifyCollisions = true;
+
     GeoComp->SetNotifyBreaks(true); // 브레이크 이벤트
     GeoComp->OnChaosBreakEvent.AddDynamic(this, &AFallingRockActor::OnChaosBreak);
     GeoComp->OnChaosPhysicsCollision.AddDynamic(this, &AFallingRockActor::OnChaosCollision);
 
-    GeoComp->SetCanEverAffectNavigation(false);
-    if (HitBox) HitBox->SetCanEverAffectNavigation(false);
+
     // Hit 이벤트는 GC에서는 OnComponentHit 대신 ChaosPhysicsCollision을 쓰는 편이 안정적
     // GeoComp->SetNotifyRigidBodyCollision(true); // 필요 시
 
@@ -57,6 +59,7 @@ AFallingRockActor::AFallingRockActor()
 
     // 판정용 히트박스
     HitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
+    HitBox->SetCanEverAffectNavigation(false);
     HitBox->SetupAttachment(GeoComp);
     HitBox->SetBoxExtent(FVector(40.f));           // 필요에 맞게 조절
     HitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -64,7 +67,8 @@ AFallingRockActor::AFallingRockActor()
     HitBox->SetCollisionResponseToAllChannels(ECR_Ignore);
     HitBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     HitBox->OnComponentBeginOverlap.AddDynamic(this, &AFallingRockActor::OnHitBoxBeginOverlap);
-  
+
+    GeoComp->SetCanEverAffectNavigation(false);
     if (!ByCallerDamageTag.IsValid())
     {
         ByCallerDamageTag = MonsterTags::Data_Drop_Damage;
@@ -85,6 +89,18 @@ void AFallingRockActor::BeginPlay()
         // 아래로 초기 속도 부여
         const FVector InitVel(0.f, 0.f, -InitialDownSpeed);
         GeoComp->SetPhysicsLinearVelocity(InitVel);
+    }
+
+    SetHitBoxActive(true);
+
+    if (bShowPredictedImpact)
+    {
+        FHitResult PredHit;
+        FVector PredPoint;
+        if (PredictImpactPoint(PredPoint, PredHit))
+        {
+            DrawImpactMarker(PredPoint, PredHit.ImpactNormal);
+        }
     }
 }
 
@@ -110,6 +126,33 @@ void AFallingRockActor::Tick(float DeltaSeconds)
 
     // UE5.6: 인자 없이 호출 (기본값: PendingOverlaps=nullptr, bDoNotifies=true)
     HitBox->UpdateOverlaps();
+
+
+    // === 추가: HitBox 기준 초짧은 스윕으로 지면 접촉 보강 ===
+    FVector HitPoint;
+    if (HitBoxTouchesGround(HitPoint))
+    {
+        HandleLanded(HitPoint);
+        return;
+    }
+
+    if (bDebugHitBox && HitBox)
+    {
+        const FTransform& T = HitBox->GetComponentTransform();
+        const FVector Extent = HitBox->GetScaledBoxExtent();
+
+        // 히트박스(초록)
+        DrawDebugBox(GetWorld(), T.GetLocation(), Extent, T.GetRotation(),
+            FColor::Green, /*bPersistent=*/false, /*LifeTime=*/0.f, /*DepthPri=*/0, /*Thickness=*/2.f);
+
+        // (선택) GC Bounds도 같이 확인(하늘에 남아있는지 디버깅)
+        if (GeoComp)
+        {
+            const auto& C = GeoComp->Bounds;
+            DrawDebugBox(GetWorld(), C.Origin, C.BoxExtent, GeoComp->GetComponentQuat(),
+                FColor::Cyan, false, 0.f, 0, 1.f);
+        }
+    }
 }
 
 void AFallingRockActor::SetDamageInstigator(AActor* InInstigator)
@@ -127,26 +170,8 @@ void AFallingRockActor::OnChaosCollision(const FChaosPhysicsCollisionInfo& Info)
     if (ImpactFX) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ImpactFX, P);
     if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, P);
 
-    // 바닥에 닿았을 때만 착지
-    if (!bHasLanded && IsGroundHit(Info))
-    {
-        bHasLanded = true;
-        ApplyFractureFieldAt(P);
+    SetHitBoxActive(false);
 
-        if (bDestroyOnGroundHit)
-        {
-            FTimerHandle Th;
-            GetWorldTimerManager().SetTimer(Th, FTimerDelegate::CreateWeakLambda(this, [this]()
-                {
-                    if (GeoComp)
-                    {
-                        GeoComp->SetSimulatePhysics(false);
-                        GeoComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-                    }
-                    SetLifeSpan(FMath::Max(0.01f, DestroyDelayOnGround));
-                }), 0.03f, false);
-        }
-    }
 }
 
 // === 브레이크(파편 분리) 콜백 ===
@@ -256,4 +281,228 @@ void AFallingRockActor::ApplyFractureFieldAt(const FVector& Center)
         nullptr,
         Radial
     );
+}
+
+//헬퍼함수
+void AFallingRockActor::SetHitBoxActive(bool bActive)
+{
+    if (!HitBox) return;
+    bHitBoxActive = bActive;
+
+    if (bActive)
+    {
+        HitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        HitBox->SetGenerateOverlapEvents(true);
+        PrimaryActorTick.SetTickFunctionEnable(true);   // 따라가기 계속
+    }
+    else
+    {
+        HitBox->SetGenerateOverlapEvents(false);
+        HitBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        PrimaryActorTick.SetTickFunctionEnable(false);  // 더 이상 따라갈 필요 X
+    }
+}
+
+
+
+void AFallingRockActor::HandleLanded(const FVector& At)
+{
+    if (bHasLanded) return;
+    bHasLanded = true;
+
+    SetHitBoxActive(false);
+
+    ApplyFractureFieldAt(At);
+
+    if (bDestroyOnGroundHit)
+    {
+        // 조각 굳히고 제거
+        if (GeoComp)
+        {
+            GeoComp->SetSimulatePhysics(false);
+            GeoComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
+        SetLifeSpan(FMath::Max(0.01f, DestroyDelayOnGround));
+    }
+}
+
+bool AFallingRockActor::SweepGroundHit(FHitResult& OutHit) const
+{
+    if (!GeoComp) return false;
+
+    UWorld* World = GetWorld();
+    if (!World) return false;
+
+    const FBoxSphereBounds& B = GeoComp->Bounds;
+
+    // 바운드 바닥 근처에서 아래로 짧게 스윕
+    const FVector Start = B.Origin;
+    const FVector End = Start + FVector(0, 0, -(B.BoxExtent.Z + 20.f)); // 여유 20
+    const float Radius = FMath::Clamp(B.SphereRadius * 0.25f, 8.f, 60.f);
+
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(RockGroundSweep), false, this);
+    FCollisionObjectQueryParams ObjParams;
+    ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);   // 바닥만
+
+    return World->SweepSingleByObjectType(
+        OutHit,
+        Start, End,
+        FQuat::Identity,
+        ObjParams,
+        FCollisionShape::MakeSphere(Radius),
+        Params
+    );
+}
+
+
+bool AFallingRockActor::HitBoxTouchesGround(FVector& OutHitPoint) const
+{
+    if (!HitBox) return false;
+    UWorld* World = GetWorld();
+    if (!World) return false;
+
+    const FTransform T = HitBox->GetComponentTransform();
+    const FVector   Center = T.GetLocation();
+    const FVector   Extent = HitBox->GetScaledBoxExtent();
+
+    // 월드 Down 고정 (회전 무시)
+    const FVector   Down = FVector(0.f, 0.f, -1.f);
+
+    // 바닥면 추정 위치(히트박스 바닥)보다 "조금 위"에서 시작해 "조금 아래"로 내리쳐
+    // -> 겹침 상태 시작을 피해서 히트를 얻기 쉽게 함
+    const float     UpPadCm = 5.f;   // 시작점을 살짝 위로
+    const float     DownSpan = 12.f;  // 아래로 짧게
+    const FVector   Foot = Center + Down * (-Extent.Z);           // 바닥 중앙
+    const FVector   Start = Foot - Down * UpPadCm;                    // 위에서 시작
+    const FVector   End = Start + Down * DownSpan;                  // 아래로 짧게
+    const float     Radius = FMath::Clamp(Extent.Size() * 0.08f, 6.f, 24.f);
+
+    FCollisionObjectQueryParams ObjParams;
+    ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
+    ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic); // 이동식 바닥(Platform) 등 대비
+
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(RockHitBoxGround), false, this);
+    // 필요시 자기 자신/컴포넌트 무시
+    Params.AddIgnoredActor(this);
+    Params.bTraceComplex = false;
+
+    FHitResult Hit;
+    bool bHit = World->SweepSingleByObjectType(
+        Hit,
+        Start, End,
+        FQuat::Identity,
+        ObjParams,
+        FCollisionShape::MakeSphere(Radius),
+        Params
+    );
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugHitBox)
+    {
+        DrawDebugSphere(World, Start, Radius, 12, FColor::Yellow, false, 0.f);
+        DrawDebugLine(World, Start, End, FColor::Yellow, false, 0.f, 0, 1.f);
+        if (bHit) DrawDebugPoint(World, Hit.ImpactPoint, 8.f, FColor::Red, false, 0.f);
+    }
+#endif
+
+    if (bHit)
+    {
+        OutHitPoint = Hit.ImpactPoint;
+        return true;
+    }
+
+    // === 보강: 아주 작은 구를 바닥 아래에 겹치기 검사 (스윕이 겹침 시작으로 실패한 경우 대비) ===
+    {
+        const FVector Probe = Foot + Down * 2.f; // 바닥 바로 아래 2cm 지점
+        const float   ProbeR = 6.f;
+
+        bool bOverlap = World->OverlapAnyTestByObjectType(
+            Probe,
+            FQuat::Identity,
+            ObjParams,
+            FCollisionShape::MakeSphere(ProbeR),
+            Params
+        );
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+        if (bDebugHitBox)
+        {
+            DrawDebugSphere(World, Probe, ProbeR, 12, bOverlap ? FColor::Red : FColor::White, false, 0.f);
+        }
+#endif
+
+        if (bOverlap)
+        {
+            OutHitPoint = Probe; // 근사값이면 충분
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
+bool AFallingRockActor::PredictImpactPoint(FVector& OutPoint, FHitResult& OutHit) const
+{
+    UWorld* World = GetWorld();
+    if (!World || !GeoComp) return false;
+
+    // 현재 바운드 기준으로 충분히 위→아래로 길게 긁어서 바닥 찾기
+    const FBoxSphereBounds& B = GeoComp->Bounds;
+
+    const FVector Start = B.Origin + FVector(0, 0, B.BoxExtent.Z + 50.f); // 바운드 조금 위
+    const FVector End = Start + FVector(0, 0, -PredictMaxDownTrace);
+
+    // 둥근 스윕(바운드 스케일 고려). 너무 크면 과도히 빨리 맞아서 줄임
+    const float Radius = FMath::Clamp(B.SphereRadius * 0.3f, 8.f, 60.f);
+
+    FCollisionObjectQueryParams Obj;
+    Obj.AddObjectTypesToQuery(ECC_WorldStatic);
+    Obj.AddObjectTypesToQuery(ECC_WorldDynamic); // 이동식 플랫폼 대비
+
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(RockPredictGround), false, this);
+    Params.AddIgnoredActor(this);
+
+    // 스윕이 과하다면 LineTrace로 바꿔도 됨(정확도는 비슷)
+    const bool bHit = World->SweepSingleByObjectType(
+        OutHit,
+        Start, End,
+        FQuat::Identity,
+        Obj,
+        FCollisionShape::MakeSphere(Radius),
+        Params
+    );
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    if (bDebugHitBox)
+    {
+        DrawDebugLine(World, Start, End, FColor::Yellow, false, 2.f, 0, 1.f);
+        DrawDebugSphere(World, Start, Radius, 12, FColor::Yellow, false, 2.f);
+    }
+#endif
+
+    if (!bHit) return false;
+
+    OutPoint = OutHit.ImpactPoint;
+    return true;
+}
+
+void AFallingRockActor::DrawImpactMarker(const FVector& At, const FVector& Normal) const
+{
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    // 1) 바닥 포인트에 박스/스피어
+    DrawDebugSphere(World, At, PredictMarkerSize, 16, PredictMarkerColor, false, PredictMarkerLife);
+
+    // 2) 노멀 방향으로 화살표(착지 면 방향 확인)
+    const FVector Tip = At + Normal * (PredictMarkerSize * 2.f);
+    DrawDebugDirectionalArrow(World, At, Tip, PredictMarkerSize * 2.f, PredictMarkerColor, false, PredictMarkerLife, 0, 2.f);
+
+    // 3) (선택) 원형 가이드(수평)
+    DrawDebugCircle(World, At + FVector(0, 0, 2.f), PredictMarkerSize * 1.5f, 32, PredictMarkerColor, false, PredictMarkerLife, 0, 1.f, FVector(1, 0, 0), FVector(0, 1, 0), false);
+
+    // 4) 텍스트
+    DrawDebugString(World, At + FVector(0, 0, PredictMarkerSize + 10.f), TEXT("Predicted Impact"), nullptr, PredictMarkerColor, PredictMarkerLife, false);
 }
