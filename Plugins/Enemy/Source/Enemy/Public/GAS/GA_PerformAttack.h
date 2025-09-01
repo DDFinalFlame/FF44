@@ -19,10 +19,6 @@ public:
 
 // attack 유형별 설정
 protected:
-	/* 몽타주 **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
-	TObjectPtr<UAnimMontage> AttackAnimMontage;
-
 	/* 몽타주 블랜딩 타임 설정**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
 	float BlendingTime = 0.1f;
@@ -33,7 +29,6 @@ protected:
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-	virtual void OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 
 	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);

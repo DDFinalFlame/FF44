@@ -81,21 +81,6 @@ void UEnemyWeaponCollisionComponent::CollisionTrace()
 						EventData
 					);
 				}
-
-				//FGameplayEventData EventData;
-
-				//EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
-				//EventData.Instigator = GetOwner()->GetOwner();
-				//EventData.Target = HitActor;
-
-				///* HitResult를 TargetData로 포장 **/
-				//EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
-
-				//UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-				//	HitActor,
-				//	EventData.EventTag,
-				//	EventData
-				//);
 			}
 		}
 	}

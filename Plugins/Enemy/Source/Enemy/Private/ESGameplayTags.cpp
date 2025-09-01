@@ -11,10 +11,13 @@ namespace SLGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_State_Hit, "Enemy.State.Hit");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_State_Patrol, "Enemy.State.Patrol");
 
-	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Melee1, "Enemy.Boss.Attack.Melee1");
-	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Melee2, "Enemy.Boss.Attack.Melee2");
-	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Melee3, "Enemy.Boss.Attack.Melee3");
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Melee, "Enemy.Boss.Attack.Melee");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Summon, "Enemy.Boss.Attack.Summon");
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Recall, "Enemy.Boss.Attack.Recall");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_Grab, "Enemy.Boss.Attack.Grab");
+
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_SummonStart, "Enemy.Event.SummonStart");
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Recall, "Enemy.Event.Recall");
+
 
 }

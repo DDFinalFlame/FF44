@@ -20,6 +20,7 @@ enum class EEnemyType : uint8
 {
 	Iron UMETA(DisplayName = "Iron"),
 	Archer UMETA(DisplayName = "Archer"),
+	Ghost UMETA(DisplayName = "Ghost"),
 	Sevarog UMETA(DisplayName = "Sevarog")
 };
 
@@ -34,6 +35,16 @@ enum class EWeaponType : uint8
 	LeftHand,
 	RightHand,
 	Bow,
+};
+
+
+// Attack Type
+UENUM(BlueprintType)
+enum class EAttackType : uint8
+{
+	Normal,
+	Running,
+	Special,
 };
 
 // Enemy Hit Direction

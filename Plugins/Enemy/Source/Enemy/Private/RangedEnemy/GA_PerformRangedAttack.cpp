@@ -13,8 +13,8 @@ UGA_PerformRangedAttack::UGA_PerformRangedAttack()
 }
 
 void UGA_PerformRangedAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                              const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-                                              const FGameplayEventData* TriggerEventData)
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
 {
 	// 기본 Attack 로직 ( Anim Montage 실행 )
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -53,4 +53,6 @@ void UGA_PerformRangedAttack::ActivateAbility(const FGameplayAbilitySpecHandle H
 		//Projectile->SetReplicateMovement(true);
 		Projectile->FireInDirection(Rotation.Vector());
 	}
+
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 }

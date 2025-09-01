@@ -4,31 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "GA_EnemyHit.generated.h"
+#include "GA_ReturnToBoss.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ENEMY_API UGA_EnemyHit : public UGameplayAbility
+class ENEMY_API UGA_ReturnToBoss : public UGameplayAbility
 {
 	GENERATED_BODY()
-public:
-	UGA_EnemyHit();
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EventTag")
-	FGameplayTag EventTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName TargetLocationKeyName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	TSubclassOf<UGameplayEffect> HitEffect;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName BehaviorKeyName;
 
-	FVector AttackerLocation;
 
 protected:
 	virtual auto ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	                             const FGameplayAbilityActivationInfo ActivationInfo,
 	                             const FGameplayEventData* TriggerEventData) -> void override;
 
-	UFUNCTION()
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

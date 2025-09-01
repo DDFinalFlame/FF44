@@ -9,11 +9,6 @@
 
 UGA_EnemyHit::UGA_EnemyHit()
 {
-	/* 블루 프린트에서 설정한 tag 부여 **/
-	if (EventTag.IsValid())
-	{
-		AbilityTags.AddTag(EventTag);
-	}
 }
 
 void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -109,11 +104,6 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 	}
 
-}
-
-void UGA_EnemyHit::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
-{
-	Super::OnGiveAbility(ActorInfo, Spec);
 }
 
 void UGA_EnemyHit::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)

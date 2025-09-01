@@ -11,11 +11,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon/EnemyBaseWeapon.h"
 
-#include "Materials/MaterialParameterCollection.h"
-#include "Materials/MaterialParameterCollectionInstance.h"
-
-class AAIController;
-
 ABaseEnemy::ABaseEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -297,9 +292,9 @@ void ABaseEnemy::StartDissolve()
 
 UAnimMontage* ABaseEnemy::GetHitMontage(EHitDirection Direction) const
 {
-	if (HitMontageData)
+	if (EnemyMontageData)
 	{
-		UAnimMontage* Montage = HitMontageData->GetHitMontage(EnemyType, Direction);
+		UAnimMontage* Montage = EnemyMontageData->GetHitMontage(EnemyType, Direction);
 		if (Montage)
 		{
 			return Montage;
@@ -311,9 +306,23 @@ UAnimMontage* ABaseEnemy::GetHitMontage(EHitDirection Direction) const
 
 UAnimMontage* ABaseEnemy::GetDieMontage() const
 {
-	if (HitMontageData)
+	if (EnemyMontageData)
 	{
-		UAnimMontage* Montage = HitMontageData->GetDieMontage(EnemyType);
+		UAnimMontage* Montage = EnemyMontageData->GetDieMontage(EnemyType);
+		if (Montage)
+		{
+			return Montage;
+		}
+	}
+
+	return nullptr;
+}
+
+UAnimMontage* ABaseEnemy::GetAttackMontage(FGameplayTagContainer TargetTags) const
+{
+	if (EnemyMontageData)
+	{
+		UAnimMontage* Montage = EnemyMontageData->GetAttackMontage(EnemyType, TargetTags);
 		if (Montage)
 		{
 			return Montage;
