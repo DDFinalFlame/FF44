@@ -95,6 +95,8 @@ void AFallingRockActor::OnMeshHit(UPrimitiveComponent* HitComp, AActor* OtherAct
         UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, ImpactPoint);
     }
 
+    bHasLanded = true;
+
     // 지면에 닿으면 멈추고 파괴(옵션)
     if (bDestroyOnGroundHit)
     {
@@ -135,6 +137,8 @@ void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
 bool AFallingRockActor::ShouldIgnore(AActor* OtherActor) const
 {
     if (!OtherActor) return true;
+
+    if (bHasLanded) return true;
 
     // 자기편/소환주 무시 로직 예시
     if (bIgnoreOwnerAndInstigatorTeam)

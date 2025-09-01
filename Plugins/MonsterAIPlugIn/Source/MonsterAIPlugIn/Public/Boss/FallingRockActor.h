@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "FallingRockActor.generated.h"
-#include "GeometryCollection/GeometryCollectionComponent.h"
+
 
 class UStaticMeshComponent;
 class UBoxComponent;
@@ -30,11 +30,7 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     UBoxComponent* HitBox;
 
-    UPROPERTY(VisibleAnywhere)
-    UGeometryCollectionComponent* GeoComp;
-
-    UPROPERTY(EditAnywhere, Category = "Rock|Asset")
-    TSoftObjectPtr<UGeometryCollection> RockGC;
+  
 
 public:
     /** 시작 하강 속도(중력만으로 충분하면 0) */
@@ -106,4 +102,5 @@ protected:
 private:
     TSet<TWeakObjectPtr<AActor>> AlreadyHitSet;
     TWeakObjectPtr<AActor> DamageInstigator;
+    bool bHasLanded = false;
 };
