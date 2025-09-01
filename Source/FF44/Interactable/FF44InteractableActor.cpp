@@ -1,7 +1,11 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
 #include "Interactable/FF44InteractableActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Components/SceneComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -17,13 +21,16 @@ AFF44InteractableActor::AFF44InteractableActor()
 
     InteractRange = CreateDefaultSubobject<USphereComponent>(TEXT("InteractRange"));
     InteractRange->SetupAttachment(RootComponent);
-    InteractRange->InitSphereRadius(150.f);
+    InteractRange->InitSphereRadius(200.f);
     InteractRange->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     InteractRange->SetCollisionResponseToAllChannels(ECR_Ignore);
     InteractRange->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
+    PromptAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("PromptAnchor"));
+    PromptAnchor->SetupAttachment(RootComponent);
+
     PromptWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PromptWidget"));
-    PromptWidget->SetupAttachment(RootComponent);
+    PromptWidget->SetupAttachment(PromptAnchor);
     PromptWidget->SetWidgetSpace(EWidgetSpace::World);
     PromptWidget->SetTwoSided(true);
     PromptWidget->SetDrawSize(FVector2D(120.f, 32.f));
@@ -35,7 +42,9 @@ void AFF44InteractableActor::BeginPlay()
     Super::BeginPlay();
 
     if (PromptWidget && PromptWidgetClass)
+    {
         PromptWidget->SetWidgetClass(PromptWidgetClass);
+    }
 
     if (InteractRange)
     {
@@ -43,28 +52,13 @@ void AFF44InteractableActor::BeginPlay()
         InteractRange->OnComponentEndOverlap.AddDynamic(this, &AFF44InteractableActor::OnRangeEnd);
     }
 
-    if (Mesh)
-    {
-        Mesh->SetSimulatePhysics(bUseGravity);
-        Mesh->SetEnableGravity(bUseGravity);
-        if (bUseGravity && InitialPhysicsSimTime > 0.f)
-        {
-            FTimerHandle H;
-            GetWorldTimerManager().SetTimer(H, [this]()
-                {
-                    if (Mesh)
-                    {
-                        Mesh->SetSimulatePhysics(false);
-                        Mesh->SetEnableGravity(false);
-                    }
-                }, InitialPhysicsSimTime, false);
-        }
-    }
+    SetPromptVisible(false);
 }
 
 void AFF44InteractableActor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
     UpdatePromptFacing();
 }
 
@@ -72,15 +66,18 @@ bool AFF44InteractableActor::CanInteract_Implementation(AActor* Interactor) cons
 {
     return true;
 }
+
 void AFF44InteractableActor::Interact_Implementation(AActor* Interactor)
 {
-
+    // 실제 상호작용 로직은 자식 클래스에서
 }
+
 void AFF44InteractableActor::OnFocus_Implementation(AActor* Interactor)
 {
     CurrentInteractor = Interactor;
     SetPromptVisible(true);
 }
+
 void AFF44InteractableActor::OnUnfocus_Implementation(AActor* Interactor)
 {
     if (CurrentInteractor.Get() == Interactor)
@@ -92,31 +89,33 @@ void AFF44InteractableActor::OnUnfocus_Implementation(AActor* Interactor)
 
 void AFF44InteractableActor::SetPromptVisible(bool bVisible)
 {
-    if (PromptWidget) PromptWidget->SetVisibility(bVisible);
+    if (PromptWidget)
+    {
+        PromptWidget->SetVisibility(bVisible);
+    }
 }
 
 void AFF44InteractableActor::UpdatePromptFacing()
 {
     if (!PromptWidget || !PromptWidget->IsVisible()) return;
 
-    UWorld* World = GetWorld();
-    if (!World) return;
-    APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0);
-    if (!PC) return;
-    APlayerCameraManager* Cam = PC->PlayerCameraManager;
-    if (!Cam) return;
+    UWorld* World = GetWorld(); if (!World) return;
+    APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0); if (!PC) return;
 
-    const FVector Origin = GetActorLocation();
-    const FVector CamLoc = Cam->GetCameraLocation();
+    FVector CamLoc; FRotator CamRot;
+    PC->GetPlayerViewPoint(CamLoc, CamRot);
 
-    FVector FlatDir = CamLoc - Origin; FlatDir.Z = 0.f; FlatDir.Normalize();
-    const FVector TargetLoc = Origin + FlatDir * PromptDistance + FVector(0, 0, PromptHeight);
+    const FVector AnchorLoc = PromptAnchor ? PromptAnchor->GetComponentLocation() : GetActorLocation();
+
+    FVector TargetLoc = FMath::Lerp(AnchorLoc, CamLoc, FMath::Clamp(PromptMidAlpha, 0.f, 1.f));
+    if (bKeepZFromAnchor) TargetLoc.Z = AnchorLoc.Z;
 
     PromptWidget->SetWorldLocation(TargetLoc);
 
-    FRotator Face = (CamLoc - TargetLoc).Rotation();
-    if (bYawOnly) { Face.Pitch = 0.f; Face.Roll = 0.f; }
-    PromptWidget->SetWorldRotation(Face);
+    FRotator LookAt = (CamLoc - TargetLoc).Rotation();
+    LookAt.Pitch = 0.f;
+    LookAt.Roll = 0.f;
+    PromptWidget->SetWorldRotation(LookAt);
 }
 
 void AFF44InteractableActor::OnRangeBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
