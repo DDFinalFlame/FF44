@@ -30,7 +30,10 @@ public class MonsterAIPlugIn : ModuleRules
 				"GameplayTags",        //태그 시스템
 				"GameplayTasks",       //Task 기반 시스템
 				"GeometryCollectionEngine",
-				"FieldSystemEngine",
+				"FieldSystemEngine","Chaos",                    // (보조) 타입/헬퍼
+				"ChaosSolverEngine",        // FChaosPhysicsCollisionInfo / 콜백 USTRUCT
+				"GeometryCollectionEngine", // UGeometryCollectionComponent
+				"FieldSystemEngine",         // FieldSystemComponent 및 Field 객체들
             }
 			);
 			

@@ -11,43 +11,62 @@
 #include "GameplayEffect.h"
 #include "MonsterTags.h"
 
+#include "GeometryCollection/GeometryCollectionComponent.h"
+#include "Field/FieldSystemComponent.h"
+#include "Field/FieldSystemObjects.h"
+
+static bool IsGroundHit(const FChaosPhysicsCollisionInfo& Info)
+{
+    return Info.OtherComponent
+        && Info.OtherComponent->GetCollisionObjectType() == ECC_WorldStatic;
+}
+
+
 AFallingRockActor::AFallingRockActor()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
 
-    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-    SetRootComponent(Mesh);
+    // === Geometry Collection 루트 ===
+    GeoComp = CreateDefaultSubobject<UGeometryCollectionComponent>(TEXT("GeoComp"));
+    SetRootComponent(GeoComp);
 
-    // 충돌 + 물리 설정
-    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    Mesh->SetCollisionObjectType(ECC_WorldDynamic);
+    // 충돌/물리
+    GeoComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    GeoComp->SetCollisionObjectType(ECC_WorldDynamic);
+    GeoComp->SetCollisionResponseToAllChannels(ECR_Block);
+    GeoComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+    GeoComp->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+    GeoComp->BodyInstance.bUseCCD = true;
 
-    // 기본 응답: 월드는 블록, 폰은 오버랩(플레이어 감지)
-    Mesh->SetCollisionResponseToAllChannels(ECR_Block);
-    Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+    GeoComp->SetSimulatePhysics(true);
+    GeoComp->SetEnableGravity(true);
 
-    // 물리로 낙하
-    Mesh->SetSimulatePhysics(true);
-    Mesh->SetEnableGravity(true);
-    Mesh->BodyInstance.bUseCCD = true;
+    // 프랙처/물리 이벤트 수신
+    GeoComp->SetNotifyBreaks(true); // 브레이크 이벤트
+    GeoComp->OnChaosBreakEvent.AddDynamic(this, &AFallingRockActor::OnChaosBreak);
+    GeoComp->OnChaosPhysicsCollision.AddDynamic(this, &AFallingRockActor::OnChaosCollision);
 
-    // Hit 이벤트 수신 (블로킹 충돌)
-    Mesh->SetNotifyRigidBodyCollision(true);
-    Mesh->OnComponentHit.AddDynamic(this, &AFallingRockActor::OnMeshHit);
+    GeoComp->SetCanEverAffectNavigation(false);
+    if (HitBox) HitBox->SetCanEverAffectNavigation(false);
+    // Hit 이벤트는 GC에서는 OnComponentHit 대신 ChaosPhysicsCollision을 쓰는 편이 안정적
+    // GeoComp->SetNotifyRigidBodyCollision(true); // 필요 시
 
+    // (선택) FieldSystem
+    FieldSystem = CreateDefaultSubobject<UFieldSystemComponent>(TEXT("FieldSystem"));
+    FieldSystem->SetupAttachment(GeoComp);
+
+    // 판정용 히트박스
     HitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
-    HitBox->SetupAttachment(Mesh);
+    HitBox->SetupAttachment(GeoComp);
     HitBox->SetBoxExtent(FVector(40.f));           // 필요에 맞게 조절
     HitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     HitBox->SetCollisionObjectType(ECC_WorldDynamic);
     HitBox->SetCollisionResponseToAllChannels(ECR_Ignore);
     HitBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     HitBox->OnComponentBeginOverlap.AddDynamic(this, &AFallingRockActor::OnHitBoxBeginOverlap);
-    // 기본 ByCaller 태그
+  
     if (!ByCallerDamageTag.IsValid())
     {
-        // 프로젝트에서 쓰는 데이터 태그명으로 바꾸세요. (예: "Data.Damage")
         ByCallerDamageTag = MonsterTags::Data_Drop_Damage;
     }
 }
@@ -61,53 +80,80 @@ void AFallingRockActor::BeginPlay()
         SetLifeSpan(LifeSeconds);
     }
 
-    // 초기 하강 속도(원하시면 사용)
-    if (InitialDownSpeed > 0.f && Mesh && Mesh->IsSimulatingPhysics())
+    if (InitialDownSpeed > 0.f && GeoComp && GeoComp->IsSimulatingPhysics())
     {
-        Mesh->SetPhysicsLinearVelocity(FVector(0.f, 0.f, -InitialDownSpeed));
+        // 아래로 초기 속도 부여
+        const FVector InitVel(0.f, 0.f, -InitialDownSpeed);
+        GeoComp->SetPhysicsLinearVelocity(InitVel);
     }
+}
+
+
+void AFallingRockActor::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if (!GeoComp || !HitBox) return;
+    if (bHasLanded) return; // 착지 후엔 굳이 갱신 안 하려면
+
+    // Chaos가 매 프레임 갱신하는 Bounds 사용
+    const FBoxSphereBounds& B = GeoComp->Bounds;
+
+    // 회전은 GeoComp 쿼터니언 그대로, 위치는 바운드 중심
+    const FQuat Rot = GeoComp->GetComponentQuat();
+    const FTransform Xform(Rot, B.Origin);
+
+    // 텔레포트 방식으로 배치(물리 스윕 X) → 이후 오버랩 재계산
+    HitBox->SetWorldTransform(Xform, /*bSweep=*/false, /*OutHit=*/nullptr, ETeleportType::TeleportPhysics);
+
+    // 박스 크기(half-extent). Bounds.BoxExtent 자체가 half이므로 그대로 사용, 살짝 축소
+    HitBox->SetBoxExtent(B.BoxExtent * 0.6f, /*bUpdateOverlaps=*/false);
+
+    // UE5.6: 인자 없이 호출 (기본값: PendingOverlaps=nullptr, bDoNotifies=true)
+    HitBox->UpdateOverlaps();
 }
 
 void AFallingRockActor::SetDamageInstigator(AActor* InInstigator)
 {
     DamageInstigator = InInstigator;
-    SetOwner(InInstigator); // 컨텍스트 추적에 유용
+    SetOwner(InInstigator);
 }
 
-void AFallingRockActor::OnMeshHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-    const FHitResult& Hit)
+// === Chaos 충돌 콜백 ===
+void AFallingRockActor::OnChaosCollision(const FChaosPhysicsCollisionInfo& Info)
 {
-    // 자기 자신/무효 체크
-    if (!OtherComp || OtherActor == this) return;
+    const FVector P = Info.Location;
 
-    // 지면 또는 월드와 블로킹 충돌한 것으로 간주
-    // (필요하면 OtherComp의 ObjectType으로 WorldStatic/WorldDynamic 체크 가능)
-    FVector ImpactPoint = Hit.ImpactPoint;
+    // FX
+    if (ImpactFX) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ImpactFX, P);
+    if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, P);
 
-    // 이펙트/사운드
-    if (ImpactFX)
+    // 바닥에 닿았을 때만 착지
+    if (!bHasLanded && IsGroundHit(Info))
     {
-        UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ImpactFX, ImpactPoint);
-    }
-    if (ImpactSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, ImpactPoint);
-    }
+        bHasLanded = true;
+        ApplyFractureFieldAt(P);
 
-    bHasLanded = true;
-
-    // 지면에 닿으면 멈추고 파괴(옵션)
-    if (bDestroyOnGroundHit)
-    {
-        // 더 이상 튀지 않게 물리/충돌 비활성
-        if (Mesh)
+        if (bDestroyOnGroundHit)
         {
-            Mesh->SetSimulatePhysics(false);
-            Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            FTimerHandle Th;
+            GetWorldTimerManager().SetTimer(Th, FTimerDelegate::CreateWeakLambda(this, [this]()
+                {
+                    if (GeoComp)
+                    {
+                        GeoComp->SetSimulatePhysics(false);
+                        GeoComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+                    }
+                    SetLifeSpan(FMath::Max(0.01f, DestroyDelayOnGround));
+                }), 0.03f, false);
         }
-        SetLifeSpan(FMath::Max(0.01f, DestroyDelayOnGround));
     }
+}
+
+// === 브레이크(파편 분리) 콜백 ===
+void AFallingRockActor::OnChaosBreak(const FChaosBreakEvent& BreakEvent)
+{
+    // 필요 시 파편화될 때 추가 이펙트/사운드/스코어링 등을 넣으세요.
+    // 예: UE_LOG(LogTemp, Warning, TEXT("GC Break Pieces=%d"), BreakEvent.Component->GetNumElements());
 }
 
 void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -117,7 +163,7 @@ void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
     UE_LOG(LogTemp, Warning, TEXT("[Rock] Overlap with %s (Auth=%d)"),
         *GetNameSafe(OtherActor), HasAuthority() ? 1 : 0);
 
-    if (!HasAuthority()) return;               // 서버에서만 처리
+    if (!HasAuthority()) return;
     if (!OtherActor || OtherActor == this) return;
     if (ShouldIgnore(OtherActor)) return;
 
@@ -129,10 +175,9 @@ void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
 
     ApplyDamageTo(OtherActor, SweepResult);
 
-    // 1회용 판정이면 여기서 바로 파괴해도 됨(선택)
-    // Destroy();
+    // 무기 등 특정 조건에서만 ‘즉시 파편화’ 하고 싶으면 여기서도 필드 적용 가능
+    // ApplyFractureFieldAt(SweepResult.ImpactPoint);
 }
-
 
 bool AFallingRockActor::ShouldIgnore(AActor* OtherActor) const
 {
@@ -140,14 +185,11 @@ bool AFallingRockActor::ShouldIgnore(AActor* OtherActor) const
 
     if (bHasLanded) return true;
 
-    // 자기편/소환주 무시 로직 예시
     if (bIgnoreOwnerAndInstigatorTeam)
     {
         if (OtherActor == GetOwner()) return true;
         if (DamageInstigator.IsValid() && OtherActor == DamageInstigator.Get()) return true;
-
-        // 팀 시스템이 있다면 여기에서 팀 비교하여 같은 팀이면 무시
-        // e.g., IGenericTeamAgentInterface* etc...
+        // 팀 비교 로직을 쓰신다면 여기에서 같은 편이면 return true;
     }
 
     return false;
@@ -156,12 +198,8 @@ bool AFallingRockActor::ShouldIgnore(AActor* OtherActor) const
 UAbilitySystemComponent* AFallingRockActor::GetASCFromActor(AActor* Actor) const
 {
     if (!Actor) return nullptr;
-
-    // 표준 접근
     return UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Actor);
 }
-
-
 
 void AFallingRockActor::ApplyDamageTo(AActor* Target, const FHitResult& OptionalHit)
 {
@@ -170,9 +208,8 @@ void AFallingRockActor::ApplyDamageTo(AActor* Target, const FHitResult& Optional
     UAbilitySystemComponent* TargetASC = GetASCFromActor(Target);
     if (!TargetASC) return;
 
-    // 타겟 ASC 기준으로 컨텍스트 생성
     FGameplayEffectContextHandle Ctx = TargetASC->MakeEffectContext();
-    // Instigator: 바위의 주인(보스) 또는 이 액터 자신
+
     AActor* InstigatorActor = DamageInstigator.IsValid() ? DamageInstigator.Get() : this;
     APawn* InstigatorPawn = Cast<APawn>(InstigatorActor);
     AController* InstigatorController = InstigatorPawn ? InstigatorPawn->GetController() : nullptr;
@@ -184,14 +221,39 @@ void AFallingRockActor::ApplyDamageTo(AActor* Target, const FHitResult& Optional
         Ctx.AddHitResult(OptionalHit);
     }
 
-    FGameplayEffectSpecHandle Spec = TargetASC->MakeOutgoingSpec(GE_Damage, /*Level=*/1.f, Ctx);
+    FGameplayEffectSpecHandle Spec = TargetASC->MakeOutgoingSpec(GE_Damage, 1.f, Ctx);
     if (!Spec.IsValid()) return;
 
-    // ByCaller 지원
     if (ByCallerDamageTag.IsValid())
     {
         Spec.Data->SetSetByCallerMagnitude(ByCallerDamageTag, DamageMagnitude);
     }
 
     TargetASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+}
+
+/** 필드(ExternalClusterStrain)로 프랙처를 유도 */
+void AFallingRockActor::ApplyFractureFieldAt(const FVector& Center)
+{
+    if (!GeoComp) return;
+
+    // RadialFalloff(Scalar) -> ToInteger -> ExternalClusterStrain 로 전달하는 방법이 일반적
+    URadialFalloff* Radial = NewObject<URadialFalloff>();
+    if (!Radial) return;
+
+    Radial->Magnitude = FractureStrength;   // 강도(클러스터 스트레인에 직접 매핑)
+    Radial->MinRange = 0.f;
+    Radial->MaxRange = FractureRadius;
+    Radial->Default = 0.f;
+    Radial->Radius = FractureRadius;
+    Radial->Position = Center;
+    Radial->Falloff = EFieldFalloffType::Field_FallOff_None; // 필요 시 Linear 등으로 변경
+
+    // Chaos_Field_ExternalClusterStrain : 클러스터 파괴 유도
+    GeoComp->ApplyPhysicsField(
+        true,
+        EGeometryCollectionPhysicsTypeEnum::Chaos_ExternalClusterStrain,
+        nullptr,
+        Radial
+    );
 }
