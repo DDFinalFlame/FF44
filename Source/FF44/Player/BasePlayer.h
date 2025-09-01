@@ -6,7 +6,7 @@
 #include "AbilitySystemInterface.h"
 
 #include "Data/PlayerDefinition.h"
-#include "AttackStatProvider.h"
+#include "Interface/AttackStatProvider.h"
 #include "BasePlayer.generated.h"
 
 class AActor;
