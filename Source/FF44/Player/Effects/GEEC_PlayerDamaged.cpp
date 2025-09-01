@@ -22,11 +22,15 @@ void UGEEC_PlayerDamaged::Execute_Implementation(const FGameplayEffectCustomExec
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(
 		MonsterAttackCaptureDef, EvaluationParameters, LocalMonsterAttackPower);
 
+	float LocalRockPower = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(
+		RockCaptureDef, EvaluationParameters, LocalRockPower);
+
 	float LocalPlayerDefence = 0.f;
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(
 		PlayerDefenceCaptureDef, EvaluationParameters, LocalPlayerDefence);
 
-	auto NewAttackPower = LocalMonsterAttackPower - LocalPlayerDefence;
+	auto NewAttackPower = LocalRockPower + LocalMonsterAttackPower - LocalPlayerDefence;
 
 	// Set new HP
 	OutExecutionOutput.AddOutputModifier((FGameplayModifierEvaluatedData(

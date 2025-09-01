@@ -5,6 +5,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "AbilitySystemBlueprintLibrary.h"
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
@@ -197,6 +198,12 @@ void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
         if (AlreadyHitSet.Contains(OtherActor)) return;
         AlreadyHitSet.Add(OtherActor);
     }
+
+    FGameplayEventData Payload;
+    Payload.EventTag = MonsterTags::Event_Player_Hit;
+    Payload.Instigator = this; //몬스터끼리 공격 X
+    Payload.Target = OtherActor;
+    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
 
     ApplyDamageTo(OtherActor, SweepResult);
 
