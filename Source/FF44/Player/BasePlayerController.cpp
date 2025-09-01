@@ -9,6 +9,12 @@
 #include "UI/BasePlayerHUDWidget.h"
 
 
+ABasePlayerController::ABasePlayerController()
+{
+	TeamId = FGenericTeamId(0);
+}
+
+
 void ABasePlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
