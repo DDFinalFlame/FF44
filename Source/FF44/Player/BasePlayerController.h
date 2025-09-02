@@ -34,9 +34,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
 
+	UPROPERTY()
+	TObjectPtr<UBasePlayerHUDWidget> PlayerHUD;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> InventoryWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> InventoryWidget;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
-	void InitUI(UAbilitySystemComponent* _AbilitySystem);
+	void InitPlayerUI(UAbilitySystemComponent* _AbilitySystem);
+
+	virtual void ToggleHUD();
+	virtual void ToggleInventory();
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 protected:

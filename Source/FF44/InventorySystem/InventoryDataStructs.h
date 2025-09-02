@@ -1,0 +1,18 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "InventoryDataStructs.generated.h"
+
+USTRUCT()
+struct FLines {
+	GENERATED_USTRUCT_BODY();
+	TArray<FVector2D> XLines;
+	TArray<FVector2D> YLines;
+};
+
+class FF44_API InventoryDataStructs
+{
+public:
+
+
+};

@@ -19,6 +19,7 @@ class UGameplayAbility;
 
 class UBasePlayerAttributeSet;
 class UBasePlayerHUDWidget;
+class UInventoryComponent;
 
 struct FInputActionValue;
 
@@ -33,6 +34,9 @@ public:
 
 public:
 	ABasePlayer();
+
+protected:
+	class ABasePlayerController* BasePlayerController;
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -187,6 +191,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
 
+	// QuickSlot
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* InventoryAction;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* ItemSlot_1Action;
 
@@ -212,13 +220,26 @@ protected:
 	virtual void Interact(const FInputActionValue& Value);
 	virtual void LockOn(const FInputActionValue& Value);
 	virtual void ToggleCombat(const FInputActionValue& Value);
-	virtual void ItemSlot_1(const FInputActionValue& Value);
 
 	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);
 	virtual void SpecialAct(const FInputActionValue& Value);
 	virtual void Skill(const FInputActionValue& Value);
 
+	// QuickSlot
+	virtual void ToggleInventory(const FInputActionValue& Value);
+	virtual void ItemSlot_1(const FInputActionValue& Value);
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///									Inventory										///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* InventoryComponent;
+
+public:
+	UInventoryComponent* GetInventoryComponent() { return InventoryComponent; }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										State											///

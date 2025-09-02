@@ -12,6 +12,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
+#include "Blueprint/UserWidget.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
@@ -23,6 +24,7 @@
 #include "BasePlayerState.h"
 #include "Camera/BasePlayerCameraManager.h"
 #include "Weapon/BaseWeapon.h"
+#include "InventorySystem/InventoryComponent.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -85,6 +87,7 @@ ABasePlayer::ABasePlayer()
 
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
@@ -136,13 +139,18 @@ void ABasePlayer::BeginPlay()
 	}
 
 	// Player Controller Set
-	if (ABasePlayerController* PlayerController = Cast<ABasePlayerController>(GetController()))
+	BasePlayerController = Cast<ABasePlayerController>(GetController());
+	if (BasePlayerController)
 	{		
-		if (AbilitySystem)
-			PlayerController->InitUI(AbilitySystem);
+		BasePlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+		BasePlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
 
-		PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
-		PlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
+		// UI Set
+		if (AbilitySystem)
+		{
+			BasePlayerController->InitPlayerUI(AbilitySystem);
+			BasePlayerController->ToggleHUD();	// 추후에 Intro -> InGame 시 구현
+		}
 	}
 	else
 	{
@@ -336,6 +344,12 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		{
 			EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ABasePlayer::Skill);
 		}
+
+		// QuickSlot
+		if (InventoryAction)
+		{
+			EnhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Started, this, &ABasePlayer::ToggleInventory);
+		}
 		if (ItemSlot_1Action)
 		{
 			EnhancedInputComponent->BindAction(ItemSlot_1Action, ETriggerEvent::Triggered, this, &ABasePlayer::ItemSlot_1);
@@ -482,16 +496,6 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 	}
 }
 
-void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
-{
-	if (!AbilitySystem) return;
-
-	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip)) return;
-
-	// 우선 Potion으로
-	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
-}
-
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
 	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
@@ -510,6 +514,23 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// Change State
 
 	// PlayMontage
+}
+
+void ABasePlayer::ToggleInventory(const FInputActionValue& Value)
+{
+	if (!BasePlayerController) return;
+
+	BasePlayerController->ToggleInventory();
+}
+
+void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
+{
+	if (!AbilitySystem) return;
+
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip)) return;
+
+	// 우선 Potion으로
+	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
 }
 
 void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity)

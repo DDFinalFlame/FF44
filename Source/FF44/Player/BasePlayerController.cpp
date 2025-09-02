@@ -28,11 +28,50 @@ void ABasePlayerController::SetupInputComponent()
 	}
 }
 
-void ABasePlayerController::InitUI(UAbilitySystemComponent* _AbilitySystem)
+void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem)
 {
-	if (!PlayerHUDClass) return;
-	auto HUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
-	HUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+	if (!_AbilitySystem) return;
 
-	HUD->AddToViewport();
+	// HUD
+	if (PlayerHUDClass) {
+		PlayerHUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
+		PlayerHUD->SetOwningPlayer(this);
+		PlayerHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+	}
+
+	// Inventory Set
+	if (InventoryWidgetClass) {
+		InventoryWidget = CreateWidget<UUserWidget>(GetWorld(), InventoryWidgetClass);
+		InventoryWidget->SetOwningPlayer(this);
+	}
+}
+
+void ABasePlayerController::ToggleHUD()
+{
+	if (!PlayerHUD) return;
+
+	if (PlayerHUD->IsInViewport()) {
+		PlayerHUD->RemoveFromParent();
+	}
+	else {
+		PlayerHUD->AddToViewport();
+	}
+}
+
+void ABasePlayerController::ToggleInventory()
+{
+	if (!InventoryWidget) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Inventory Toggle"));
+
+	if (InventoryWidget->IsInViewport()) {
+		InventoryWidget->RemoveFromParent();
+		SetShowMouseCursor(false);
+		SetInputMode(FInputModeGameOnly());
+	}
+	else {
+		InventoryWidget->AddToViewport();		
+		SetShowMouseCursor(true);
+		SetInputMode(FInputModeGameAndUI());
+	}
 }
