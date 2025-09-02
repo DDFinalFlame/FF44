@@ -34,6 +34,7 @@ public class MonsterAIPlugIn : ModuleRules
 				"ChaosSolverEngine",        // FChaosPhysicsCollisionInfo / 콜백 USTRUCT
 				"GeometryCollectionEngine", // UGeometryCollectionComponent
 				"FieldSystemEngine",         // FieldSystemComponent 및 Field 객체들
+                 "Niagara",//필요 시 입력 시스템 (선택사항)
             }
 			);
 			

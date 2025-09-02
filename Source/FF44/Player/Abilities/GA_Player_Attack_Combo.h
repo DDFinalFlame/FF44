@@ -22,6 +22,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
 	FGameplayTag ComboEnabledTag;
 
+
 protected:
 	virtual void CommitExecute(const FGameplayAbilitySpecHandle Handle,
 							   const FGameplayAbilityActorInfo* ActorInfo,
