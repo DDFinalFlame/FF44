@@ -38,8 +38,6 @@ private:
     void RetractSpikes();
     void EndCooldown();
 
-    void ApplyDamageOnce();
-
 private:
     UPROPERTY(VisibleAnywhere, Category = "SpikeTrap|Components")
     USceneComponent* SpikeRoot;
@@ -51,7 +49,7 @@ private:
     UStaticMeshComponent* SpikeMesh;
 
     UPROPERTY(VisibleAnywhere, Category = "SpikeTrap|Components")
-    UBoxComponent* DamageZone;
+    UBoxComponent* DamageArea;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpikeTrap|Timing", meta = (AllowPrivateAccess = "true", ClampMin = "0"))
     float TriggerDelay = 0.25f;
@@ -77,14 +75,7 @@ private:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpikeTrap|Motion", meta = (AllowPrivateAccess = "true"))
     bool bEaseOut = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpikeTrap|Damage", meta = (AllowPrivateAccess = "true"))
-    float Damage = 25.f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpikeTrap|Damage", meta = (AllowPrivateAccess = "true"))
-    TSubclassOf<UDamageType> DamageType;
-
     bool bCycling = false;
-    bool bDisarmed = false;
 
     FVector SpikeDownLocal;
     FVector SpikeUpLocal;
@@ -100,4 +91,10 @@ private:
 
     UFUNCTION()
     void OnRetracted();
+
+    virtual void OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep) override;
+
+    virtual void OnDamageEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 };

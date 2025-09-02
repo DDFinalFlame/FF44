@@ -95,3 +95,13 @@ void AFF44TrapBase::SetArmed(bool bInArmed)
     if (bArmed) BP_OnArmed();
     else        BP_OnDisarmed();
 }
+
+void AFF44TrapBase::OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)
+{
+
+}
+
+void AFF44TrapBase::OnDamageEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+
+}

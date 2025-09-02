@@ -8,6 +8,7 @@
 
 class UBoxComponent;
 class UGameplayEffect;
+class ABasePlayer;
 
 UCLASS()
 class FF44_API AFF44TrapBase : public AFF44InteractableActor
@@ -69,4 +70,18 @@ public:
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Trap")
     void BP_OnDeactivate();
+
+    UFUNCTION()
+    virtual void OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep);
+
+    UFUNCTION()
+    virtual void OnDamageEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DamageAbility")
+    TSubclassOf<UGameplayAbility> DamageAbility;
+
+    FGameplayAbilitySpecHandle DamageAbilityHandle;
 };

@@ -6,6 +6,8 @@
 #include "Interactable/FF44TrapBase.h"
 #include "FF44BladeTrap.generated.h"
 
+class UBoxComponent;
+
 UCLASS()
 class FF44_API AFF44BladeTrap : public AFF44TrapBase
 {
@@ -17,6 +19,12 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
+
+    virtual void OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep) override;
+
+    virtual void OnDamageEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BladeTrap")
@@ -30,6 +38,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, Category = "BladeTrap")
     UStaticMeshComponent* BladeMesh;
+
+    UPROPERTY(VisibleAnywhere, Category = "BladeTrap")
+    UBoxComponent* DamageArea;
 
 private:
     float RunningTime = 0.f;

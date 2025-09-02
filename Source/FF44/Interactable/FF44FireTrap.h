@@ -23,13 +23,11 @@ protected:
 
     virtual void SetActive(bool bInActive) override;
 
-    UFUNCTION()
-    void OnDamageAreaBegin(UPrimitiveComponent* Overlapped, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIdx, bool bFromSweep, const FHitResult& Sweep);
+    virtual void OnDamageBegin(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIdx, bool bFromSweep, const FHitResult& Sweep) override;
 
-    UFUNCTION()
-    void OnDamageAreaEnd(UPrimitiveComponent* Overlapped, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIdx);
+    virtual void OnDamageEnd(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIdx) override;
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Fire")
@@ -38,9 +36,4 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Fire")
     UParticleSystemComponent* FireEffect;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Fire")
-    float Damage = 10.f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Fire")
-    TSubclassOf<UDamageType> DamageTypeClass;
 };

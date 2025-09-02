@@ -31,8 +31,8 @@ void AFF44FireTrap::BeginPlay()
 
     if (DamageArea)
     {
-        DamageArea->OnComponentBeginOverlap.AddDynamic(this, &AFF44FireTrap::OnDamageAreaBegin);
-        DamageArea->OnComponentEndOverlap.AddDynamic(this, &AFF44FireTrap::OnDamageAreaEnd);
+        DamageArea->OnComponentBeginOverlap.AddDynamic(this, &AFF44FireTrap::OnDamageBegin);
+        DamageArea->OnComponentEndOverlap.AddDynamic(this, &AFF44FireTrap::OnDamageEnd);
     }
 
     SetActive(false);
@@ -55,34 +55,55 @@ void AFF44FireTrap::SetActive(bool bInActive)
     }
 }
 
-void AFF44FireTrap::OnDamageAreaBegin(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+void AFF44FireTrap::OnDamageBegin(UPrimitiveComponent* Overlapped, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIdx, bool bFromSweep, const FHitResult& Sweep)
 {
     if (!bArmed || !bActive || !OtherActor) return;
 
+  //  if (auto Player = Cast<ABasePlayer>(OtherActor))
+  //  {
+  //      auto playerAbility = Player->GetAbilitySystemComponent();
+  //      auto EffectContext = playerAbility->MakeEffectContext();
+		//EffectContext.AddSourceObject(this);
+
+  //      auto spec = playerAbility->MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
+  //      
+  //      if (spec.Data.IsValid())
+  //      {
+		//	playerAbility->ApplyGameplayEffectSpecToSelf(*spec.Data.Get());
+  //          
+  //          FGameplayEventData Payload;
+  //          Payload.EventTag = FGameplayTag::RequestGameplayTag("Event.Player.Hit");
+  //          Payload.Instigator = this;
+  //          Payload.Target = OtherActor;
+  //          UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
+  //      }
+  //  }
+
+	UE_LOG(LogTemp, Warning, TEXT("Fire Trap Damage Begin"));
+
     if (auto Player = Cast<ABasePlayer>(OtherActor))
     {
-        auto playerAbility = Player->GetAbilitySystemComponent();
-        auto EffectContext = playerAbility->MakeEffectContext();
-		EffectContext.AddSourceObject(this);
+        FGameplayAbilitySpec spec = DamageAbility;
+		auto playerAbility = Player->GetAbilitySystemComponent();
 
-        auto spec = playerAbility->MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
-        
-        if (spec.Data.IsValid())
+        if (DamageAbility)
         {
-			playerAbility->ApplyGameplayEffectSpecToSelf(*spec.Data.Get());
-            
-            FGameplayEventData Payload;
-            Payload.EventTag = FGameplayTag::RequestGameplayTag("Event.Player.Hit");
-            Payload.Instigator = this;
-            Payload.Target = OtherActor;
-            UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
+            DamageAbilityHandle = playerAbility->GiveAbilityAndActivateOnce(spec);
         }
     }
 }
 
-void AFF44FireTrap::OnDamageAreaEnd(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+void AFF44FireTrap::OnDamageEnd(UPrimitiveComponent* Overlapped, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIdx)
 {
-    // 필요 시 지속 데미지/틱 제거 등 처리
+    if (!bArmed || !bActive || !OtherActor) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("Fire Trap Damage End"));
+
+    if (auto Player = Cast<ABasePlayer>(OtherActor))
+    {
+        auto playerAbility = Player->GetAbilitySystemComponent();
+        playerAbility->ClearAbility(DamageAbilityHandle);
+	}
 }

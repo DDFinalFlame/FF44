@@ -7,6 +7,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/Character.h"
+#include "Player/BasePlayer.h"
+#include "AbilitySystemBlueprintLibrary.h"
 
 AFF44SpikeTrap::AFF44SpikeTrap()
 {
@@ -30,12 +32,12 @@ AFF44SpikeTrap::AFF44SpikeTrap()
     SpikeMesh->SetupAttachment(SpikeRoot);
     SpikeMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
-    DamageZone = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageZone"));
-    DamageZone->SetupAttachment(SpikeMesh);
-    DamageZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    DamageZone->SetCollisionResponseToAllChannels(ECR_Ignore);
-    DamageZone->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    DamageZone->SetGenerateOverlapEvents(true);
+    DamageArea = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageArea"));
+    DamageArea->SetupAttachment(SpikeMesh);
+    DamageArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    DamageArea->SetCollisionResponseToAllChannels(ECR_Ignore);
+    DamageArea->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    DamageArea->SetGenerateOverlapEvents(true);
 }
 
 void AFF44SpikeTrap::BeginPlay()
@@ -50,13 +52,22 @@ void AFF44SpikeTrap::BeginPlay()
         TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AFF44SpikeTrap::OnTriggerBegin);
         TriggerBox->OnComponentEndOverlap.AddDynamic(this, &AFF44SpikeTrap::OnTriggerEnd);
     }
+
+    if (DamageArea)
+    {
+        DamageArea->OnComponentBeginOverlap.AddDynamic(this, &AFF44SpikeTrap::OnDamageBegin);
+        DamageArea->OnComponentEndOverlap.AddDynamic(this, &AFF44SpikeTrap::OnDamageEnd);
+    }
+
+	bArmed = true;
+    SetActive(true);
 }
 
 void AFF44SpikeTrap::OnTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
     bool bFromSweep, const FHitResult& Sweep)
 {
-    if (!OtherActor || bDisarmed) return;
+    if (!OtherActor || !bArmed) return;
 
     if (Cast<APawn>(OtherActor))
     {
@@ -72,7 +83,7 @@ void AFF44SpikeTrap::OnTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor*
 void AFF44SpikeTrap::OnTriggerEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (!OtherActor || bDisarmed) return;
+    if (!OtherActor || !bArmed) return;
 
     if (Cast<APawn>(OtherActor))
     {
@@ -82,14 +93,14 @@ void AFF44SpikeTrap::OnTriggerEnd(UPrimitiveComponent* OverlappedComp, AActor* O
 
 bool AFF44SpikeTrap::CanInteract_Implementation(AActor* Interactor) const
 {
-    return !bDisarmed;
+    return bArmed;
 }
 
 void AFF44SpikeTrap::Interact_Implementation(AActor* Interactor)
 {
-    if (bDisarmed) return;
+    if (!bArmed) return;
 
-    bDisarmed = true;
+    bArmed = false;
     bCycling = false;
 
     GetWorldTimerManager().ClearTimer(DelayHandle);
@@ -98,9 +109,9 @@ void AFF44SpikeTrap::Interact_Implementation(AActor* Interactor)
 
     SpikeRoot->SetRelativeLocation(SpikeDownLocal);
 
-    if (DamageZone)
+    if (DamageArea)
     {
-        DamageZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        DamageArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
     if (TriggerBox)
     {
@@ -112,7 +123,7 @@ void AFF44SpikeTrap::Interact_Implementation(AActor* Interactor)
 
 void AFF44SpikeTrap::StartCycle()
 {
-    if (bDisarmed || bCycling) return;
+    if (!bArmed || bCycling) return;
 
     bCycling = true;
 
@@ -121,7 +132,7 @@ void AFF44SpikeTrap::StartCycle()
 
 void AFF44SpikeTrap::RaiseSpikes()
 {
-    if (bDisarmed)
+    if (!bArmed)
     {
         bCycling = false;
         return;
@@ -148,7 +159,7 @@ void AFF44SpikeTrap::RaiseSpikes()
 
 void AFF44SpikeTrap::RetractSpikes()
 {
-    if (bDisarmed)
+    if (!bArmed)
     {
         bCycling = false;
         return;
@@ -177,36 +188,49 @@ void AFF44SpikeTrap::EndCooldown()
 {
     bCycling = false;
 
-    if (!bDisarmed && OverlapCount > 0)
+    if (!bArmed && OverlapCount > 0)
     {
         StartCycle();
     }
 }
 
-void AFF44SpikeTrap::ApplyDamageOnce()
-{
-    if (!DamageZone) return;
-
-    TArray<AActor*> Overlapping;
-    DamageZone->GetOverlappingActors(Overlapping, APawn::StaticClass());
-
-    for (AActor* A : Overlapping)
-    {
-        if (!A) continue;
-        UGameplayStatics::ApplyDamage(A, Damage, nullptr, this, DamageType ? *DamageType : nullptr);
-    }
-
-    // 필요하면 소리/파티클 재생 지점
-}
-
 void AFF44SpikeTrap::OnRaised()
 {
-    ApplyDamageOnce();
-
     GetWorldTimerManager().SetTimer(HoldHandle, this, &AFF44SpikeTrap::RetractSpikes, HoldTime, false);
 }
 
 void AFF44SpikeTrap::OnRetracted()
 {
     GetWorldTimerManager().SetTimer(CooldownHandle, this, &AFF44SpikeTrap::EndCooldown, CooldownTime, false);
+}
+
+void AFF44SpikeTrap::OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)
+{
+	if (!bArmed || !bActive || !OtherActor) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("Spike Trap Damage Begin"));
+
+    if (auto Player = Cast<ABasePlayer>(OtherActor))
+    {
+        FGameplayAbilitySpec spec = DamageAbility;
+        auto playerAbility = Player->GetAbilitySystemComponent();
+
+        if (DamageAbility)
+        {
+            DamageAbilityHandle = playerAbility->GiveAbilityAndActivateOnce(spec);
+        }
+    }
+}
+
+void AFF44SpikeTrap::OnDamageEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    if (!bArmed || !bActive || !OtherActor) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("Spike Trap Damage End"));
+
+    if (auto Player = Cast<ABasePlayer>(OtherActor))
+    {
+        auto playerAbility = Player->GetAbilitySystemComponent();
+        playerAbility->ClearAbility(DamageAbilityHandle);
+    }
 }
