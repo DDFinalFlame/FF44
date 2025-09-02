@@ -199,13 +199,15 @@ void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
         AlreadyHitSet.Add(OtherActor);
     }
 
+    ApplyDamageTo(OtherActor, SweepResult);
+
     FGameplayEventData Payload;
     Payload.EventTag = MonsterTags::Event_Player_Hit;
     Payload.Instigator = this; //몬스터끼리 공격 X
     Payload.Target = OtherActor;
     UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
 
-    ApplyDamageTo(OtherActor, SweepResult);
+    
 
     // 무기 등 특정 조건에서만 ‘즉시 파편화’ 하고 싶으면 여기서도 필드 적용 가능
     // ApplyFractureFieldAt(SweepResult.ImpactPoint);

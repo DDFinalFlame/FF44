@@ -1,5 +1,6 @@
 #include "BT/BTService_LockPlayerTarget.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/Blackboard/BlackboardKeyType_Enum.h" 
 #include "AIController.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -11,6 +12,9 @@ UBTService_LockPlayerTarget::UBTService_LockPlayerTarget()
     Interval = 0.2f;
     RandomDeviation = 0.f;
     bNotifyTick = true;
+
+    BossStateKey.SelectedKeyName = TEXT("BossState");     
+    PrevBossStateKey.SelectedKeyName = TEXT("PrevBossState"); 
 }
 
 void UBTService_LockPlayerTarget::InitializeFromAsset(UBehaviorTree& Asset)
@@ -24,8 +28,26 @@ void UBTService_LockPlayerTarget::InitializeFromAsset(UBehaviorTree& Asset)
 
     TargetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTService_LockPlayerTarget, TargetActorKey), AActor::StaticClass());
     TargetActorKey.ResolveSelectedKey(*BB);
+
+    
+    BossStateKey.ResolveSelectedKey(*BB);
+    PrevBossStateKey.ResolveSelectedKey(*BB);
+
+    bHitResolved = ResolveHitFromBlackboardEnum();
 }
 
+void UBTService_LockPlayerTarget::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) // [추가]
+{
+    Super::OnBecomeRelevant(OwnerComp, NodeMemory);
+
+    if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+    {
+        if (BossStateKey.SelectedKeyType)
+        {
+            CachedLastState = BB->GetValueAsEnum(BossStateKey.SelectedKeyName);
+        }
+    }
+}
 
 AActor* UBTService_LockPlayerTarget::PickTarget(UWorld* World, APawn* Self) const
 {
@@ -90,6 +112,35 @@ void UBTService_LockPlayerTarget::TickNode(UBehaviorTreeComponent& OwnerComp, ui
     UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
     if (!BB) return;
 
+    {
+        // 필요시 재해석(런타임에 BB 변경 가능성 대비)
+        if (!bHitResolved)
+        {
+            bHitResolved = ResolveHitFromBlackboardEnum();
+        }
+
+        if (BossStateKey.SelectedKeyType && PrevBossStateKey.SelectedKeyType)
+        {
+            const uint8 Current = BB->GetValueAsEnum(BossStateKey.SelectedKeyName);
+
+            if (Current != CachedLastState)
+            {
+                const bool bIsHit = (bHitResolved && Current == HitStateValue);
+
+                // 새 상태가 Hit가 아니면 Prev = 직전 상태로 기록
+                if (!bIsHit)
+                {
+                    if (!(bTreatZeroAsUnset && CachedLastState == 0))
+                    {
+                        BB->SetValueAsEnum(PrevBossStateKey.SelectedKeyName, CachedLastState);
+                    }
+                }
+
+                CachedLastState = Current;
+            }
+        }
+    }
+
     // 전투 중이 아니면 아무것도 안 함
     if (InBattleKey.SelectedKeyType && !BB->GetValueAsBool(InBattleKey.SelectedKeyName))
         return;
@@ -126,4 +177,41 @@ void UBTService_LockPlayerTarget::TickNode(UBehaviorTreeComponent& OwnerComp, ui
             }
         }
     }
+}
+
+bool UBTService_LockPlayerTarget::ResolveHitFromBlackboardEnum() // [추가]
+{
+    if (!BossStateKey.SelectedKeyType) return false;
+
+    const UBlackboardKeyType_Enum* EnumKey =
+        Cast<UBlackboardKeyType_Enum>(BossStateKey.SelectedKeyType);
+    if (!EnumKey || !EnumKey->EnumType) return false;
+
+    UEnum* StateEnum = EnumKey->EnumType;
+
+    // 1) 이름으로 직접 조회
+    int64 Value = StateEnum->GetValueByName(HitStateName);
+    if (Value == INDEX_NONE)
+    {
+        // 2) "EBossState::Hit" 형태까지 대응(대소문자 무시)
+        const int32 Count = StateEnum->NumEnums();
+        for (int32 i = 0; i < Count; ++i)
+        {
+            const FString FullName = StateEnum->GetNameStringByIndex(i);
+            const FString RightToken = FullName.Contains(TEXT("::"))
+                ? FullName.RightChop(FullName.Find(TEXT("::")) + 2)
+                : FullName;
+
+            if (RightToken.Equals(HitStateName.ToString(), ESearchCase::IgnoreCase))
+            {
+                Value = StateEnum->GetValueByIndex(i);
+                break;
+            }
+        }
+    }
+
+    if (Value == INDEX_NONE) return false;
+
+    HitStateValue = static_cast<uint8>(Value);
+    return true;
 }

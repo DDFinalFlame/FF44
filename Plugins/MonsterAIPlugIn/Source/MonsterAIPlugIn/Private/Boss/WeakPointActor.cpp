@@ -5,6 +5,15 @@
 #include "Components/StaticMeshComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "MonsterTags.h"
+#include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "BossLightningProjectile.h"
+
+//디버깅용
+#include "Engine/TargetPoint.h"
+
 
 AWeakPointActor::AWeakPointActor()
 {
@@ -29,27 +38,84 @@ void AWeakPointActor::InitializeWeakPoint(AActor* _BossActor, float _DamageToBos
 void AWeakPointActor::OnMeshHit(UPrimitiveComponent* _HitComp, AActor* _OtherActor,
     UPrimitiveComponent* _OtherComp, FVector _NormalImpulse, const FHitResult& _Hit)
 {
-    // 여기서는 어떤 타격이든 맞으면 부서지는 예시입니다.
-    // 필요하면 "플레이어 무기만" 허용하는 필터 조건을 추가하세요.
+
+}
+
+void AWeakPointActor::HandleDelayedBreak()
+{
+    // 1) 나이아가라 이펙트
+    if (BreakVFX)
+    {
+        const FVector SpawnAt = (CachedImpactPoint.IsNearlyZero() ? GetActorLocation() : CachedImpactPoint) + VFXOffset;
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), BreakVFX, SpawnAt, GetActorRotation());
+    }
+
+    // 2) 보스 방향으로 번개 투사체 스폰(선택)
+    SpawnProjectileTowardBoss();
+
+    // 3) 최종 알림 + 제거
     BreakAndNotify();
 }
+
+void AWeakPointActor::NotifyHitByPlayerWeapon(const FHitResult& Hit, AActor* Attacker)
+{
+    if (bPendingBreak || bBroken) return;
+    bPendingBreak = true;
+
+    CachedImpactPoint = FVector(Hit.ImpactPoint).IsNearlyZero() ? GetActorLocation() : FVector(Hit.ImpactPoint);
+    CachedAttacker = Attacker;
+
+    // 랜덤 지연
+    const float Delay = FMath::FRandRange(BreakDelayMin, BreakDelayMax);
+
+    GetWorldTimerManager().SetTimer(
+        BreakTimerHandle,
+        this, &AWeakPointActor::HandleDelayedBreak,
+        Delay, false
+    );
+
+}
+
+void AWeakPointActor::SpawnProjectileTowardBoss()
+{
+    if (!ProjectileClass || !OwnerBoss.IsValid()) return;
+
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    const FVector Start = CachedImpactPoint.IsNearlyZero() ? GetActorLocation() : CachedImpactPoint;
+    const FRotator Rot = (OwnerBoss->GetActorLocation() - Start).Rotation();
+    const FTransform Xf(Rot, Start);
+
+    ABossLightningProjectile* P = Cast<ABossLightningProjectile>(
+        UGameplayStatics::BeginDeferredActorSpawnFromClass(
+            this, ProjectileClass, Xf, ESpawnActorCollisionHandlingMethod::AlwaysSpawn, this));
+
+    if (!P) return;
+
+    // BeginPlay/Overlap 전에 미리 초기화
+    P->InitProjectile(OwnerBoss.Get(), DamageToBossOnBreak);
+
+    UGameplayStatics::FinishSpawningActor(P, Xf);
+}
+
 
 void AWeakPointActor::BreakAndNotify()
 {
     if (bBroken) return;
     bBroken = true;
 
-    if (OwnerBoss.IsValid())
-    {
-        FGameplayEventData Payload;
-        Payload.EventTag = MonsterTags::Event_Boss_P2_WeakPointDestroyed;
-        Payload.Instigator = this;
-        Payload.Target = OwnerBoss.Get();
-        Payload.EventMagnitude = DamageToBossOnBreak; // 피해량을 이벤트로 전달
+    //if (OwnerBoss.IsValid())
+    //{
+    //    FGameplayEventData Payload;
+    //    Payload.EventTag = MonsterTags::Event_Boss_P2_WeakPointDestroyed;
+    //    Payload.Instigator = this;
+    //    Payload.Target = OwnerBoss.Get();
+    //    Payload.EventMagnitude = 0; // 피해량을 프로젝타일에 이양
 
-        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-            OwnerBoss.Get(), Payload.EventTag, Payload);
-    }
+    //    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+    //        OwnerBoss.Get(), Payload.EventTag, Payload);
+    //}
 
     Destroy(); // 파괴
 }

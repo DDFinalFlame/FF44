@@ -42,6 +42,8 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_PhaseEnd, "Event.Boss.PhaseEnd");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_Land, "Event.Boss.Land");		   // º¸½º ¹Ù´Ú ÂøÁö
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_P2_WeakPointDestroyed, "Event.Boss.Phase2.WeakPointDestroyed");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_RockHit, "Event.Boss.Phase1.Rock");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_LightingDamage, "Event.Boss.LightingDamage");
+
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_InvulnShield, "GameplayCue.Boss.InvulnShield"); // ¹«Àû½Ã ½¯µå/ÀÌÆåÆ®
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_Summon, "GameplayCue.Boss.Summon");             // ¼ÒÈ¯ ½Ã VFX/SFX
