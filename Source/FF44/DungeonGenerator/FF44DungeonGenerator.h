@@ -42,6 +42,10 @@ public:
     UPROPERTY(EditAnywhere, Category = "Rooms|Special")
     TSubclassOf<AFF44RoomBase> BossRoomClass;
 
+	// 보스 전용 아레나 방
+    UPROPERTY(EditAnywhere, Category = "Rooms|Special")
+    TSubclassOf<AFF44RoomBase> BossArenaRoomClass;
+
     /* ===========================
        Generation controls
        =========================== */
@@ -113,6 +117,13 @@ public:
     int32 TotalSpawned = 0;
 
     /* ===========================
+   Public boss entry API
+   =========================== */
+public:
+    UFUNCTION(BlueprintCallable, Category = "Dungeon|Boss")
+    void EnterBossArena();
+
+    /* ===========================
        Internal helpers
        =========================== */
 private:
@@ -138,4 +149,9 @@ private:
 
     // Weighted pick (optional)
     TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
+
+    void ClearDungeonContents();
+
+    UPROPERTY(Transient)
+    TArray<TWeakObjectPtr<AFF44RoomBase>> SpawnedRooms;
 };

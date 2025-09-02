@@ -31,6 +31,11 @@ void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
     OutStarter = GetWorld()->SpawnActor<AFF44StarterRoom>(StarterRoomClass);
     StarterRoomRef = OutStarter;
 
+    if (bIsBossFloor)
+    {
+        SpawnedRooms.Add(OutStarter);
+    }
+
     if (OutStarter && OutStarter->ExitPoints)
     {
         OutStarter->ExitPoints->GetChildrenComponents(false, Exits);
@@ -132,6 +137,11 @@ void AFF44DungeonGenerator::SpawnNextRoom()
     // 8) 출구 갱신 & 마커 수집
     Exits.Remove(SelectedExitPoint);
     Exits.Append(NewExits);
+
+    if (bIsBossFloor)
+    {
+        SpawnedRooms.Add(LatestSpawnedRoom);
+    }
 
     CollectMonsterMarkersFromRoom(LatestSpawnedRoom);
     CollectInteractableMarkersFromRoom(LatestSpawnedRoom);
@@ -267,6 +277,14 @@ void AFF44DungeonGenerator::PlaceFloorGoalAndFinish()
                 continue;
             }
 
+            if (bIsBossFloor)
+            {
+                SpawnedRooms.Add(Goal);
+            }
+
+            CollectMonsterMarkersFromRoom(Goal);
+            CollectInteractableMarkersFromRoom(Goal);
+
             Exits.RemoveAt(ExitIndex);
 
             bPlaced = true;
@@ -366,3 +384,63 @@ TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<
 }
 
 
+void AFF44DungeonGenerator::ClearDungeonContents()
+{
+    for (TWeakObjectPtr<AFF44RoomBase>& WRoom : SpawnedRooms)
+    {
+        if (AFF44RoomBase* R = WRoom.Get())
+        {
+            if (IsValid(R) && !R->IsActorBeingDestroyed())
+            {
+                R->Destroy();
+            }
+        }
+    }
+    SpawnedRooms.Empty();
+
+    Exits.Empty();
+    SelectedExitPoint = nullptr;
+    LatestSpawnedRoom = nullptr;
+
+    MonsterSpawnMarkers.Empty();
+    InteractableSpawnMarkers.Empty();
+
+    GetWorld()->GetTimerManager().ClearTimer(SpawnNextHandle);
+    TotalSpawned = 0;
+
+    bDungeonCompleted = false;
+}
+
+void AFF44DungeonGenerator::EnterBossArena()
+{
+    ClearDungeonContents();
+
+    FTransform SpawnT = FTransform::Identity;
+    if (StarterRoomRef)
+    {
+        SpawnT.SetLocation(StarterRoomRef->GetActorLocation());
+        SpawnT.SetRotation(StarterRoomRef->GetActorQuat());
+    }
+
+    if (*BossArenaRoomClass)
+    {
+        AFF44RoomBase* Arena = GetWorld()->SpawnActor<AFF44RoomBase>(BossArenaRoomClass, SpawnT);
+        if (Arena)
+        {
+            SpawnedRooms.Add(Arena);
+
+            if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld()))
+            {
+                NavSys->Build();
+            }
+
+            bDungeonCompleted = true;
+            OnDungeonComplete.Broadcast();
+        }
+    }
+    else
+    {
+        bDungeonCompleted = true;
+        OnDungeonComplete.Broadcast();
+    }
+}
