@@ -9,7 +9,10 @@
 
 UGA_Player_Attack::UGA_Player_Attack()
 {
-	AbilityTags.AddTag(PlayerTags::Ability_Player_Attack);
+	FGameplayTagContainer AssetTags;
+	AssetTags.AddTag(PlayerTags::Ability_Player_Attack);
+	SetAssetTags(AssetTags);
+
 	ActivationRequiredTags.AddTag(PlayerTags::State_Player_Weapon_Equip);
 }
 

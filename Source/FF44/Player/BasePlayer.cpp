@@ -8,6 +8,7 @@
 #include "Components/InputComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/ArrowComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
@@ -20,6 +21,7 @@
 #include "BasePlayerAttributeSet.h"
 #include "BasePlayerController.h"
 #include "BasePlayerState.h"
+#include "Camera/BasePlayerCameraManager.h"
 #include "Weapon/BaseWeapon.h"
 #include "Interactable/FF44Interactable.h"
 #include "DrawDebugHelpers.h"
@@ -56,21 +58,35 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
+
 	OnCharacterMovementUpdated.AddDynamic(this, &ABasePlayer::CharacterMovementUpdated);
 
-	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	//CameraBoom->SetupAttachment(RootComponent);
-	//CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
-	//CameraBoom->TargetArmLength = 200.f;
-	//CameraBoom->bUsePawnControlRotation = true;
-	//CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
-	//// 카메라가 늦게 따라오는 설정
-	////CameraBoom->bEnableCameraLag = true;
-	////CameraBoom->bEnableCameraRotationLag = true;
+	// 카메라 봄
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 0.f, 80.f)));
+	CameraBoom->TargetArmLength = 200.f;
 
-	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	//FollowCamera->SetupAttachment(CameraBoom);
-	//FollowCamera->bUsePawnControlRotation = false;		
+	// 실제 카메라
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	FollowCamera->SetupAttachment(CameraBoom);
+
+	// Camera Offset 설정용 Arrow
+	CameraUnequipLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraUnequipLook"));
+	CameraUnequipLook->SetupAttachment(RootComponent);
+	CameraEquipLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraEquipLook"));
+	CameraEquipLook->SetupAttachment(RootComponent);
+	CameraZoomInLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraZoomInLook"));
+	CameraZoomInLook->SetupAttachment(RootComponent);
+	CameraRightMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraRightMoveLook"));
+	CameraRightMoveLook->SetupAttachment(RootComponent);
+	CameraLeftMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraLeftMoveLook"));
+	CameraLeftMoveLook->SetupAttachment(RootComponent);
+
+	// Camera Logic 처리는 여기서
+	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
@@ -123,12 +139,12 @@ void ABasePlayer::BeginPlay()
 
 	// Player Controller Set
 	if (ABasePlayerController* PlayerController = Cast<ABasePlayerController>(GetController()))
-	{
-		FRotator ControlRotation = PlayerController->GetControlRotation();
-		ControlRotation.Pitch = -10.f;
-
+	{		
 		if (AbilitySystem)
 			PlayerController->InitUI(AbilitySystem);
+
+		PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+		PlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
 	}
 	else
 	{
@@ -138,6 +154,24 @@ void ABasePlayer::BeginPlay()
 
 	// Delegate Bind
 	OnPlayerMoveChanged.AddDynamic(this, &ABasePlayer::UpdateMoveType);
+
+	//// Components가 제대로 생성되었는지 확인
+	//TArray<UActorComponent*> All;
+	//GetComponents(All);
+
+	//UE_LOG(LogTemp, Warning, TEXT("== %s Components (%d) =="), *GetName(), All.Num());
+	//for (UActorComponent* C : All)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT(" - %s (%s) Reg=%d"),
+	//		*C->GetName(), *C->GetClass()->GetName(), C->IsRegistered());
+	//}
+
+	//// 혹시 포인터만 비었는지 교차검증
+	//if (!BaseCameraManager)
+	//{
+	//	BaseCameraManager = FindComponentByClass<UBasePlayerCameraManager>();
+	//	UE_LOG(LogTemp, Warning, TEXT("FindComponentByClass => %s"), *GetNameSafe(BaseCameraManager));
+	//}
 }
 
 void ABasePlayer::Tick(float DeltaTime)
@@ -145,6 +179,8 @@ void ABasePlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CurrentInputDirection = 0;	
+
+	if (!AbilitySystem) return;
 
 	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Run))
 	{
@@ -221,6 +257,15 @@ void ABasePlayer::InitializeGameplayTags()
 	AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_UnEquip);	
 }
 
+void ABasePlayer::ZeroControllerPitch()
+{
+	if (Controller)
+	{
+		FRotator ControlRotation = Controller->GetControlRotation();
+		Controller->SetControlRotation(FRotator(0.f, ControlRotation.Yaw, 0.f));
+	}
+}
+
 void ABasePlayer::MetaDataSetup()
 {
 	// Definition Load
@@ -276,7 +321,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		}
 		if(LockOnAction)
 		{
-			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Triggered, this, &ABasePlayer::LockOn);
+			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ABasePlayer::LockOn);
 		}
 		if(ToggleCombatAction)
 		{
@@ -313,22 +358,27 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 
 	if (Controller)
 	{
-		if(MovementVector.X > 0.f)
+		if (BaseCameraManager->GetCurrentCameraMode() != ECameraMode::UnEquip)
 		{
-			CurrentInputDirection = 4; // Right
+			if (MovementVector.X > 0.f)
+			{
+				CurrentInputDirection = 4; // Right
+			}
+			else if (MovementVector.X < 0.f)
+			{
+				CurrentInputDirection = 3; // Left
+			}
+			else if (MovementVector.Y > 0.f)
+			{
+				CurrentInputDirection = 1; // Forward
+			}
+			else if (MovementVector.Y < 0.f)
+			{
+				CurrentInputDirection = 2; // Backward
+			}
 		}
-		else if(MovementVector.X < 0.f)
-		{
-			CurrentInputDirection = 3; // Left
-		}
-		else if(MovementVector.Y > 0.f)
-		{
+		else
 			CurrentInputDirection = 1; // Forward
-		}
-		else if(MovementVector.Y < 0.f)
-		{
-			CurrentInputDirection = 2; // Backward
-		}
 
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -354,13 +404,18 @@ void ABasePlayer::StopMove()
 void ABasePlayer::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
+	
 	if (Controller)
 	{
 		FRotator ControlRotation = Controller->GetControlRotation();
 
-		float NewPitch = FMath::Clamp(ControlRotation.Pitch - LookAxisVector.Y, -40.f, 30.f);
-		float NewYaw = ControlRotation.Yaw + LookAxisVector.X;
+		float NewPitch = ControlRotation.Pitch;
+		float NewYaw = ControlRotation.Yaw;
+
+		if (BaseCameraManager)
+			if (!BaseCameraManager->IsCameraChanging())
+				NewPitch -= LookAxisVector.Y;
+		NewYaw += LookAxisVector.X;
 
 		Controller->SetControlRotation(FRotator(NewPitch, NewYaw, 0.f));
 	}
@@ -403,17 +458,34 @@ void ABasePlayer::Interact(const FInputActionValue& Value)
 
 void ABasePlayer::LockOn(const FInputActionValue& Value)
 {
-	// Change State
-
-	// Camera Lock-On Logic
+	if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Equip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::ZoomIn);
+	}
+	else if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::ZoomIn)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
+	}
 }
 
 void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 {
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip))
+		return;
+
 	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
 		AbilitySystem->TryActivateAbilityByClass(UnEquipWeaponAbility);
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
 		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
+
+	if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::UnEquip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
+	}
+	else if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Equip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::UnEquip);
+	}
 }
 
 void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
