@@ -10,7 +10,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Data/staticName.h"
-
+#include "Boss/ShockwaveActor.h"
 #include "Kismet/GameplayStatics.h"           
 #include "Components/SkeletalMeshComponent.h" 
 #include "Boss/WeakPointActor.h"
@@ -246,7 +246,13 @@ void UGA_BossPhase2::OnLandEvent(FGameplayEventData Payload)
     if (ShockwaveActorClass)
     {
         FTransform T(C->GetActorRotation(), C->GetActorLocation());
-        C->GetWorld()->SpawnActor<AActor>(ShockwaveActorClass, T);
+        AActor* Spawned = C->GetWorld()->SpawnActor<AActor>(ShockwaveActorClass, T);
+
+        // 보스 인스티게이터 전달(피해 컨텍스트용)
+        if (AShockwaveActor* SW = Cast<AShockwaveActor>(Spawned))
+        {
+            SW->SetInstigatorActor(C);
+        }
     }
     // 또는 여기서 플레이어에게 라디얼 데미지/GE 적용 로직
 }
