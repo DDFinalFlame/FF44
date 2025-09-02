@@ -98,7 +98,7 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	else
 	{
 		/* 상태 변경 **/
-		Enemy->SetState(EAIBehavior::Patrol);
+		Enemy->SetEnemyState(EAIBehavior::Patrol);
 		/* 어빌리티 종료 **/
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 
@@ -111,7 +111,7 @@ void UGA_EnemyHit::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	/* 상태 변경 **/
 	if (ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get()))
 	{
-		Enemy->SetState(EAIBehavior::Patrol);
+		Enemy->SetEnemyState(EAIBehavior::Patrol);
 		//Enemy->SetRotationTarget(AttackerLocation);
 	}
 

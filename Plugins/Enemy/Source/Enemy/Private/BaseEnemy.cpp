@@ -164,7 +164,7 @@ bool ABaseEnemy::IsAttackSuccessful()
 	return Weapon->IsAttackSuccessful();
 }
 
-void ABaseEnemy::SetState(EAIBehavior NewBehavior)
+void ABaseEnemy::SetEnemyState(EAIBehavior NewBehavior)
 {
 	CurrentBehavior = NewBehavior;
 }

@@ -14,6 +14,6 @@ EBTNodeResult::Type UBTTask_AttackFailed::ExecuteTask(UBehaviorTreeComponent& Ow
 	ABaseEnemy* Enemy = Cast<ABaseEnemy>(AICon->GetPawn());
 	if (!Enemy) return EBTNodeResult::Failed;
 
-	Enemy->SetState(EAIBehavior::Patrol);
+	Enemy->SetEnemyState(EAIBehavior::Patrol);
 	return EBTNodeResult::Succeeded;
 }

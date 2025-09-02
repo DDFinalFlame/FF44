@@ -119,7 +119,8 @@ public:
 
 // AI - State
 public:
-	void SetState(EAIBehavior NewBehavior);
+	UFUNCTION(BlueprintCallable)
+	void SetEnemyState(EAIBehavior NewBehavior);
 	bool ChangeState(EAIBehavior NewBehavior);
 	bool CheckCurrentBehavior(EAIBehavior NewBehavior);
 	bool IsCurrentStateInterruptible();
