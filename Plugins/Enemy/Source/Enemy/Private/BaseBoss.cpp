@@ -20,6 +20,11 @@ TArray<TWeakObjectPtr<ABaseEnemy>> ABaseBoss::GetGhostList()
 	return SpawnedGhosts;
 }
 
+FVector ABaseBoss::GetBossLocation()
+{
+	return GetActorLocation();
+}
+
 int ABaseBoss::GetSummonNum() const
 {
 	return 5;

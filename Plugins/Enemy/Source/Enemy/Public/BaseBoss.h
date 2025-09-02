@@ -43,6 +43,7 @@ public:
 	virtual void AddSpawnedEnemy(TWeakObjectPtr<ABaseEnemy> Enemy) override;
 	virtual void DeleteSpawnedEnemy(TWeakObjectPtr<ABaseEnemy> Enemy) override;
 	virtual TArray<TWeakObjectPtr<ABaseEnemy>> GetGhostList() override;
+	virtual FVector GetBossLocation() override;
 
 
 public:

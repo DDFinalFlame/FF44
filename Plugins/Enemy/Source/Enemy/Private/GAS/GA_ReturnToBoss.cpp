@@ -28,7 +28,7 @@ void UGA_ReturnToBoss::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const ABaseEnemy* Boss = Cast<ABaseEnemy>(TriggerEventData->Instigator.Get());
 	if (!Boss) { return; }
 
-	FVector Location = Boss->GetActorLocation();
+	FVector TargetLocation = Boss->GetActorLocation();
 
 	// BB 가져오기
 	if (AAIController* AIController = Cast<AAIController>(Enemy->GetController()))
@@ -36,12 +36,12 @@ void UGA_ReturnToBoss::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
 		{
 			// State 바꿔주고
-			BB->SetValueAsVector(TargetLocationKeyName, Location);
-			// 돌아갈 위치 BB에 저장
 			BB->SetValueAsEnum(BehaviorKeyName, static_cast<uint8>(EAIBehavior::Patrol));
+			// 돌아갈 위치 BB에 저장
+			BB->SetValueAsVector(TargetKeyName, TargetLocation);
 		}
 	}
 
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 
 }

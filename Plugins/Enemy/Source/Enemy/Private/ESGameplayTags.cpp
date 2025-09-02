@@ -18,6 +18,6 @@ namespace SLGameplayTags
 
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_SummonStart, "Enemy.Event.SummonStart");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Recall, "Enemy.Event.Recall");
-
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Buff, "Enemy.Event.Buff");
 
 }

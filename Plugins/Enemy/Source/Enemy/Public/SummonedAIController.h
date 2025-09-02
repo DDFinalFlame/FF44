@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Interfaces/EnemyAIState.h"
 #include "SummonedAIController.generated.h"
 
 class IBossAttack;
@@ -12,7 +13,7 @@ class ABaseEnemy;
  * 
  */
 UCLASS()
-class ENEMY_API ASummonedAIController : public AAIController
+class ENEMY_API ASummonedAIController : public AAIController, public IEnemyAIState
 {
 	GENERATED_BODY()
 
@@ -35,5 +36,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 public:
 	FORCEINLINE void SetSummonOwner(UObject* InSummonOwner ) { SummonOwner = InSummonOwner; };
-
+public:
+	// State Interface
+	virtual EAIBehavior GetCurrentBehavior() override;
 };

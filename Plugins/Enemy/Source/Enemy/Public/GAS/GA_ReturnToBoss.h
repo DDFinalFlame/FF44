@@ -15,10 +15,10 @@ class ENEMY_API UGA_ReturnToBoss : public UGameplayAbility
 	GENERATED_BODY()
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName TargetLocationKeyName;
+	FName TargetKeyName = "F_Target";
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName BehaviorKeyName;
+	FName BehaviorKeyName = "Behavior";
 
 
 protected:

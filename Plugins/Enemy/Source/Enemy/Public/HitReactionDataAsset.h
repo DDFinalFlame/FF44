@@ -18,15 +18,15 @@ struct FEnemyHitReactRow : public FTableRowBase
 
 	// Enemy 타입
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EEnemyType EnemyType;
+	EEnemyType EnemyType = EEnemyType::None;
 
 	// 맞은 방향
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EHitDirection Direction;
+	EHitDirection Direction = EHitDirection::None;
 
 	// 해당 상황에서 재생할 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* Montage;
+	UAnimMontage* Montage = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -36,11 +36,11 @@ struct FEnemyDeathRow : public FTableRowBase
 
 	// Enemy 타입
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EEnemyType EnemyType;
+	EEnemyType EnemyType = EEnemyType::None;
 
 	// 해당 상황에서 재생할 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* Montage;
+	UAnimMontage* Montage = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -50,15 +50,15 @@ struct FEnemyAttackRow : public FTableRowBase
 
 	// Enemy 타입
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EEnemyType EnemyType;
+	EEnemyType EnemyType = EEnemyType::None;
 
 	// Attack 타입
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag GameplayTag;
+	FGameplayTag GameplayTag = FGameplayTag();
 
 	// 해당 상황에서 재생할 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* Montage;
+	UAnimMontage* Montage = nullptr;
 };
 
 UCLASS()

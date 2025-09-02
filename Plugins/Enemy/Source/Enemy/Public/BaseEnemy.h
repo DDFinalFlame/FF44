@@ -126,7 +126,7 @@ public:
 	void EndCurrentBehavior();
 	FORCEINLINE EAIBehavior GetCurrentBehavior() const { return CurrentBehavior; }
 	/* Death 애니메이션 처리 중 **/
-	void OnDeath();
+	virtual void OnDeath();
 	/* Death 애니메이션 종료 **/
 	void EndDeath();
 	/* 월드에서 사라지기 **/

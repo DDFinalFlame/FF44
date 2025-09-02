@@ -27,7 +27,7 @@ void UGA_Recall::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 		// FGameplayEventData »ý¼º
 		FGameplayEventData EventData;
-		EventData.Instigator = Ghost.Get();
+		EventData.Instigator = Cast<AActor>(BossAttacker);
 		EventData.Target = nullptr;
 		EventData.EventTag = EventTag;
 

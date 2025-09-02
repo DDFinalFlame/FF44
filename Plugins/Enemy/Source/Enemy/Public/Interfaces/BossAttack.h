@@ -31,4 +31,5 @@ public:
 	virtual void AddSpawnedEnemy(TWeakObjectPtr<ABaseEnemy> Enemy) = 0;
 	virtual void DeleteSpawnedEnemy(TWeakObjectPtr<ABaseEnemy> Enemy) = 0;
 	virtual TArray<TWeakObjectPtr<ABaseEnemy>> GetGhostList() = 0;
+	virtual FVector GetBossLocation() = 0;
 };

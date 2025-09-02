@@ -45,6 +45,8 @@ void ASummonedAIController::OnUnPossess()
 	ControlledEnemy = nullptr;
 	Target = nullptr;
 
+	SetActorTickEnabled(false);
+
 	Super::OnUnPossess();
 }
 
@@ -52,9 +54,25 @@ void ASummonedAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	//if (!ControlledEnemy) { return; }
+
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())
 	{
-		RotationComponent->SetTargetLocation(Target->GetActorLocation());
+		EAIBehavior CurrentBehavior = GetCurrentBehavior();
+		switch (CurrentBehavior)
+		{
+		case EAIBehavior::Patrol:
+			RotationComponent->SetTargetLocation(Cast<IBossAttack>(SummonOwner)->GetBossLocation());
+			break;
+		default:
+			RotationComponent->SetTargetLocation(Target->GetActorLocation());
+			break;
+		}
 	}
 
+}
+
+EAIBehavior ASummonedAIController::GetCurrentBehavior()
+{
+	return static_cast<EAIBehavior>(Blackboard->GetValueAsEnum("Behavior"));
 }
