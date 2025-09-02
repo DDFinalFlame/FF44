@@ -1,11 +1,19 @@
 #include "Player/BasePlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "GenericTeamAgentInterface.h"
 #include "InputMappingContext.h"
 #include "AbilitySystemComponent.h"
 #include "BasePlayerAttributeSet.h"
 
 #include "UI/BasePlayerHUDWidget.h"
+
+
+ABasePlayerController::ABasePlayerController()
+{
+	TeamId = FGenericTeamId(0);
+}
+
 
 void ABasePlayerController::SetupInputComponent()
 {

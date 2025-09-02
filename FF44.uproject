@@ -43,10 +43,6 @@
 			"Enabled": true
 		},
 		{
-			"Name": "GameplayCameras",
-			"Enabled": true
-		},
-		{
 			"Name": "MonsterAIPlugin",
 			"Enabled": true
 		}

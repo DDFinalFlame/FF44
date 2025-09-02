@@ -19,6 +19,9 @@ public:
 	FGameplayEffectAttributeCaptureDefinition MonsterAttackCaptureDef;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayEffectAttributeCaptureDefinition RockCaptureDef;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayEffectAttributeCaptureDefinition PlayerDefenceCaptureDef;
 
 	void Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, 

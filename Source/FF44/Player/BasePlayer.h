@@ -6,13 +6,14 @@
 #include "AbilitySystemInterface.h"
 
 #include "Data/PlayerDefinition.h"
-#include "AttackStatProvider.h"
+#include "Interface/AttackStatProvider.h"
 #include "BasePlayer.generated.h"
 
 class AActor;
 class ABaseWeapon;
 class UCameraComponent;
 class USpringArmComponent;
+class UArrowComponent;
 class UInputAction;
 class UGameplayAbility;
 
@@ -108,12 +109,34 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////
 ///										Cameras										///
 ///////////////////////////////////////////////////////////////////////////////////////
-//protected:
-//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-//	UCameraComponent* FollowCamera;
-//
-//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
-//	USpringArmComponent* CameraBoom;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	TObjectPtr<class UBasePlayerCameraManager> BaseCameraManager;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UCameraComponent* FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	USpringArmComponent* CameraBoom;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraUnequipLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraEquipLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraZoomInLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraRightMoveLook;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UArrowComponent* CameraLeftMoveLook;
+
+public:
+	void ZeroControllerPitch();
+	class UBasePlayerCameraManager* GetCameraManager() { return BaseCameraManager; }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
