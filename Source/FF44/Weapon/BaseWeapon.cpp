@@ -104,7 +104,7 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 
     if (AWeakPointActor* WP = Cast<AWeakPointActor>(OtherActor))
     {
-        WP->BreakAndNotify();   // 또는 WP->NotifyHitByPlayerWeapon(HR, GetOwner());
+        WP->NotifyHitByPlayerWeapon(SweepResult, GetOwner());   // 또는 WP->NotifyHitByPlayerWeapon(HR, GetOwner());
         return;
     }
     // 4-2) 컴포넌트 태그로 식별(약점 메시 등 일부만 약점일 때)
@@ -112,7 +112,7 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
     {
         if (AWeakPointActor* WP2 = Cast<AWeakPointActor>(OtherComp->GetOwner()))
         {
-            WP2->BreakAndNotify();
+            WP2->NotifyHitByPlayerWeapon(SweepResult, GetOwner());
             return;
         }
         // 약점이 별도 Actor가 아니면 여기서 커스텀 로직 수행 가능
