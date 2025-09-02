@@ -724,12 +724,5 @@ void ABasePlayer::UpdateClosestInteractable()
 			IFF44Interactable::Execute_OnFocus(Cur, this);
 		}
 	}
-
-#if WITH_EDITOR
-	if (AActor* Cur = FocusedInteractable.Get())
-	{
-		DrawDebugSphere(GetWorld(), Cur->GetActorLocation(), 25.f, 12, FColor::Green, false, 0.f, 0, 1.f);
-	}
-#endif
 }
 
