@@ -6,24 +6,26 @@
 #include "UObject/Interface.h"
 #include "FF44Interactable.generated.h"
 
-UINTERFACE(Blueprintable)
+UINTERFACE(BlueprintType)
 class UFF44Interactable : public UInterface
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 };
 
-/**
- * 
- */
-class FF44_API IFF44Interactable
+class IFF44Interactable
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
     bool CanInteract(AActor* Interactor) const;
 
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
     void Interact(AActor* Interactor);
 
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
+    void OnFocus(AActor* Interactor);
+
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactable")
+    void OnUnfocus(AActor* Interactor);
 };

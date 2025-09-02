@@ -39,9 +39,6 @@ public:
     UPROPERTY(VisibleAnywhere, Category = "Room|Collision")
     UBoxComponent* Bounds;
 
-    UPROPERTY(VisibleAnywhere, Category = "Room|Collision")
-    UBoxComponent* NavBounds;
-
     UPROPERTY(EditDefaultsOnly, Category = "Room|Meta")
     FName RoomTypeTag;
 

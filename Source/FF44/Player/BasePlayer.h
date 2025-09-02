@@ -318,4 +318,18 @@ public:
 public:
 	ABaseWeapon* GetWeapon() const { return Weapon; }
 	void SetWeapon(ABaseWeapon* _Weapon) { Weapon = _Weapon; }
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+	///										Interact										///
+	///////////////////////////////////////////////////////////////////////////////////////////
+	
+public:
+	UFUNCTION(BlueprintCallable)
+	void NotifyInteractableInRange(AActor* Interactable, bool bEnter);
+
+	void UpdateClosestInteractable();
+
+public:
+	TArray<TWeakObjectPtr<AActor>> NearbyInteractables;
+	TWeakObjectPtr<AActor> FocusedInteractable;
 };
