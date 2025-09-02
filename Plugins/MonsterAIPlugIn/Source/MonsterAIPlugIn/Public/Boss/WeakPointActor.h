@@ -33,7 +33,7 @@ protected:
     UFUNCTION()
     void OnMeshHit(UPrimitiveComponent* _HitComp, AActor* _OtherActor,
         UPrimitiveComponent* _OtherComp, FVector _NormalImpulse, const FHitResult& _Hit);
-
+public:
     // 실제 파괴 처리 (한번만)
     void BreakAndNotify();
 

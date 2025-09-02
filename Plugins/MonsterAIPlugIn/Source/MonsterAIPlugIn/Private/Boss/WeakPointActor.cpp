@@ -31,7 +31,7 @@ void AWeakPointActor::OnMeshHit(UPrimitiveComponent* _HitComp, AActor* _OtherAct
 {
     // 여기서는 어떤 타격이든 맞으면 부서지는 예시입니다.
     // 필요하면 "플레이어 무기만" 허용하는 필터 조건을 추가하세요.
-    BreakAndNotify();
+    //BreakAndNotify();
 }
 
 void AWeakPointActor::BreakAndNotify()
