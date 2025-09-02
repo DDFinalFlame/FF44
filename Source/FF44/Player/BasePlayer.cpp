@@ -353,22 +353,27 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 
 	if (Controller)
 	{
-		if(MovementVector.X > 0.f)
+		if (BaseCameraManager->GetCurrentCameraMode() != ECameraMode::UnEquip)
 		{
-			CurrentInputDirection = 4; // Right
+			if (MovementVector.X > 0.f)
+			{
+				CurrentInputDirection = 4; // Right
+			}
+			else if (MovementVector.X < 0.f)
+			{
+				CurrentInputDirection = 3; // Left
+			}
+			else if (MovementVector.Y > 0.f)
+			{
+				CurrentInputDirection = 1; // Forward
+			}
+			else if (MovementVector.Y < 0.f)
+			{
+				CurrentInputDirection = 2; // Backward
+			}
 		}
-		else if(MovementVector.X < 0.f)
-		{
-			CurrentInputDirection = 3; // Left
-		}
-		else if(MovementVector.Y > 0.f)
-		{
+		else
 			CurrentInputDirection = 1; // Forward
-		}
-		else if(MovementVector.Y < 0.f)
-		{
-			CurrentInputDirection = 2; // Backward
-		}
 
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -456,6 +461,9 @@ void ABasePlayer::LockOn(const FInputActionValue& Value)
 
 void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 {
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip))
+		return;
+
 	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
 		AbilitySystem->TryActivateAbilityByClass(UnEquipWeaponAbility);
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
