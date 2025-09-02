@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Interactable/FF44InteractableActor.h"
+#include "AbilitySystemComponent.h"
 #include "FF44TrapBase.generated.h"
 
 class UBoxComponent;
-class UGameplayEffect;
 class ABasePlayer;
 
 UCLASS()
@@ -20,9 +20,6 @@ public:
 
 protected:
     virtual void BeginPlay() override;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayEffect")
-    TSubclassOf<UGameplayEffect> GameplayEffect;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Trigger")
     UBoxComponent* TriggerBox;

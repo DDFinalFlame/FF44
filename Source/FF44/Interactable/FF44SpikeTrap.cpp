@@ -107,11 +107,12 @@ void AFF44SpikeTrap::Interact_Implementation(AActor* Interactor)
     GetWorldTimerManager().ClearTimer(HoldHandle);
     GetWorldTimerManager().ClearTimer(CooldownHandle);
 
-    SpikeRoot->SetRelativeLocation(SpikeDownLocal);
+    SpikeMesh->SetRelativeLocation(SpikeDownLocal);
 
     if (DamageArea)
     {
         DamageArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        DamageArea->SetGenerateOverlapEvents(false);
     }
     if (TriggerBox)
     {
