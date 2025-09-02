@@ -6,6 +6,8 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Pawn.h"
+#include "Player/BasePlayer.h"
+#include "AbilitySystemBlueprintLibrary.h"
 
 AFF44FireTrap::AFF44FireTrap()
 {
@@ -58,15 +60,24 @@ void AFF44FireTrap::OnDamageAreaBegin(UPrimitiveComponent* Overlapped, AActor* O
 {
     if (!bArmed || !bActive || !OtherActor) return;
 
-    if (Cast<APawn>(OtherActor))
+    if (auto Player = Cast<ABasePlayer>(OtherActor))
     {
-        UGameplayStatics::ApplyDamage(
-            OtherActor,
-            Damage,
-            nullptr,
-            this,
-            DamageTypeClass ? *DamageTypeClass : UDamageType::StaticClass()
-        );
+        auto playerAbility = Player->GetAbilitySystemComponent();
+        auto EffectContext = playerAbility->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+
+        auto spec = playerAbility->MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
+        
+        if (spec.Data.IsValid())
+        {
+			playerAbility->ApplyGameplayEffectSpecToSelf(*spec.Data.Get());
+            
+            FGameplayEventData Payload;
+            Payload.EventTag = FGameplayTag::RequestGameplayTag("Event.Player.Hit");
+            Payload.Instigator = this;
+            Payload.Target = OtherActor;
+            UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
+        }
     }
 }
 

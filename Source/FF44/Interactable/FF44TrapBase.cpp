@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Player/BasePlayer.h"
+#include "GameplayEffect.h"
 
 AFF44TrapBase::AFF44TrapBase()
 {
