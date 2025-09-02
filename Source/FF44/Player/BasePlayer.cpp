@@ -469,6 +469,9 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
 		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
 
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip))
+		return;
+
 	if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::UnEquip)
 	{
 		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
