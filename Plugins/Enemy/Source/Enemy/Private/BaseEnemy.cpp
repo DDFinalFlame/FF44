@@ -50,8 +50,8 @@ void ABaseEnemy::BeginPlay()
 
 		Weapon = GetWorld()->SpawnActor<AEnemyBaseWeapon>(
 			WeaponClass,
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
+			GetActorLocation(),
+			GetActorRotation(),
 			SpawnParams
 		);
 

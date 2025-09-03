@@ -1,8 +1,7 @@
-#pragma once
+ #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "EnemyWeaponCollisionComponent.generated.h"
 
@@ -49,6 +48,9 @@ protected:
 	/* 플레이어 충돌 시에만 True, 끄고 켤 때 무조건 False 초기화 **/
 	UPROPERTY(VisibleAnywhere)
 	bool bIsAttackSuccessful = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName TriggerEvent = "Event.Player.Hit";
 
 public:	
 	UEnemyWeaponCollisionComponent();

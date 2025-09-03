@@ -15,7 +15,7 @@ class URangeAttack : public UInterface
 /**
  * 
  */
-class ENEMY_API IRangeAttack
+class ENEMY_API IRangeAttack 
 {
 	GENERATED_BODY()
 

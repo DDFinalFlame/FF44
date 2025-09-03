@@ -32,7 +32,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	void EquipWeapon();
+	virtual void EquipWeapon();
 	void ActivateCollision();
 	void DeactivateCollision();
 

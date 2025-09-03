@@ -68,7 +68,7 @@ void UEnemyWeaponCollisionComponent::CollisionTrace()
 
 					FGameplayEventData EventData;
 
-					EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
+					EventData.EventTag = FGameplayTag::RequestGameplayTag(TriggerEvent);
 					EventData.Instigator = GetOwner()->GetOwner();
 					EventData.Target = HitActor;
 
