@@ -26,12 +26,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
 	UCanvasPanel* GridCanvasPanel;
 
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> ItemWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> ItemWidget;
+
+protected:
+	UPROPERTY()
+	class ABasePlayer* CharRef;
+
+	UPROPERTY()
+	class UInventoryComponent* IC;
+
+	FLines LineStructData;
+
 	int32 Colums;
 	int32 Rows;
 	float TileSize;
-
-	UPROPERTY()
-	FLines LineStructData;
 
 	TArray<float> StartX;
 	TArray<float> StartY;
@@ -49,4 +61,5 @@ protected:
 							  bool bParentEnabled) const override;
 
 	void CreateLineSegments();
+	void RefreshInventory();
 };

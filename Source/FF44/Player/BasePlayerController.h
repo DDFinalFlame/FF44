@@ -25,6 +25,7 @@ protected:
 	TArray<UInputMappingContext*> InputMappingContexts;
 
 	virtual void SetupInputComponent() override;
+	virtual void OnUnPossess() override;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///										UI											///

@@ -151,7 +151,7 @@ void ABasePlayer::BeginPlay()
 		if (AbilitySystem)
 		{
 			BasePlayerController->InitPlayerUI(AbilitySystem);
-			BasePlayerController->ToggleHUD();	// 추후에 Intro -> InGame 시 구현
+			//BasePlayerController->ToggleHUD();	// 추후에 Intro에서만 
 		}
 	}
 	else

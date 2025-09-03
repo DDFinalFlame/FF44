@@ -28,6 +28,17 @@ void ABasePlayerController::SetupInputComponent()
 	}
 }
 
+void ABasePlayerController::OnUnPossess()
+{
+	if (PlayerHUD->IsInViewport()) {
+		PlayerHUD->RemoveFromParent();
+	}
+
+	if (InventoryWidget->IsInViewport()) {
+		InventoryWidget->RemoveFromParent();
+	}
+}
+
 void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem)
 {
 	if (!_AbilitySystem) return;
@@ -36,6 +47,7 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 	if (PlayerHUDClass) {
 		PlayerHUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
 		PlayerHUD->SetOwningPlayer(this);
+		PlayerHUD->AddToViewport();
 		PlayerHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UBasePlayerAttributeSet>());
 	}
 
@@ -43,6 +55,8 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 	if (InventoryWidgetClass) {
 		InventoryWidget = CreateWidget<UUserWidget>(GetWorld(), InventoryWidgetClass);
 		InventoryWidget->SetOwningPlayer(this);
+		InventoryWidget->AddToViewport();
+		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 
@@ -50,12 +64,10 @@ void ABasePlayerController::ToggleHUD()
 {
 	if (!PlayerHUD) return;
 
-	if (PlayerHUD->IsInViewport()) {
-		PlayerHUD->RemoveFromParent();
-	}
-	else {
-		PlayerHUD->AddToViewport();
-	}
+	if (PlayerHUD->GetVisibility() == ESlateVisibility::Collapsed)
+		PlayerHUD->SetVisibility(ESlateVisibility::Visible);
+	else
+		PlayerHUD->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void ABasePlayerController::ToggleInventory()
@@ -64,14 +76,16 @@ void ABasePlayerController::ToggleInventory()
 
 	UE_LOG(LogTemp, Warning, TEXT("Inventory Toggle"));
 
-	if (InventoryWidget->IsInViewport()) {
-		InventoryWidget->RemoveFromParent();
+	if (InventoryWidget->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+		SetInputMode(FInputModeGameAndUI());
+		SetShowMouseCursor(true);
+	}
+	else
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 		SetShowMouseCursor(false);
 		SetInputMode(FInputModeGameOnly());
-	}
-	else {
-		InventoryWidget->AddToViewport();		
-		SetShowMouseCursor(true);
-		SetInputMode(FInputModeGameAndUI());
 	}
 }

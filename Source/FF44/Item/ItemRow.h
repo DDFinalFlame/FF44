@@ -12,7 +12,7 @@ struct FItemRow : public FTableRowBase
 	FIntPoint Dimension;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UTexture2D* InventoryUI;
+	UMaterialInterface* Icon;
 
 	// 비 설정 값
 	int32 ItemIndex;

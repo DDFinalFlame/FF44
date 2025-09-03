@@ -14,7 +14,6 @@ void UInventoryGridWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ABasePlayer* CharRef;
 	CharRef = Cast<ABasePlayer>(GetOwningPlayerPawn());
 	if (!CharRef) 
 	{ 
@@ -22,7 +21,6 @@ void UInventoryGridWidget::NativeConstruct()
 		return; 
 	}
 
-	UInventoryComponent* IC;
 	IC = CharRef->GetInventoryComponent();
 	if (!IC) 
 	{ 
@@ -109,5 +107,21 @@ void UInventoryGridWidget::CreateLineSegments()
 	{
 		StartY.Add(Elements.X);
 		EndY.Add(Elements.Y);
+	}
+}
+
+void UInventoryGridWidget::RefreshInventory()
+{
+	TArray<FItemRow*> Keys;
+	IC->GetAllItems().GetKeys(Keys);
+
+	if (ItemWidgetClass)
+	{
+		ItemWidget = CreateWidget(GetWorld, ItemWidgetClass);
+
+		for (FItemRow* item : Keys)
+		{
+
+		}
 	}
 }
