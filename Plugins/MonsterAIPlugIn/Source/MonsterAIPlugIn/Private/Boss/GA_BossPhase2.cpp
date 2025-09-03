@@ -54,9 +54,11 @@ void UGA_BossPhase2::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     const float CurHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetHealthAttribute());
     const float MaxHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetMaxHealthAttribute());
     const float Ratio = (MaxHP > 0.f) ? (CurHP / MaxHP) : 0.f;
-
+   
+   
     if (Ratio <= EndHpRatioThreshold)
     {
+
         bShouldEndAfterCurrentSmash = true;
         // 타이머 미가동 상태 보장
         if (AActor* Boss = GetAvatarActorFromActorInfo())
@@ -70,6 +72,7 @@ void UGA_BossPhase2::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     if (Ratio <= StartHpRatioThreshold && !bPhaseStarted)
     {
+       
         StartPhase();
         return;
     }
@@ -132,6 +135,7 @@ void UGA_BossPhase2::OnHPChangedNative(const FOnAttributeChangeData& Data)
         // Start 조건: 아직 Phase 시작 안 했을 때만
         if (!bPhaseStarted && Ratio <= StartHpRatioThreshold)
         {
+
             UnbindHPThresholdWatch();
             StartPhase();
         }
@@ -147,6 +151,31 @@ void UGA_BossPhase2::StartPhase()
     {
         BossCharacter->SetBossState_EBB((uint8)EBossState_BB::InPhase2);
     }
+
+    if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+    {
+        const float CurHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetHealthAttribute());
+        const float MaxHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetMaxHealthAttribute());
+        const float TargetHP = MaxHP * EndHpRatioThreshold;  // 예: 0.20 → 20%
+
+        const float Need = FMath::Max(0.f, CurHP - TargetHP);   // 지금부터 목표까지 깎아야 할 총량
+        const int32 Count = FMath::Max(1, WeakPointSpawnCount); // 0 나눗셈 방지
+
+        float perWeak = Need / Count;
+
+        // “혹시 모르니까 1 정도만 키우자”
+        if (Need > KINDA_SMALL_NUMBER)
+        {
+            perWeak += 1.f;
+        }
+
+        // 요청하신 대로 ‘음수’로 저장(Health를 Add로 줄이는 GE라면 음수여야 체력이 감소)
+        WeakPointDamageToBoss = -perWeak;
+
+        UE_LOG(LogTemp, Log, TEXT("[Phase2] Cur=%.1f Max=%.1f Target=%.1f Need=%.1f Count=%d PerWeak=%.1f(neg)"),
+            CurHP, MaxHP, TargetHP, Need, Count, WeakPointDamageToBoss);
+    }
+
     BindHPThresholdWatch();
 
     ApplyInvuln();
@@ -549,7 +578,7 @@ void UGA_BossPhase2::OnWeakPointDestroyedEvent(FGameplayEventData Payload)
         FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(GE_WeakPointDamageToBoss, 1.f, Ctx);
         if (Spec.IsValid())
         {
-            Spec.Data->SetSetByCallerMagnitude(MonsterTags::Data_Damage, Damage);
+            Spec.Data->SetSetByCallerMagnitude(MonsterTags::Data_Boss_Damaged, Damage);
             ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
         }
     }

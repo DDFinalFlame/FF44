@@ -51,5 +51,5 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_ChannelCast, "GameplayCue.Boss.Chann
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Boss_Phase, "Data.Boss.Phase");          // 현재 페이즈 인덱스
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Boss_SummonCount, "Data.Boss.SummonCount"); // 소환몹 수량
-UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Damage, "Data.Boss.Damage");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Boss_Damaged, "Data.Boss.Damage");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Drop_Damage, "Data.Boss.Drop_Damage");

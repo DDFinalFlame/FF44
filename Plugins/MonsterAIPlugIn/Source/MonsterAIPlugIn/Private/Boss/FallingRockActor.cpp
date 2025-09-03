@@ -100,7 +100,35 @@ void AFallingRockActor::BeginPlay()
         FVector PredPoint;
         if (PredictImpactPoint(PredPoint, PredHit))
         {
-            DrawImpactMarker(PredPoint, PredHit.ImpactNormal);
+           // DrawImpactMarker(PredPoint, PredHit.ImpactNormal);
+
+            // 예측값 캐시
+            bHasPredicted = true;
+            PredictedPoint = PredPoint;
+            PredictedNormal = PredHit.ImpactNormal;
+
+            // 표시용 BP 스폰 (서버 물리 간섭 방지: 클라에서만 생성 권장)
+            if (GroundMarkerClass)   //  서버에선 안 만듦
+            {
+                const FRotator SpawnRot = bAlignMarkerToGround
+                    ? FRotationMatrix::MakeFromZ(PredHit.ImpactNormal).Rotator()
+                    : FRotator::ZeroRotator;
+
+                FActorSpawnParameters SP;
+                SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+                GroundMarkerActor = GetWorld()->SpawnActor<AActor>(
+                    GroundMarkerClass, PredPoint, SpawnRot, SP);
+
+                if (GroundMarkerActor)
+                {
+                    // 표시용이므로 충돌/오버랩 완전 OFF (물리/트레이스 간섭 방지)
+                    GroundMarkerActor->SetActorEnableCollision(false);
+
+                    if (MarkerUniformScale != 1.f)
+                        GroundMarkerActor->SetActorScale3D(FVector(MarkerUniformScale));
+                }
+            }
         }
     }
 }
@@ -172,6 +200,13 @@ void AFallingRockActor::OnChaosCollision(const FChaosPhysicsCollisionInfo& Info)
     if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, P);
 
     SetHitBoxActive(false);
+
+    // 표시용 BP 제거
+    if (GroundMarkerActor)
+    {
+        GroundMarkerActor->Destroy();
+        GroundMarkerActor = nullptr;
+    }  
 
 }
 
@@ -321,6 +356,25 @@ void AFallingRockActor::HandleLanded(const FVector& At)
 
     SetHitBoxActive(false);
 
+    // 착지 FX (전용서버 제외, 바닥 노멀 정렬)
+    if (LandFX && GetNetMode() != NM_DedicatedServer)
+    {
+        const FRotator FXRot = (bAlignFXToGround && bHasPredicted)
+            ? FRotationMatrix::MakeFromZ(PredictedNormal).Rotator()
+            : FRotator::ZeroRotator;
+
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            GetWorld(), LandFX, At, FXRot, FVector(1.f),
+            /*bAutoDestroy=*/true, /*bAutoActivate=*/true, ENCPoolMethod::AutoRelease);
+    }
+
+    // 표시용 BP 제거
+    if (GroundMarkerActor)
+    {
+        GroundMarkerActor->Destroy();
+        GroundMarkerActor = nullptr;
+    }
+
     ApplyFractureFieldAt(At);
 
     if (bDestroyOnGroundHit)
@@ -390,9 +444,13 @@ bool AFallingRockActor::HitBoxTouchesGround(FVector& OutHitPoint) const
     ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
     ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic); // 이동식 바닥(Platform) 등 대비
 
+  
+
     FCollisionQueryParams Params(SCENE_QUERY_STAT(RockHitBoxGround), false, this);
     // 필요시 자기 자신/컴포넌트 무시
     Params.AddIgnoredActor(this);
+    if (GroundMarkerActor)                 // 표시용 BP 무시
+        Params.AddIgnoredActor(GroundMarkerActor);
     Params.bTraceComplex = false;
 
     FHitResult Hit;

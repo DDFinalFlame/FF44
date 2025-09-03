@@ -31,6 +31,7 @@ AMonsterCharacter::AMonsterCharacter()
 	AttributeSet = CreateDefaultSubobject<UMonsterAttributeSet>(TEXT("AttributeSet"));
 
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetReceivesDecals(false);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	AIControllerClass = AMonsterAIController::StaticClass();

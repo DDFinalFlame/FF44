@@ -184,7 +184,7 @@ void AShockwaveActor::ApplyDamageToActor(AActor* TargetActor)
         return;
 
     // SetByCaller로 피해 전달 (프로젝트에서 쓰는 태그에 맞춰주세요)
-    Spec.Data->SetSetByCallerMagnitude(MonsterTags::Data_Damage, Damage);
+    Spec.Data->SetSetByCallerMagnitude(MonsterTags::Data_Boss_Damaged, Damage);
 
     SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
 }
