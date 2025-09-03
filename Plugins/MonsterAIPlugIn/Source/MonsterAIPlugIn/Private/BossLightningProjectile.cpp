@@ -22,6 +22,9 @@ ABossLightningProjectile::ABossLightningProjectile()
     Movement->ProjectileGravityScale = 0.f;
     Movement->bRotationFollowsVelocity = true;
     Movement->bInitialVelocityInLocalSpace = true;
+    //유도탄처럼 쓰기 위해서 필요.
+    Movement->bIsHomingProjectile = true;
+    Movement->HomingAccelerationMagnitude = 8000.f; // 회전/쫓는 힘. 필요시 조절
 }
 
 void ABossLightningProjectile::BeginPlay()
@@ -61,6 +64,12 @@ void ABossLightningProjectile::InitProjectile(AActor* InTargetBoss, float InDama
 {
     TargetBoss = InTargetBoss;
     DamageValue = InDamage;
+
+    if (TargetBoss.IsValid())
+    {
+        USceneComponent* TargetComp = TargetBoss->GetRootComponent();
+        Movement->HomingTargetComponent = TargetComp;
+    }
 }
 
 void ABossLightningProjectile::OnOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,

@@ -36,6 +36,15 @@ AMonsterCharacter::AMonsterCharacter()
 	AIControllerClass = AMonsterAIController::StaticClass();
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->bUseRVOAvoidance = false;          // RVO 끄기 (Crowd와 중복 방지)
+		Move->bOrientRotationToMovement = true;  // 이동 방향으로 회전
+		Move->bUseControllerDesiredRotation = false; // 컨트롤러 주도 회전 끔
+		Move->RotationRate = FRotator(0.f, 540.f, 0.f);
+
+	}
 }
 
 

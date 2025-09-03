@@ -203,7 +203,7 @@ void AFallingRockActor::OnHitBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
 
     FGameplayEventData Payload;
     Payload.EventTag = MonsterTags::Event_Player_Hit;
-    Payload.Instigator = this; //몬스터끼리 공격 X
+    Payload.Instigator = this; 
     Payload.Target = OtherActor;
     UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, Payload.EventTag, Payload);
 

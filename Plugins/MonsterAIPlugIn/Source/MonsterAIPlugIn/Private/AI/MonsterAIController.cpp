@@ -8,9 +8,12 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Sight.h"
 #include "Perception/AISense_Hearing.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Navigation/PathFollowingComponent.h" 
 
 AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectInitializer)
-// ▼ 기본 Subobject "PathFollowingComponent"를 Crowd로 교체
+// 기본 Subobject "PathFollowingComponent"를 Crowd로 교체
     : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -52,6 +55,7 @@ AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectIniti
 void AMonsterAIController::BeginPlay()
 {
     Super::BeginPlay();
+  
 }
 
 void AMonsterAIController::OnPossess(APawn* InPawn)
@@ -70,7 +74,23 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
             UE_LOG(LogTemp, Warning, TEXT("RunBehaviorTree failed on %s"), *GetName());
         }
     }
+
 }
+
+
+void AMonsterAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+    Super::OnMoveCompleted(RequestID, Result);
+
+    // 실패/중단 시 제자리 떨림 방지: 즉시 정지
+    if (Result.Code != EPathFollowingResult::Success)
+    {
+        if (ACharacter* C = Cast<ACharacter>(GetPawn()))
+            if (auto* M = C->GetCharacterMovement())
+                M->StopMovementImmediately();
+    }
+}
+
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
