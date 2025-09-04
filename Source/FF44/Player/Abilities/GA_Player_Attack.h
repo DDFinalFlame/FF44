@@ -25,6 +25,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
 	float MontagePlayRate = 1.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+	class USoundBase* AttackSound;
+
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 								 const FGameplayAbilityActorInfo* ActorInfo, 

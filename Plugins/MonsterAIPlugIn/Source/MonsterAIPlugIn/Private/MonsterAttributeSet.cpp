@@ -98,14 +98,16 @@ void UMonsterAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			AActor* avatar = _data.Target.AbilityActorInfo->AvatarActor.Get();
 			UAbilitySystemComponent* asc = _data.Target.AbilityActorInfo->AbilitySystemComponent.Get();
 
-			// 이미 Dead 상태면(다중 타격 중복 방지) 재송신 금지
 			if (asc && !asc->HasMatchingGameplayTag(MonsterTags::State_Dead))
 			{
+				// [STEP3-옵션] 아주 이르게 Dying 태그를 올려 HitReact 경로를 미리 차단
+				asc->AddLooseGameplayTag(MonsterTags::State_Dying);
+
 				FGameplayEventData evt;
 				evt.EventTag = MonsterTags::Event_Monster_Death;
 				evt.Target = avatar;
-
-				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(avatar, MonsterTags::Event_Monster_Death, evt);
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+					avatar, MonsterTags::Event_Monster_Death, evt);
 			}
 		}
 	}

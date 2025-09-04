@@ -6,10 +6,11 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // Includes
-#include "MonsterCharacter.h"
+#include "Monster/MonsterCharacter.h"
 #include "Player/BasePlayer.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "DrawDebugHelpers.h" 
+#include "Boss/WeakPointActor.h" 
 
 ABaseWeapon::ABaseWeapon()
 {
@@ -45,7 +46,7 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 
     // 2) 기본 필터
     if (!OtherActor || OtherActor == GetOwner()) return;
-    if (!UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor)) return;
+    //if (!UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor)) return;
 
     // 3) HitResult 준비
     FHitResult HR = SweepResult;
@@ -99,6 +100,22 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 
         // ImpactNormal 방향 확인용 라인
         DrawDebugLine(World, HR.ImpactPoint, HR.ImpactPoint + HR.ImpactNormal * 50.0f, FColor::Red, false, 1.0f, 0, 1.5f);
+    }
+
+    if (AWeakPointActor* WP = Cast<AWeakPointActor>(OtherActor))
+    {
+        WP->NotifyHitByPlayerWeapon(SweepResult, GetOwner());   // 또는 WP->NotifyHitByPlayerWeapon(HR, GetOwner());
+        return;
+    }
+    // 4-2) 컴포넌트 태그로 식별(약점 메시 등 일부만 약점일 때)
+    if (OtherComp && OtherComp->ComponentHasTag(FName(TEXT("BossWeakPoint"))))
+    {
+        if (AWeakPointActor* WP2 = Cast<AWeakPointActor>(OtherComp->GetOwner()))
+        {
+            WP2->NotifyHitByPlayerWeapon(SweepResult, GetOwner());
+            return;
+        }
+        // 약점이 별도 Actor가 아니면 여기서 커스텀 로직 수행 가능
     }
 
 
