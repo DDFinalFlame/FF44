@@ -7,6 +7,7 @@
 #include "DungeonGenerator/FF44InteractableSpawner.h"
 #include "Interactable/FF44Portal.h"
 #include "Kismet/GameplayStatics.h"
+#include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
 
 AFF44FloorManager::AFF44FloorManager()
 {
@@ -55,18 +56,21 @@ void AFF44FloorManager::CleanupFloor()
 
     if (Dungeon)
     {
+        //Dungeon->ClearDungeonContents();
         Dungeon->Destroy();
         Dungeon = nullptr;
     }
 
     if (MonsterSpawner)
     {
+        //MonsterSpawner->CleanupSpawned();
         MonsterSpawner->Destroy();
         MonsterSpawner = nullptr;
     }
 
     if (InteractableSpawner)
     {
+        //InteractableSpawner->CleanupSpawned();
         InteractableSpawner->Destroy();
         InteractableSpawner = nullptr;
     }

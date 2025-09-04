@@ -3,6 +3,14 @@
 
 #include "DungeonGenerator/FF44MonsterSpawner.h"
 
+void AFF44MonsterSpawner::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    CleanupSpawned();
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    OnSpawnComplete.Clear();
+    Super::EndPlay(EndPlayReason);
+}
+
 void AFF44MonsterSpawner::SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Markers)
 {
     UWorld* World = GetWorld();
@@ -18,10 +26,27 @@ void AFF44MonsterSpawner::SpawnFromMarkers(const TArray<FMonsterSpawnInfo>& Mark
         {
             if (*Found)
             {
-                World->SpawnActor<APawn>(*Found, Info.Transform);
+                APawn* Spawned = World->SpawnActor<APawn>(*Found, Info.Transform);
+                if (Spawned)
+                {
+                    SpawnedActors.Add(Spawned);
+                }
             }
         }
     }
 
     OnSpawnComplete.Broadcast();
+}
+
+void AFF44MonsterSpawner::CleanupSpawned()
+{
+    for (auto& W : SpawnedActors)
+    {
+        if (AActor* A = W.Get())
+        {
+            if (IsValid(A)) A->Destroy();
+        }
+    }
+
+    SpawnedActors.Empty();
 }

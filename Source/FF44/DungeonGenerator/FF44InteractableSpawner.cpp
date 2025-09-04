@@ -10,14 +10,18 @@ AFF44InteractableSpawner::AFF44InteractableSpawner()
 
 }
 
+void AFF44InteractableSpawner::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    CleanupSpawned();
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    OnSpawnComplete.Clear();
+    Super::EndPlay(EndPlayReason);
+}
+
 void AFF44InteractableSpawner::SpawnFromMarkers(const TArray<FInteractableSpawnInfo>& Markers, int32 Seed)
 {
     UWorld* World = GetWorld();
-    if (!World)
-    {
-        OnSpawnComplete.Broadcast();
-        return;
-    }
+    if (!World) { OnSpawnComplete.Broadcast(); return; }
 
     FRandomStream Rand(Seed);
 
@@ -25,37 +29,49 @@ void AFF44InteractableSpawner::SpawnFromMarkers(const TArray<FInteractableSpawnI
     {
         const FInteractableSpawnInfo& Info = Markers[i];
 
+        AFF44InteractableActor* Spawned = nullptr;
+
         if (const TSubclassOf<AFF44InteractableActor>* TagClass = TaggedPools.Find(Info.Tag))
         {
             if (*TagClass)
             {
-                World->SpawnActor<AFF44InteractableActor>(*TagClass, Info.Transform);
+                Spawned = World->SpawnActor<AFF44InteractableActor>(*TagClass, Info.Transform);
             }
-
-            continue;
         }
-
-        if (NoneChance > 0.f && (Rand.FRand() < NoneChance))
+        else
         {
-            continue;
-        }
-
-        if (DefaultPool.Num() == 0)
-        {
-            if (!bApplyNoneWhenPoolEmpty)
+            if (!(NoneChance > 0.f && (Rand.FRand() < NoneChance)))
             {
-                continue;
+                if (DefaultPool.Num() > 0)
+                {
+                    const int32 PickIdx = Rand.RandRange(0, DefaultPool.Num() - 1);
+                    TSubclassOf<AFF44InteractableActor> Picked = DefaultPool[PickIdx];
+                    if (*Picked)
+                    {
+                        Spawned = World->SpawnActor<AFF44InteractableActor>(Picked, Info.Transform);
+                    }
+                }
             }
-
-            continue;
         }
 
-        const int32 PickIdx = Rand.RandRange(0, DefaultPool.Num() - 1);
-        TSubclassOf<AFF44InteractableActor> Picked = DefaultPool[PickIdx];
-        if (!*Picked) { continue; }
-
-        World->SpawnActor<AFF44InteractableActor>(Picked, Info.Transform);
+        if (Spawned)
+        {
+            SpawnedActors.Add(Spawned);
+        }
     }
 
     OnSpawnComplete.Broadcast();
+}
+
+void AFF44InteractableSpawner::CleanupSpawned()
+{
+    for (auto& W : SpawnedActors)
+    {
+        if (AActor* A = W.Get())
+        {
+            if (IsValid(A)) A->Destroy();
+        }
+    }
+
+    SpawnedActors.Empty();
 }

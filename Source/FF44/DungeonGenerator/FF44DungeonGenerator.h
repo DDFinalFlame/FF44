@@ -22,6 +22,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     /* ===========================
        Room classes / pools
@@ -150,8 +151,11 @@ private:
     // Weighted pick (optional)
     TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
 
-    void ClearDungeonContents();
-
     UPROPERTY(Transient)
     TArray<TWeakObjectPtr<AFF44RoomBase>> SpawnedRooms;
+
+public:
+    void DestroyAllOfClass(UClass* Cls);
+    void ClearDungeonContents();
+
 };

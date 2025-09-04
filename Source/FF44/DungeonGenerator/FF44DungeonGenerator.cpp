@@ -23,6 +23,16 @@ void AFF44DungeonGenerator::BeginPlay()
     SpawnNextRoom();
 }
 
+void AFF44DungeonGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    DestroyAllOfClass(ExitCapClass.Get());
+    DestroyAllOfClass(SmallExitCapClass.Get());
+    DestroyAllOfClass(AFF44RoomBase::StaticClass());
+
+    GetWorld()->GetTimerManager().ClearTimer(SpawnNextHandle);
+    Super::EndPlay(EndPlayReason);
+}
+
 void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
 {
     OutStarter = nullptr;
@@ -383,6 +393,19 @@ TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<
     return Pool.Last();
 }
 
+void AFF44DungeonGenerator::DestroyAllOfClass(UClass* Cls)
+{
+    if (!Cls) return;
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    TArray<AActor*> Found;
+    UGameplayStatics::GetAllActorsOfClass(World, Cls, Found);
+    for (AActor* A : Found)
+    {
+        if (IsValid(A)) { A->Destroy(); }
+    }
+}
 
 void AFF44DungeonGenerator::ClearDungeonContents()
 {
@@ -444,3 +467,4 @@ void AFF44DungeonGenerator::EnterBossArena()
         OnDungeonComplete.Broadcast();
     }
 }
+
