@@ -54,7 +54,6 @@ void ASkeletonHeadMonster::Tick(float _dt)
 
     if (!HasAuthority()) return;
 
-    // 3) 플레이어가 임계 거리 이하면 이벤트로 GA 발동
     if (GetMonsterState() == EMonsterState::Ragdoll && !bAssembleRequested)
     {
         if (AssembleTriggerDistance > 0.f && AbilitySystemComponent)
@@ -65,13 +64,30 @@ void ASkeletonHeadMonster::Tick(float _dt)
                 float d = FVector::Dist(player->GetActorLocation(), GetActorLocation());
                 if (d <= AssembleTriggerDistance)
                 {
-                    bAssembleRequested = true;
+                    // === 벽(시야) 체크 추가 ===
+                    FHitResult Hit;
+                    FCollisionQueryParams Params(SCENE_QUERY_STAT(AssembleCheck), false, this);
+                    Params.AddIgnoredActor(this);
+                    Params.AddIgnoredActor(player);
 
-                    FGameplayEventData Ev;
-                    Ev.EventTag = MonsterTags::Event_Assemble;   // GA가 이 태그로 트리거됨
-                    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, Ev.EventTag, Ev);
+                    bool bBlocked = GetWorld()->LineTraceSingleByChannel(
+                        Hit,
+                        GetActorLocation() + FVector(0, 0, 50),   // 몬스터 위치(조금 위로 보정)
+                        player->GetActorLocation() + FVector(0, 0, 50), // 플레이어 위치(머리/가슴 높이 보정)
+                        ECC_Visibility,   // 가시성 채널 사용
+                        Params
+                    );
 
-                    SetMonsterState(EMonsterState::Assembling);   // 표시용(선택)
+                    if (!bBlocked) // 막는 게 없을 때만 발동
+                    {
+                        bAssembleRequested = true;
+
+                        FGameplayEventData Ev;
+                        Ev.EventTag = MonsterTags::Event_Assemble;
+                        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, Ev.EventTag, Ev);
+
+                        SetMonsterState(EMonsterState::Assembling);
+                    }
                 }
             }
         }
