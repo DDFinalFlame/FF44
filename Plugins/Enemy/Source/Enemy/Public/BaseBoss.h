@@ -7,6 +7,7 @@
 #include "Interfaces/BossAttack.h"
 #include "BaseBoss.generated.h"
 
+class USplineComponent;
 struct FEnvQueryResult;
 class UEnvQuery;
 /**
@@ -16,6 +17,7 @@ UCLASS()
 class ENEMY_API ABaseBoss : public ABaseEnemy, public IBossAttack
 {
 	GENERATED_BODY()
+
 
 protected:
 	// Summon 위치 찾을 EQS
@@ -30,6 +32,24 @@ protected:
 	// Summon 된 Actor들
 	TArray<TWeakObjectPtr<ABaseEnemy>> SpawnedGhosts;
 
+protected:
+	// Grab 경로
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USplineComponent* SplineComponent;
+
+	// Spline 경로 이동 관련
+	bool bMovingHand = false;
+
+	float DistanceAlongSpline = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MoveSpeed = 200.f; // 스플라인 이동 속도
+
+public:
+	ABaseBoss();
+
+protected:
+	virtual void Tick(float DeltaSeconds) override;
 public:
 	// BossAttack Interface - Summon
 	FORCEINLINE virtual bool IsReadyToSummon() const override
@@ -45,8 +65,12 @@ public:
 	virtual TArray<TWeakObjectPtr<ABaseEnemy>> GetGhostList() override;
 	virtual FVector GetBossLocation() override;
 
-
 public:
 	// EQS Finish 바인딩할 델리게이트 함수
 	void OnSummonQueryFinished(TSharedPtr<FEnvQueryResult> Result);
+
+public:
+	// 경로 컨트롤 추가된 Activate/Deactivate
+	virtual void ActivateWeaponCollision() override;
+	virtual void DeactivateWeaponCollision() override;
 };

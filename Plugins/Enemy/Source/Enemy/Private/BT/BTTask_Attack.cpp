@@ -56,7 +56,7 @@ void UBTTask_Attack::OnAbilityEnded(const FAbilityEndedData& EndData)
 
 	if (EndData.AbilityThatEnded)
 	{
-		if (EndData.AbilityThatEnded->AbilityTags.HasTag(AbilityTag))
+		if (EndData.AbilityThatEnded->GetAssetTags().HasTag(AbilityTag))
 		{
 			CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
 			FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);

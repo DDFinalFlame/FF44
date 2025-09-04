@@ -26,6 +26,7 @@ public class Enemy : ModuleRules
                 "GameplayTasks",
                 "AnimGraphRuntime",
                 "MonsterAIPlugIn",
+                "Niagara"
             }
             );
 
