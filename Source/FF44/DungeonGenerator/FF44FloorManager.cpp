@@ -54,25 +54,25 @@ void AFF44FloorManager::CleanupFloor()
 {
     UnbindFromPortals();
 
-    if (Dungeon)
-    {
-        //Dungeon->ClearDungeonContents();
-        Dungeon->Destroy();
-        Dungeon = nullptr;
-    }
-
     if (MonsterSpawner)
     {
-        //MonsterSpawner->CleanupSpawned();
+        MonsterSpawner->CleanupSpawned();
         MonsterSpawner->Destroy();
         MonsterSpawner = nullptr;
     }
 
     if (InteractableSpawner)
     {
-        //InteractableSpawner->CleanupSpawned();
+        InteractableSpawner->CleanupSpawned();
         InteractableSpawner->Destroy();
         InteractableSpawner = nullptr;
+    }
+
+    if (Dungeon)
+    {
+        Dungeon->ClearDungeonContents();
+        Dungeon->Destroy();
+        Dungeon = nullptr;
     }
 
     bFloorReady = false;
@@ -195,6 +195,9 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
         if (Dungeon)
         {
             if (!IsBossFloor()) { return; }
+
+            MonsterSpawner->CleanupSpawned();
+            InteractableSpawner->CleanupSpawned();
 
             FName FnName = TEXT("EnterBossArena");
             if (Dungeon->GetClass()->FindFunctionByName(FnName))

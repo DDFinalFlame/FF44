@@ -2,8 +2,9 @@
 
 
 #include "DungeonGenerator/FF44DungeonGenerator.h"
-#include "DungeonGenerator/DungeonBase/FF44StarterRoom.h"
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
+#include "DungeonGenerator/DungeonBase/FF44StarterRoom.h"
+#include "DungeonGenerator/DungeonBase/FF44BossArenaRoom.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
@@ -25,11 +26,10 @@ void AFF44DungeonGenerator::BeginPlay()
 
 void AFF44DungeonGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    DestroyAllOfClass(ExitCapClass.Get());
-    DestroyAllOfClass(SmallExitCapClass.Get());
-    DestroyAllOfClass(AFF44RoomBase::StaticClass());
-
     GetWorld()->GetTimerManager().ClearTimer(SpawnNextHandle);
+    TotalSpawned = 0;
+    bDungeonCompleted = false;
+
     Super::EndPlay(EndPlayReason);
 }
 
@@ -59,6 +59,24 @@ void AFF44DungeonGenerator::SpawnStarterRoom(AFF44StarterRoom*& OutStarter)
 }
 
 void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44StarterRoom* Starter)
+{
+    if (!Starter) return;
+
+    FTransform StartT;
+    Starter->GetPlayerStartTransform(StartT);
+
+    if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+    {
+        if (APawn* Pawn = PC->GetPawn())
+        {
+            Pawn->SetActorLocationAndRotation(StartT.GetLocation(), StartT.GetRotation());
+
+            PC->SetControlRotation(StartT.Rotator());
+        }
+    }
+}
+
+void AFF44DungeonGenerator::SpawnPlayerAtStart(const AFF44BossArenaRoom* Starter)
 {
     if (!Starter) return;
 
@@ -409,29 +427,22 @@ void AFF44DungeonGenerator::DestroyAllOfClass(UClass* Cls)
 
 void AFF44DungeonGenerator::ClearDungeonContents()
 {
-    for (TWeakObjectPtr<AFF44RoomBase>& WRoom : SpawnedRooms)
-    {
-        if (AFF44RoomBase* R = WRoom.Get())
-        {
-            if (IsValid(R) && !R->IsActorBeingDestroyed())
-            {
-                R->Destroy();
-            }
-        }
-    }
-    SpawnedRooms.Empty();
-
+    DestroyAllOfClass(ExitCapClass.Get());
+    DestroyAllOfClass(SmallExitCapClass.Get());
     Exits.Empty();
     SelectedExitPoint = nullptr;
-    LatestSpawnedRoom = nullptr;
 
+    DestroyAllOfClass(AFF44RoomBase::StaticClass());
+    SpawnedRooms.Empty();
+    LatestSpawnedRoom = nullptr;
     MonsterSpawnMarkers.Empty();
     InteractableSpawnMarkers.Empty();
 
-    GetWorld()->GetTimerManager().ClearTimer(SpawnNextHandle);
-    TotalSpawned = 0;
-
-    bDungeonCompleted = false;
+    if (StarterRoomRef && IsValid(StarterRoomRef) && !StarterRoomRef->IsActorBeingDestroyed())
+    {
+        StarterRoomRef->Destroy();
+    }
+    StarterRoomRef = nullptr;
 }
 
 void AFF44DungeonGenerator::EnterBossArena()
@@ -447,10 +458,15 @@ void AFF44DungeonGenerator::EnterBossArena()
 
     if (*BossArenaRoomClass)
     {
-        AFF44RoomBase* Arena = GetWorld()->SpawnActor<AFF44RoomBase>(BossArenaRoomClass, SpawnT);
-        if (Arena)
+        AFF44RoomBase* BossArenaRoom = GetWorld()->SpawnActor<AFF44RoomBase>(BossArenaRoomClass, SpawnT);
+        if (BossArenaRoom)
         {
-            SpawnedRooms.Add(Arena);
+            SpawnedRooms.Add(BossArenaRoom);
+
+            if (auto* ArenaRoom = Cast<AFF44BossArenaRoom>(BossArenaRoom))
+            {
+                SpawnPlayerAtStart(ArenaRoom);
+            }
 
             if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld()))
             {

@@ -5,7 +5,6 @@
 
 void AFF44MonsterSpawner::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    CleanupSpawned();
     GetWorldTimerManager().ClearAllTimersForObject(this);
     OnSpawnComplete.Clear();
     Super::EndPlay(EndPlayReason);

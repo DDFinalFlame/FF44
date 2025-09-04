@@ -14,7 +14,6 @@ AFF44StarterRoom::AFF44StarterRoom()
 	PlayerStartPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("PlayerStartPoint"));
 	PlayerStartPoint->SetupAttachment(PlayerStart);
     PlayerStartPoint->ArrowSize = 1.5f;
-
 }
 
 bool AFF44StarterRoom::GetPlayerStartTransform(FTransform& OutTransform) const
@@ -24,7 +23,6 @@ bool AFF44StarterRoom::GetPlayerStartTransform(FTransform& OutTransform) const
         OutTransform = PlayerStartPoint->GetComponentTransform();
         return true;
     }
-
     OutTransform = FTransform::Identity;
     return false;
 }

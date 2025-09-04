@@ -7,12 +7,10 @@
 AFF44InteractableSpawner::AFF44InteractableSpawner()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 void AFF44InteractableSpawner::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    CleanupSpawned();
     GetWorldTimerManager().ClearAllTimersForObject(this);
     OnSpawnComplete.Clear();
     Super::EndPlay(EndPlayReason);

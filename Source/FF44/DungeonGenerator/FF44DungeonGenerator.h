@@ -7,8 +7,9 @@
 #include "SpawnInfo.h"
 #include "FF44DungeonGenerator.generated.h"
 
-class AFF44StarterRoom;
 class AFF44RoomBase;
+class AFF44StarterRoom;
+class AFF44BossArenaRoom;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
 
@@ -131,6 +132,7 @@ private:
     // Entry / player
     void SpawnStarterRoom(AFF44StarterRoom*& OutStarter);
     void SpawnPlayerAtStart(const AFF44StarterRoom* Starter);
+    void SpawnPlayerAtStart(const AFF44BossArenaRoom* Starter);
 
     // Main loop
     void SpawnNextRoom();
