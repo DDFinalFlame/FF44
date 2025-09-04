@@ -17,7 +17,7 @@ ABossLightningProjectile::ABossLightningProjectile()
 
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
     Movement->UpdatedComponent = Collision;     
-    Movement->InitialSpeed = 2000.f;
+    Movement->InitialSpeed = 500.f;
     Movement->MaxSpeed = 2000.f;
     Movement->ProjectileGravityScale = 0.f;
     Movement->bRotationFollowsVelocity = true;
@@ -45,19 +45,6 @@ void ABossLightningProjectile::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-  /*  if (bDebugDraw && Collision)
-    {
-        const FVector Center = Collision->GetComponentLocation();
-        const float Radius = Collision->GetScaledSphereRadius();
-
-        DrawDebugSphere(GetWorld(), Center, Radius, 12, FColor::Green, false, -1.f, 0, DebugLineThickness);
-
-        if (Movement)
-        {
-            const FVector Velocity = Movement->Velocity;
-            DrawDebugLine(GetWorld(), Center, Center + Velocity.GetSafeNormal() * 150.f, FColor::Cyan, false, -1.f, 0, DebugLineThickness);
-        }
-    }*/
 }
 
 void ABossLightningProjectile::InitProjectile(AActor* InTargetBoss, float InDamage)
