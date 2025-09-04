@@ -40,10 +40,20 @@ protected:
 	// Spline 경로 이동 관련
 	bool bMovingHand = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DistanceAlongSpline = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LookAheadSeconds = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float RotationInterpSpeed = 10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MoveSpeed = 200.f; // 스플라인 이동 속도
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MoveSpeedMultiplier = 3.f; // 스플라인 이동 속도
 
 public:
 	ABaseBoss();

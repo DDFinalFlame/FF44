@@ -42,7 +42,6 @@ void AEnemyFXWeapon::OnConstruction(const FTransform& Transform)
 
 void AEnemyFXWeapon::EquipWeapon()
 {
-
 	WeaponCollision->SetWeaponMesh(MeshComponent);
 	SecondWeaponCollision->SetWeaponMesh(MeshComponent);
 
@@ -50,13 +49,7 @@ void AEnemyFXWeapon::EquipWeapon()
 	{
 		WeaponCollision->AddIgnoredActor(OwnerCharacter);
 		SecondWeaponCollision->AddIgnoredActor(OwnerCharacter);
-
-		//// Boss 소켓에 붙이기
-		//FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-		//AttachToComponent(OwnerCharacter->GetMesh(), AttachmentRules, FName("Hand_L_Socket"));
 	}
-
-
 }
 
 void AEnemyFXWeapon::ActivateCollision()
@@ -64,11 +57,7 @@ void AEnemyFXWeapon::ActivateCollision()
 	Super::ActivateCollision();
 
 	// FX 플레이
-	if (!NiagaraComponent)
-	{
-		int a = 0;
-	}
-	else
+	if (NiagaraComponent)
 	{
 		NiagaraComponent->Activate(true);
 
