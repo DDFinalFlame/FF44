@@ -17,8 +17,8 @@ EBTNodeResult::Type UBTTask_Patrol::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 	if (ABaseEnemy* Character = Cast<ABaseEnemy>(ControlledPawn))
 	{
-		OwnerComp.GetBlackboardComponent()->SetValueAsVector(BlackboardLocation.SelectedKeyName, Character->GetPatrolPoint()->GetActorLocation());
-		Character->IncrementPatrolIndex();
+		//OwnerComp.GetBlackboardComponent()->SetValueAsVector(BlackboardLocation.SelectedKeyName, Character->GetPatrolPoint()->GetActorLocation());
+		//Character->IncrementPatrolIndex();
 		return EBTNodeResult::Succeeded;
 	}
 

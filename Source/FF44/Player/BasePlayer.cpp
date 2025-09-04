@@ -87,6 +87,9 @@ ABasePlayer::ABasePlayer()
 
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
+
+	// Tag
+	Tags.Add(FName("Player"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)

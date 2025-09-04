@@ -86,20 +86,9 @@ void UBTService_SelectBehavior::UpdateBehavior(UBlackboardComponent* BlackboardC
 	}
 	else
 	{
-		/* Patrol Point 가 있다면 **/
-		if (ControlledEnemy->GetPatrolPoint() != nullptr)
+		if (ControlledEnemy->ChangeState(EAIBehavior::Idle))
 		{
-			if (ControlledEnemy->ChangeState(EAIBehavior::Patrol))
-			{
-				SetBehaviorKey(BlackboardComponent, EAIBehavior::Patrol);
-			}
-		}
-		else
-		{
-  			if (ControlledEnemy->ChangeState(EAIBehavior::Idle))
-			{
-				SetBehaviorKey(BlackboardComponent, EAIBehavior::Idle);
-			}
+			SetBehaviorKey(BlackboardComponent, EAIBehavior::Idle);
 		}
 	}
 }
