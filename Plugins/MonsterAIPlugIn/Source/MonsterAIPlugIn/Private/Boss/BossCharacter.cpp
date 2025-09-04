@@ -2,14 +2,13 @@
 
 
 #include "Boss/BossCharacter.h"
-#include "Boss/BossHPBarWidget.h"
 #include "AIController.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "MonsterTags.h"
 #include "Data/staticName.h"
 #include "Boss/BossMeleeWeapon.h"
-#include "Kismet/GameplayStatics.h"
+
 
 
 
@@ -30,62 +29,10 @@ void ABossCharacter::BeginPlay()
     }
 
 
-    if (BossHPWidgetClass)
-    {
-        BossHPWidget = CreateWidget<UBossHPBarWidget>(
-            UGameplayStatics::GetPlayerController(this, 0),
-            BossHPWidgetClass
-        );
-
-        if (BossHPWidget)
-        {
-            BossHPWidget->AddToViewport(50);
-
-            // 화면 상단 중앙 고정
-            BossHPWidget->SetAnchorsInViewport(FAnchors(0.5f, 0.0f, 0.5f, 0.0f));
-            BossHPWidget->SetAlignmentInViewport(FVector2D(0.5f, 0.0f));
-            BossHPWidget->SetPositionInViewport(FVector2D(0.0f, 40.0f), false);
-
-            BossHPWidget->InitBossName(FText::FromString(TEXT("Boss")));
-        }
-    }
-
-    if (AbilitySystemComponent)
-    {
-        AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-            UMonsterAttributeSet::GetHealthAttribute()
-        ).AddUObject(this, &ABossCharacter::OnHealthChanged);
-    }
-
 }
 
 
-void ABossCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
-{
-    if (BossHPWidget)
-    {
-        BossHPWidget->UpdateHP(Data.NewValue, GetMaxHealth());
-    }
 
-    if (Data.NewValue <= 0.f && BossHPWidget)
-    {
-        BossHPWidget->RemoveFromParent();
-        BossHPWidget = nullptr;
-    }
-}
-
-float ABossCharacter::GetMaxHealth() const
-{
-    if (AbilitySystemComponent)
-    {
-        const UMonsterAttributeSet* AttrSet = AbilitySystemComponent->GetSet<UMonsterAttributeSet>();
-        if (AttrSet)
-        {
-            return AttrSet->GetMaxHealth(); 
-        }
-    }
-    return 0.f;
-}
 
 void ABossCharacter::ActivatePhaseWatcherOnce()
 {

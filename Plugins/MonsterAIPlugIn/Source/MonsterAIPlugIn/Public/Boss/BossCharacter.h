@@ -63,10 +63,6 @@ protected:
 
     void ActivatePhaseWatcherOnce();  // GA_BossPhase1을 한 번 켜서 HP 80% 대기 시작
 
-    UFUNCTION()
-    void OnHealthChanged(const FOnAttributeChangeData& Data);
-
-    float GetMaxHealth() const;  // AttributeSet에서 최대체력 가져오는 함수 (직접 구현)
 public:
     UFUNCTION(BlueprintCallable)
     void SetBossState_EBB(uint8 NewState); // BP Enum 값 그대로 넣을 수 있게 uint8
@@ -76,11 +72,6 @@ public:
 
     virtual void Landed(const FHitResult& Hit) override;
 
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
-    TSubclassOf<class UBossHPBarWidget> BossHPWidgetClass;
-
-    UPROPERTY()
-    UBossHPBarWidget* BossHPWidget;
 public:
     UFUNCTION(BlueprintCallable)
     void SetBlackboardTargetActor(FName BBKeyName, AActor* NewTarget);

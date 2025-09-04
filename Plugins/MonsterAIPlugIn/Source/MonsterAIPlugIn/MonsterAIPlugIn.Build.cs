@@ -50,7 +50,10 @@ public class MonsterAIPlugIn : ModuleRules
 				"NavigationSystem",    //네비게이션 기능이 필요한 경우
 				"EnhancedInput",
                  "Niagara",//필요 시 입력 시스템 (선택사항)
-			}
+				 "Slate",
+				"SlateCore",
+				"UMG"
+            }
 			);
 		
 		

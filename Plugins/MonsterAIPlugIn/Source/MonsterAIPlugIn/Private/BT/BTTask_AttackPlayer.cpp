@@ -182,3 +182,39 @@ void UBTTask_AttackPlayer::RestoreMovementFromLock(ACharacter* C)
 	}
 	bLockApplied = false;
 }
+
+EBTNodeResult::Type UBTTask_AttackPlayer::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	// 1) 델리게이트 해제
+	if (BoundAnim && bBoundDelegate)
+	{
+		BoundAnim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+	}
+	bBoundDelegate = false;
+
+	// 2) 이동/RVO/회전 복구 + 충돌 프로필 복원
+	if (AAIController* AI = OwnerComp.GetAIOwner())
+	{
+		if (ACharacter* C = Cast<ACharacter>(AI->GetPawn()))
+		{
+			RestoreMovementFromLock(C);
+
+			if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(C))
+			{
+				MC->PopAttackCollision();
+			}
+		}
+	}
+
+	// 3) 캐시 정리
+	BoundAnim = nullptr;
+	CachedMontage = nullptr;
+	CachedBTC = nullptr;
+	MontageDuration = 0.f;
+	ElapsedTime = 0.f;
+	bFinishedByEvent = false;
+	bLockApplied = false;
+
+	// 태스크 Abort 결과 반환
+	return EBTNodeResult::Aborted;
+}

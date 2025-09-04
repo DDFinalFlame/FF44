@@ -2,7 +2,7 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
-#include "Navigation/CrowdFollowingComponent.h"
+//#include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -13,8 +13,10 @@
 #include "Navigation/PathFollowingComponent.h" 
 
 AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectInitializer)
-// 기본 Subobject "PathFollowingComponent"를 Crowd로 교체
-    : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+// 기본 Subobject "PathFollowingComponent"를 Crowd로 교체 (기존) 
+// : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+// 기본 PathFollowing 사용(권장)
+    : Super(ObjectInitializer /* .SetDefaultSubobjectClass<UPathFollowingComponent>(TEXT("PathFollowingComponent")) 생략 가능 */)
 {
     PrimaryActorTick.bCanEverTick = true;
 
@@ -25,20 +27,20 @@ AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectIniti
 
     if (SightConfig)
     {
-        SightConfig->SightRadius = SightRadius;             // 값 적당히(예: 1500.f)
-        SightConfig->LoseSightRadius = LoseSightRadius;     // 예: 1800.f
-        SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle; // 예: 90.f
+        SightConfig->SightRadius = SightRadius;
+        SightConfig->LoseSightRadius = LoseSightRadius;
+        SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle;
         SightConfig->DetectionByAffiliation.bDetectEnemies = true;
         SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-        SightConfig->DetectionByAffiliation.bDetectNeutrals = false; // 디버깅 시 true로
+        SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
     }
     if (HearingConfig)
     {
         HearingConfig->HearingRange = HearingRange;
-        HearingConfig->LoSHearingRange = LoSHearingRange;
+        HearingConfig->LoSHearingRange = LoSHearingRange; // (UE5.6에선 deprecated 경고) → 가능하면 제거하고 HearingRange만 사용 권장
         HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
         HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
-        HearingConfig->DetectionByAffiliation.bDetectNeutrals = false; // 디버깅 시 true로
+        HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
     }
     if (PerceptionComp)
     {

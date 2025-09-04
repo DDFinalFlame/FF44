@@ -6,7 +6,7 @@
 #include "AIController.h"
 #include "AITypes.h"                               // FAIRequestID
 #include "Navigation/PathFollowingComponent.h"     // FPathFollowingResult (대부분 이걸로 해결)
-#include "Navigation/CrowdFollowingComponent.h"    // 이미 쓰고 있으면 유지
+//#include "Navigation/CrowdFollowingComponent.h"    // 이미 쓰고 있으면 유지
 #include "Perception/AIPerceptionTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "MonsterAIController.generated.h"

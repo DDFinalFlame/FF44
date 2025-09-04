@@ -40,11 +40,17 @@ AMonsterCharacter::AMonsterCharacter()
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->bUseRVOAvoidance = false;          // RVO 끄기 (Crowd와 중복 방지)
-		Move->bOrientRotationToMovement = true;  // 이동 방향으로 회전
-		Move->bUseControllerDesiredRotation = false; // 컨트롤러 주도 회전 끔
-		Move->RotationRate = FRotator(0.f, 540.f, 0.f);
+		//RVO 켜기
+		Move->bUseRVOAvoidance = true;
 
+		//RVO가 실제로 동작하도록 기본 파라미터(프로젝트에 맞게 조정)
+		Move->AvoidanceConsiderationRadius = 180.f; // 서로를 인지하는 반경
+		Move->AvoidanceWeight = 0.5f;               // 회피 가중치(0~1)
+
+		// 이동 회전 설정은 기존 그대로 사용 (필요 시만 조정)
+		Move->bOrientRotationToMovement = true;
+		Move->bUseControllerDesiredRotation = false;
+		Move->RotationRate = FRotator(0.f, 540.f, 0.f);
 	}
 }
 
