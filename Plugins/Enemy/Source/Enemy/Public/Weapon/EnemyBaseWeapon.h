@@ -33,8 +33,8 @@ public:
 
 public:
 	virtual void EquipWeapon();
-	void ActivateCollision();
-	void DeactivateCollision();
+	virtual void ActivateCollision();
+	virtual void DeactivateCollision();
 
 public:
 	FORCEINLINE bool IsAttackSuccessful() const { return WeaponCollision->IsAttackSuccessful() || SecondWeaponCollision->IsAttackSuccessful();}

@@ -9,10 +9,12 @@
 /**
  * 
  */
+
 UCLASS()
 class ENEMY_API AEnemyFXWeapon : public AEnemyBaseWeapon
 {
 	GENERATED_BODY()
+
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -21,10 +23,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* MeshComponent;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystemComponent* ParticleSystemComponent;
+
 public:
 	AEnemyFXWeapon();
 
 public:
 	virtual void EquipWeapon() override;
+	virtual void ActivateCollision() override;
+	virtual void DeactivateCollision() override;
 
 };

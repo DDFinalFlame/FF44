@@ -19,6 +19,9 @@ protected:
 	bool HasCombo = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	bool bShouldBlend = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
 	FName CurrentSectionName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")

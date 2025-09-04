@@ -2,6 +2,7 @@
 
 
 #include "Weapon/EnemyFXWeapon.h"
+#include "Particles/ParticleSystemComponent.h"
 
 #include "BaseEnemy.h"
 
@@ -12,6 +13,10 @@ AEnemyFXWeapon::AEnemyFXWeapon()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("MeshComponent");
 	MeshComponent->SetupAttachment(RootComponent);
 	MeshComponent->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+
+	ParticleSystemComponent = CreateDefaultSubobject<UParticleSystemComponent>("Particle");
+	ParticleSystemComponent->SetupAttachment(MeshComponent);
+
 }
 
 void AEnemyFXWeapon::EquipWeapon()
@@ -26,4 +31,18 @@ void AEnemyFXWeapon::EquipWeapon()
 	}
 
 
+}
+
+void AEnemyFXWeapon::ActivateCollision()
+{
+	Super::ActivateCollision();
+
+	// FX ÇÃ·¹ÀÌ
+	ParticleSystemComponent->ActivateSystem();
+
+}
+
+void AEnemyFXWeapon::DeactivateCollision()
+{
+	Super::DeactivateCollision();
 }

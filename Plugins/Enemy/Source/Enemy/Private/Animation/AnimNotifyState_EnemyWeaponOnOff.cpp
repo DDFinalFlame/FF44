@@ -30,22 +30,52 @@ void UAnimNotifyState_EnemyWeaponOnOff::NotifyEnd(USkeletalMeshComponent* MeshCo
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 
-	if (AActor* OwnerActor = MeshComp->GetOwner())
+	/* 필요 요소 확인 **/
+	AActor* OwnerActor = MeshComp->GetOwner();
+	if (!OwnerActor) { return; }
+
+	IEnemyWeaponControl* WeaponControl = Cast<IEnemyWeaponControl>(OwnerActor);
+	if (!WeaponControl) { return; }
+
+	/* 콤보 플레이 확인 **/
+	if (HasCombo && WeaponControl->IsAttackSuccessful())
 	{
-		if (IEnemyWeaponControl* WeaponControl = Cast<IEnemyWeaponControl>(OwnerActor))
+		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
 		{
-			if (HasCombo)
+			/* 섹션 간 블랜딩 필요 여부에 확인해서 처리 **/
+			if (!bShouldBlend)
 			{
-				if (WeaponControl->IsAttackSuccessful())
+				AnimInstance->Montage_SetNextSection(CurrentSectionName, NextSectionName);
+			}
+			else
+			{
+				/* 섹션 간 블랜딩 작업
+				 * 중지 -> 블랜딩 설정을 가지고 다시 실행 -> 섹션 설정 **/
+				UAnimMontage* CurrentMontage = AnimInstance->GetCurrentActiveMontage();
+
+				AnimInstance->Montage_Stop(0.5f);
+
+				FAlphaBlendArgs BlendInArgs;
+				BlendInArgs.BlendTime = 0.5f;
+				BlendInArgs.BlendOption = EAlphaBlendOption::Linear;
+
+				float Duration = AnimInstance->Montage_PlayWithBlendIn(
+					CurrentMontage,
+					BlendInArgs,
+					1.0f, // Play Rate
+					EMontagePlayReturnType::MontageLength,
+					0.0f, // Start time
+					false // bStopAllMontages
+				);
+
+				if (Duration > 0.f)
 				{
-					if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
-					{
-						AnimInstance->Montage_SetNextSection(CurrentSectionName, NextSectionName);
-					}
+					AnimInstance->Montage_JumpToSection(NextSectionName, CurrentMontage);
 				}
 			}
-
-			WeaponControl->DeactivateWeaponCollision();
 		}
 	}
+
+	/* 콤보 확인 후 Deactive **/
+	WeaponControl->DeactivateWeaponCollision();
 }
