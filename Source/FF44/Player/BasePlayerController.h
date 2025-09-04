@@ -12,6 +12,7 @@ class UAbilitySystemComponent;
 class UBasePlayerAttributeSet;
 
 class UBasePlayerHUDWidget;
+class UInventoryWidget;
 
 UCLASS()
 class FF44_API ABasePlayerController : public APlayerController, public IGenericTeamAgentInterface
@@ -39,10 +40,10 @@ protected:
 	TObjectPtr<UBasePlayerHUDWidget> PlayerHUD;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<UUserWidget> InventoryWidgetClass;
+	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
 
 	UPROPERTY()
-	TObjectPtr<UUserWidget> InventoryWidget;
+	TObjectPtr<UInventoryWidget> InventoryWidget;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
@@ -52,6 +53,7 @@ public:
 	virtual void ToggleInventory();
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
+	virtual UInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
 protected:
 	FGenericTeamId TeamId;
 };

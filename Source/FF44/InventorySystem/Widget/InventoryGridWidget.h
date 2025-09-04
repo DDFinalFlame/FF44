@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InventorySystem/InventoryDataStructs.h"
+#include "Item/ItemRow.h"
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -9,7 +10,8 @@
 class UCanvasPanel;
 class UBorder;
 
-struct FLines;
+class UItemWidget;
+class UInventoryWidget;
 
 UCLASS()
 class FF44_API UInventoryGridWidget : public UUserWidget
@@ -26,16 +28,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
 	UCanvasPanel* GridCanvasPanel;
 
+	UPROPERTY()
+	UPanelSlot* PanelSlot;
+
 	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<UUserWidget> ItemWidgetClass;
+	TSubclassOf<UItemWidget> ItemWidgetClass;
 
 	UPROPERTY()
-	TObjectPtr<UUserWidget> ItemWidget;
+	UInventoryWidget* InventoryWidget;
 
 protected:
-	UPROPERTY()
-	class ABasePlayer* CharRef;
-
 	UPROPERTY()
 	class UInventoryComponent* IC;
 
@@ -50,9 +52,12 @@ protected:
 	TArray<float> EndX;
 	TArray<float> EndY;
 
+	FIntPoint DraggedItemTile;
+
+	bool DrawDropLocation = false;
+	UObject* DraggedPayload;
+
 protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
 	virtual int32 NativePaint(const FPaintArgs& Args, 
 							  const FGeometry& AllottedGeometry,
 							  const FSlateRect& MyCullingRect, 
@@ -60,6 +65,23 @@ protected:
 							  int32 LayerId, const FWidgetStyle& InWidgetStyle,
 							  bool bParentEnabled) const override;
 
+	void NativeOnDragEnter(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	void NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+
+	bool NativeOnDragOver(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+
+	bool IsRoomAvailableForPayload(FItemRow* _Item) const;
+
+public:
+	void SetInventoryWidget(UInventoryWidget* _Widget) { InventoryWidget = _Widget; }
+	void DrawInventoryGrid(AActor* _InventoryOwner);
+	void DrawItemWidget(FItemRow* _Item);
+	void DrawItemWidget(FItemRow* _Item, UPanelSlot* _OtherPanel, UCanvasPanel* _OtherGrid);
+	void DrawItemWidgets();
+
+protected:
 	void CreateLineSegments();
-	void RefreshInventory();
+	FMousePositionInTile MousePositionInTileResult(FVector2D _MousePosition);
+	void DrawBackgroundBox(FItemRow* _Item, FLinearColor _Color, const FGeometry& _AllottedGeometry, FVector2D TopLeftCorner, FSlateWindowElementList& OutDrawElements, int32 LayerId) const;
 };

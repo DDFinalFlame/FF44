@@ -7,6 +7,7 @@
 #include "BasePlayerAttributeSet.h"
 
 #include "UI/BasePlayerHUDWidget.h"
+#include "InventorySystem/Widget/InventoryWidget.h"
 
 
 ABasePlayerController::ABasePlayerController()
@@ -53,7 +54,7 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 
 	// Inventory Set
 	if (InventoryWidgetClass) {
-		InventoryWidget = CreateWidget<UUserWidget>(GetWorld(), InventoryWidgetClass);
+		InventoryWidget = CreateWidget<UInventoryWidget>(GetWorld(), InventoryWidgetClass);
 		InventoryWidget->SetOwningPlayer(this);
 		InventoryWidget->AddToViewport();
 		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -74,7 +75,7 @@ void ABasePlayerController::ToggleInventory()
 {
 	if (!InventoryWidget) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Inventory Toggle"));
+	UE_LOG(LogTemp, Log, TEXT("Inventory Toggle"));
 
 	if (InventoryWidget->GetVisibility() == ESlateVisibility::Collapsed)
 	{

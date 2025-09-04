@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
-//class ItemBase;
+class UInventoryGridWidget;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class FF44_API UInventoryComponent : public UActorComponent
@@ -28,9 +28,9 @@ protected:
 	int32 Rows;
 
 	UPROPERTY(EditAnywhere, Category = "IC Info | Inventory Tile Size")
-	float TileSize;
+	float TileSize = 50.f;
 
-	bool AddedItem = false;
+	UInventoryGridWidget* GridWidget;
 
 	// Items
 	TArray<FItemRow*> Items;
@@ -39,10 +39,10 @@ protected:
 public:
 	bool TryAddItem(FItemRow* _ItemToAdd);
 	bool IsRoomAvailable(FItemRow* _ItemToAdd, int32 _Index);
-	TMap<FItemRow*, FIntPoint> GetAllItems();
+	TMap<FItemRow*, FIntPoint> GetAllItems() { return AllItems; }
 
-protected:
 	void AddItemAt(FItemRow* _ItemToAdd, int32 _Index);
+	void RemoveItem(FItemRow* _ItemToRemove);
 
 	bool IsTileValid(FIntPoint _Tile);
 

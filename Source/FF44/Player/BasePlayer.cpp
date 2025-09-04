@@ -25,6 +25,7 @@
 #include "Camera/BasePlayerCameraManager.h"
 #include "Weapon/BaseWeapon.h"
 #include "InventorySystem/InventoryComponent.h"
+#include "InventorySystem/Widget/InventoryWidget.h"
 #include "Interactable/FF44Interactable.h"
 #include "DrawDebugHelpers.h"
 
@@ -325,7 +326,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// Interact Actions
 		if(InteractAction)
 		{
-			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ABasePlayer::Interact);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ABasePlayer::Interact);
 		}
 		if(LockOnAction)
 		{
@@ -529,6 +530,7 @@ void ABasePlayer::ToggleInventory(const FInputActionValue& Value)
 {
 	if (!BasePlayerController) return;
 
+	BasePlayerController->GetInventoryWidget()->SetInteractActor(nullptr);
 	BasePlayerController->ToggleInventory();
 }
 

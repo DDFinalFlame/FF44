@@ -1,4 +1,5 @@
 #include "InventoryComponent.h"
+#include "Widget/InventoryGridWidget.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -9,8 +10,6 @@ void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Begin InventoryComponent"));
-
 	Items.SetNum(Colums * Rows);
 }
 
@@ -19,7 +18,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-// 비어있는 공간에 item을 추가한다.
+// 비어있는 공간이 있는지 확인하고 AddItemAt을 호출하여 item을 추가
 bool UInventoryComponent::TryAddItem(FItemRow* _ItemToAdd)
 {
 	if (_ItemToAdd)	{
@@ -69,35 +68,41 @@ bool UInventoryComponent::IsRoomAvailable(FItemRow* _ItemToAdd, int32 _Index)
 	return true;
 }
 
-TMap<FItemRow*, FIntPoint> UInventoryComponent::GetAllItems()
-{
-	for (int32 i = 0; i < Items.Num(); i++)
-	{
-		if (Items[i])
-		{
-			// 가지고 있지 않을 시, 추가
-			if (!AllItems.Contains(Items[i]))
-			{
-				AllItems.Add(Items[i], IndexToTile(i));
-			}
-		}
-	}
-
-	return AllItems;
-}
-
+// Index에 Item을 바로 추가
 void UInventoryComponent::AddItemAt(FItemRow* _ItemToAdd, int32 _Index)
 {
 	FIntPoint Dimensions = _ItemToAdd->Dimension;
 	FIntPoint Tile = IndexToTile(_Index);
+	bool isAdd = false;
 
 	for (int32 x = Tile.X; x <= Tile.X + Dimensions.X - 1; x++) {
 		for (int32 y = Tile.Y; y <= Tile.Y + Dimensions.Y - 1; y++) {
 			Items[TileToIndex(FIntPoint(x, y))] = _ItemToAdd;
+
+			if (!isAdd)
+			{
+				AllItems.Add(_ItemToAdd, FIntPoint(x, y));
+				_ItemToAdd->ItemIndex = _Index;
+				_ItemToAdd->OwnerInventory = this;
+				isAdd = true;
+			}
 		}
 	}
+}
 
-	AddedItem = true;
+// Index의 Item을 바로 삭제
+void UInventoryComponent::RemoveItem(FItemRow* _ItemToRemove)
+{
+	if (!_ItemToRemove) return;
+
+	AllItems.Remove(_ItemToRemove);
+	for (int32 i = 0; i < Items.Num(); i++)
+	{
+		if (Items[i] == _ItemToRemove)
+		{
+			Items[i] = nullptr;
+		}
+	}
 }
 
 // 인벤토리 사이즈를 넘어가지 않는지

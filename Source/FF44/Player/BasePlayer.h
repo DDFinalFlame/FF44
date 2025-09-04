@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "InventorySystem/InventorySystemInterface.h"
 
 #include "Data/PlayerDefinition.h"
 #include "Interface/AttackStatProvider.h"
@@ -19,24 +20,28 @@ class UGameplayAbility;
 
 class UBasePlayerAttributeSet;
 class UBasePlayerHUDWidget;
-class UInventoryComponent;
 
 struct FInputActionValue;
 
 UCLASS()
-class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider
+class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider, public IInventorySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 	// IAttackStatProvider Interface
 	virtual float GetAttackPower_Implementation() const override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
+	virtual UInventoryComponent* GetInventoryComponent() const override { return InventoryComponent; }
 
 public:
 	ABasePlayer();
 
 protected:
 	class ABasePlayerController* BasePlayerController;
+
+public:
+	ABasePlayerController* GetBasePlayerController() { return BasePlayerController; }
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -100,10 +105,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TSubclassOf<UGameplayEffect> StaminaRunEffect;
-
-
-public:
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
 	
 protected:
 	virtual void InitializeAbilities();
@@ -238,8 +239,6 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UInventoryComponent* InventoryComponent;
 
-public:
-	UInventoryComponent* GetInventoryComponent() { return InventoryComponent; }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										State											///
