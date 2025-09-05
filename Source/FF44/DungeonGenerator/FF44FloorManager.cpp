@@ -185,6 +185,7 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
 {
     if (PortalTag.IsNone() || PortalTag == TEXT("PortalNext"))
     {
+        OnFloorEnded.Broadcast(CurrentFloor);
         CurrentFloor = FMath::Max(1, CurrentFloor + 1);
         NextFloor();
         return;
