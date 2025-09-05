@@ -12,6 +12,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
+#include "Blueprint/UserWidget.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
@@ -23,6 +24,8 @@
 #include "BasePlayerState.h"
 #include "Camera/BasePlayerCameraManager.h"
 #include "Weapon/BaseWeapon.h"
+#include "InventorySystem/InventoryComponent.h"
+#include "InventorySystem/Widget/InventoryWidget.h"
 #include "Interactable/FF44Interactable.h"
 #include "DrawDebugHelpers.h"
 
@@ -87,6 +90,7 @@ ABasePlayer::ABasePlayer()
 
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
 	// Tag
 	Tags.Add(FName("Player"));
@@ -127,6 +131,8 @@ void ABasePlayer::BeginPlay()
 	InitializeEffects();
 	InitializeGameplayTags();
 
+	SetPreview();
+
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
 	if (Weapon)
@@ -141,13 +147,18 @@ void ABasePlayer::BeginPlay()
 	}
 
 	// Player Controller Set
-	if (ABasePlayerController* PlayerController = Cast<ABasePlayerController>(GetController()))
+	BasePlayerController = Cast<ABasePlayerController>(GetController());
+	if (BasePlayerController)
 	{		
-		if (AbilitySystem)
-			PlayerController->InitUI(AbilitySystem);
+		BasePlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+		BasePlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
 
-		PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
-		PlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
+		// UI Set
+		if (AbilitySystem)
+		{
+			BasePlayerController->InitPlayerUI(AbilitySystem);
+			//BasePlayerController->ToggleHUD();	// 추후에 Intro에서만 
+		}
 	}
 	else
 	{
@@ -320,7 +331,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// Interact Actions
 		if(InteractAction)
 		{
-			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ABasePlayer::Interact);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ABasePlayer::Interact);
 		}
 		if(LockOnAction)
 		{
@@ -343,6 +354,12 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		if(SkillAction)
 		{
 			EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ABasePlayer::Skill);
+		}
+
+		// QuickSlot
+		if (InventoryAction)
+		{
+			EnhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Started, this, &ABasePlayer::ToggleInventory);
 		}
 		if (ItemSlot_1Action)
 		{
@@ -481,6 +498,9 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
 		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
 
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip))
+		return;
+
 	if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::UnEquip)
 	{
 		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
@@ -489,16 +509,6 @@ void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 	{
 		BaseCameraManager->SetCameraMode(ECameraMode::UnEquip);
 	}
-}
-
-void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
-{
-	if (!AbilitySystem) return;
-
-	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip)) return;
-
-	// 우선 Potion으로
-	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
 }
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
@@ -519,6 +529,50 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// Change State
 
 	// PlayMontage
+}
+
+void ABasePlayer::ToggleInventory(const FInputActionValue& Value)
+{
+	if (!BasePlayerController) return;
+
+	BasePlayerController->GetInventoryWidget()->SetInteractActor(nullptr);
+	BasePlayerController->ToggleInventory();
+}
+
+void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
+{
+	if (!AbilitySystem) return;
+
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip)) return;
+
+	// 우선 Potion으로
+	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
+}
+
+void ABasePlayer::SetPreview()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (PreviewCharacterClass)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			SpawnParams.Owner = this;
+
+			// 위치와 회전은 원하는 값 지정
+			FVector Location = FVector(10000000.f, 0.f, 0.f);
+			FRotator Rotation = FRotator(0.f, 90.f, 0.f);
+
+			ACharacter* PreviewPawn = World->SpawnActor<ACharacter>(
+				PreviewCharacterClass, Location, Rotation, SpawnParams);
+
+			if (PreviewPawn)
+			{
+				// 필요하면 여기서 메시 복사, 애님 클래스 세팅 등 처리
+			}
+		}
+	}
 }
 
 void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity)
