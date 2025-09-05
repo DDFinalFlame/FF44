@@ -225,6 +225,7 @@ void ABasePlayer::InitializeAbilities()
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(SpecialHitAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(PotionAbility));
