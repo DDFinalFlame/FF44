@@ -7,8 +7,9 @@
 #include "SpawnInfo.h"
 #include "FF44DungeonGenerator.generated.h"
 
-class AFF44StarterRoom;
 class AFF44RoomBase;
+class AFF44StarterRoom;
+class AFF44BossArenaRoom;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
 
@@ -22,6 +23,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     /* ===========================
        Room classes / pools
@@ -41,6 +43,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Rooms|Special")
     TSubclassOf<AFF44RoomBase> BossRoomClass;
+
+	// 보스 전용 아레나 방
+    UPROPERTY(EditAnywhere, Category = "Rooms|Special")
+    TSubclassOf<AFF44RoomBase> BossArenaRoomClass;
 
     /* ===========================
        Generation controls
@@ -113,12 +119,20 @@ public:
     int32 TotalSpawned = 0;
 
     /* ===========================
+   Public boss entry API
+   =========================== */
+public:
+    UFUNCTION(BlueprintCallable, Category = "Dungeon|Boss")
+    void EnterBossArena();
+
+    /* ===========================
        Internal helpers
        =========================== */
 private:
     // Entry / player
     void SpawnStarterRoom(AFF44StarterRoom*& OutStarter);
     void SpawnPlayerAtStart(const AFF44StarterRoom* Starter);
+    void SpawnPlayerAtStart(const AFF44BossArenaRoom* Starter);
 
     // Main loop
     void SpawnNextRoom();
@@ -138,4 +152,12 @@ private:
 
     // Weighted pick (optional)
     TSubclassOf<AFF44RoomBase> PickWeightedRoom(const TArray<TSubclassOf<AFF44RoomBase>>& Pool) const;
+
+    UPROPERTY(Transient)
+    TArray<TWeakObjectPtr<AFF44RoomBase>> SpawnedRooms;
+
+public:
+    void DestroyAllOfClass(UClass* Cls);
+    void ClearDungeonContents();
+
 };
