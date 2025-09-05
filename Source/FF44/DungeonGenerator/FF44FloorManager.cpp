@@ -5,7 +5,9 @@
 #include "DungeonGenerator/FF44DungeonGenerator.h"
 #include "DungeonGenerator/FF44MonsterSpawner.h"
 #include "DungeonGenerator/FF44InteractableSpawner.h"
+#include "Interactable/FF44Portal.h"
 #include "Kismet/GameplayStatics.h"
+#include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
 
 AFF44FloorManager::AFF44FloorManager()
 {
@@ -16,6 +18,7 @@ AFF44FloorManager::AFF44FloorManager()
 void AFF44FloorManager::BeginPlay()
 {
 	Super::BeginPlay();
+
 	StartRun(BaseSeed, 1);
 }
 
@@ -49,22 +52,27 @@ void AFF44FloorManager::StartFloorInternal()
 
 void AFF44FloorManager::CleanupFloor()
 {
-    if (Dungeon)
-    {
-        Dungeon->Destroy();
-        Dungeon = nullptr;
-    }
+    UnbindFromPortals();
 
     if (MonsterSpawner)
     {
+        MonsterSpawner->CleanupSpawned();
         MonsterSpawner->Destroy();
         MonsterSpawner = nullptr;
     }
 
     if (InteractableSpawner)
     {
+        InteractableSpawner->CleanupSpawned();
         InteractableSpawner->Destroy();
         InteractableSpawner = nullptr;
+    }
+
+    if (Dungeon)
+    {
+        Dungeon->ClearDungeonContents();
+        Dungeon->Destroy();
+        Dungeon = nullptr;
     }
 
     bFloorReady = false;
@@ -131,11 +139,72 @@ void AFF44FloorManager::HandleDungeonComplete()
 void AFF44FloorManager::HandleMonsterSpawnComplete()
 {
     bMonstersDone = true;
+
     TryFinishFloorReady();
 }
 
 void AFF44FloorManager::HandleInteractableSpawnComplete()
 {
     bInteractablesDone = true;
+    BindToPortals();
+
     TryFinishFloorReady();
+}
+
+void AFF44FloorManager::BindToPortals()
+{
+    UnbindFromPortals();
+
+    TArray<AActor*> Found;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFF44Portal::StaticClass(), Found);
+
+    for (AActor* A : Found)
+    {
+        if (AFF44Portal* P = Cast<AFF44Portal>(A))
+        {
+            P->OnPortalInteracted.AddDynamic(this, &AFF44FloorManager::HandlePortalInteracted);
+            BoundPortals.Add(P);
+        }
+    }
+}
+
+void AFF44FloorManager::UnbindFromPortals()
+{
+    for (TWeakObjectPtr<AFF44Portal>& W : BoundPortals)
+    {
+        if (AFF44Portal* P = W.Get())
+        {
+            P->OnPortalInteracted.RemoveDynamic(this, &AFF44FloorManager::HandlePortalInteracted);
+        }
+    }
+
+    BoundPortals.Empty();
+}
+
+void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName PortalTag)
+{
+    if (PortalTag.IsNone() || PortalTag == TEXT("PortalNext"))
+    {
+        CurrentFloor = FMath::Max(1, CurrentFloor + 1);
+        NextFloor();
+        return;
+    }
+
+    if (PortalTag == TEXT("PortalBoss"))
+    {
+        if (Dungeon)
+        {
+            if (!IsBossFloor()) { return; }
+
+            MonsterSpawner->CleanupSpawned();
+            InteractableSpawner->CleanupSpawned();
+
+            FName FnName = TEXT("EnterBossArena");
+            if (Dungeon->GetClass()->FindFunctionByName(FnName))
+            {
+                Dungeon->CallFunctionByNameWithArguments(*FnName.ToString(), *GLog, nullptr, true);
+            }
+        }
+        return;
+    }
 }

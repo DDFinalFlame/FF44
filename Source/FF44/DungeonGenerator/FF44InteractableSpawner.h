@@ -19,6 +19,9 @@ class FF44_API AFF44InteractableSpawner : public AActor
 public:	
     AFF44InteractableSpawner();
 
+protected:
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 public:
     UPROPERTY(BlueprintAssignable, Category = "Spawner")
     FInteractableSpawnComplete OnSpawnComplete;
@@ -35,7 +38,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawner|Rules")
     bool bApplyNoneWhenPoolEmpty = false;
 
+    UPROPERTY(Transient)
+    TArray<TWeakObjectPtr<AActor>> SpawnedActors;
+
     UFUNCTION(BlueprintCallable, Category = "Spawner")
     void SpawnFromMarkers(const TArray<FInteractableSpawnInfo>& Markers, int32 Seed);
 
+    UFUNCTION(BlueprintCallable, Category = "Spawner")
+    void CleanupSpawned();
 };

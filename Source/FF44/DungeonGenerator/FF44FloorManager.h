@@ -10,6 +10,7 @@
 class AFF44DungeonGenerator;
 class AFF44MonsterSpawner;
 class AFF44InteractableSpawner;
+class AFF44Portal;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloorEvent, int32, FloorIndex);
 
@@ -24,10 +25,10 @@ public:
 protected:
     virtual void BeginPlay() override;
 
+public:
     /* ===========================
        Config (Class references)
        =========================== */
-public:
     UPROPERTY(EditAnywhere, Category = "Flow|Classes")
     TSubclassOf<AFF44DungeonGenerator> DungeonGeneratorClass;
 
@@ -64,7 +65,6 @@ public:
     /* ===========================
        Blueprint events
        =========================== */
-public:
     UPROPERTY(BlueprintAssignable, Category = "Flow|Events")
     FFloorEvent OnFloorStarted;
 
@@ -77,17 +77,16 @@ public:
     /* ===========================
        Public API
        =========================== */
-public:
     UFUNCTION(BlueprintCallable, Category = "Flow")
     void StartRun(int32 InBaseSeed, int32 StartFloor = 1);
 
     UFUNCTION(BlueprintCallable, Category = "Flow")
     void NextFloor();
 
+private:
     /* ===========================
        Internals
        =========================== */
-private:
     // Active actors (kept as UPROPERTY to prevent GC)
     UPROPERTY()
     AFF44DungeonGenerator* Dungeon = nullptr;
@@ -101,6 +100,10 @@ private:
     // Phase flags for parallel completion
     bool bMonstersDone = false;
     bool bInteractablesDone = false;
+
+    // Bound portals (to unbind on cleanup)
+    UPROPERTY(Transient)
+    TArray<TWeakObjectPtr<AFF44Portal>> BoundPortals;
 
     // Flow helpers
     void StartFloorInternal();
@@ -116,6 +119,13 @@ private:
 
     UFUNCTION()
     void HandleInteractableSpawnComplete();
+
+    // Portal binding/handling
+    void BindToPortals();
+    void UnbindFromPortals();
+
+    UFUNCTION()
+    void HandlePortalInteracted(AFF44Portal* Portal, FName PortalTag);
 
     // Inline helpers
     bool IsBossFloor() const { return (CurrentFloor % FloorsPerBossCycle) == 0; }
