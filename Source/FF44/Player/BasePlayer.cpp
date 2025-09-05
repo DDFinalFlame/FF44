@@ -91,6 +91,8 @@ ABasePlayer::ABasePlayer()
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+
+
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
@@ -127,6 +129,8 @@ void ABasePlayer::BeginPlay()
 	InitializeAbilities();
 	InitializeEffects();
 	InitializeGameplayTags();
+
+	SetPreview();
 
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
@@ -542,6 +546,32 @@ void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
 
 	// 우선 Potion으로
 	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
+}
+
+void ABasePlayer::SetPreview()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (PreviewCharacterClass)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			SpawnParams.Owner = this;
+
+			// 위치와 회전은 원하는 값 지정
+			FVector Location = FVector(10000000.f, 0.f, 0.f);
+			FRotator Rotation = FRotator(0.f, 0.f, 90.f);
+
+			ACharacter* PreviewPawn = World->SpawnActor<ACharacter>(
+				PreviewCharacterClass, Location, Rotation, SpawnParams);
+
+			if (PreviewPawn)
+			{
+				// 필요하면 여기서 메시 복사, 애님 클래스 세팅 등 처리
+			}
+		}
+	}
 }
 
 void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity)

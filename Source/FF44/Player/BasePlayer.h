@@ -124,19 +124,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraUnequipLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraEquipLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraZoomInLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraRightMoveLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraLeftMoveLook;
 
 public:
@@ -238,6 +238,12 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere)
 	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Preview")
+	TSubclassOf<ACharacter> PreviewCharacterClass;
+
+protected:
+	void SetPreview();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
