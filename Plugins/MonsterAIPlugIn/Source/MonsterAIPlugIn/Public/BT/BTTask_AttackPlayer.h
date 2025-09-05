@@ -19,9 +19,16 @@ public:
 	UBTTask_AttackPlayer();
 
 	// --- 재생 상태/이벤트 관리용 ---
-	UPROPERTY() UAnimInstance* BoundAnim;
-	UPROPERTY() UAnimMontage* CachedMontage;
-	UPROPERTY() class UBehaviorTreeComponent* CachedBTC;
+	UPROPERTY() 
+	UAnimInstance* BoundAnim;
+	UPROPERTY() 
+	UAnimMontage* CachedMontage;
+	UPROPERTY() 
+	class UBehaviorTreeComponent* CachedBTC;
+	UPROPERTY(EditAnywhere, Category = "Attack")	
+	FName AttackKey;
+	
+	FName ChosenSection = NAME_None;
 
 	bool bFinishedByEvent = false;
 	bool bBoundDelegate = false;

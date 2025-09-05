@@ -43,6 +43,7 @@ namespace MonsterTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Boss_Summon);       // 소환 패턴
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Boss_Channel);      // 캐스팅/채널링
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Boss_PhaseStart);   // 페이즈 시작 트리거
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Boss_Swing1);
 
     // 보스 전용 State
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Invuln);         // 무적

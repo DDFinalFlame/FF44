@@ -72,11 +72,11 @@ void UBTService_UpdateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 
 		return;
 	}
-
-	if (Monster->GetMonsterState() == EMonsterState::Patrol)
-	{
-		Monster->SetMonsterState(EMonsterState::CombatReady); 
-	}
+	//상태 변화는 한 service에서 관리.
+	//if (Monster->GetMonsterState() == EMonsterState::Patrol)
+	//{
+	//	Monster->SetMonsterState(EMonsterState::CombatReady); 
+	//}
 
 	// 거리 계산 및 기록
 	const float Distance = FVector::Dist(Target->GetActorLocation(), SelfPawn->GetActorLocation());

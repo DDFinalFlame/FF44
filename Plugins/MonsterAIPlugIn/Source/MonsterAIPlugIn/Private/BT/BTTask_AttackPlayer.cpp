@@ -12,6 +12,7 @@ UBTTask_AttackPlayer::UBTTask_AttackPlayer()
 {
 	NodeName = TEXT("Attack Player");
 	bNotifyTick = true;
+	bCreateNodeInstance = true;
 }
 
 EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -31,12 +32,21 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 	UMonsterDefinition* Def = MC->GetMonsterDef();
 	if (!Def) return EBTNodeResult::Failed;
 
-	if (!Def->AttackMontage.IsValid())
-	{
-		Def->AttackMontage.LoadSynchronous();
-	}
-	UAnimMontage* AttackMontage = Def->AttackMontage.Get();
-	if (!AttackMontage) return EBTNodeResult::Failed;
+    UAnimMontage* AttackMontage = nullptr;
+    ChosenSection = NAME_None;
+
+    bool bPicked = false;
+    if (!AttackKey.IsNone())
+    {
+        // 키로 특정 공격 선택
+        bPicked = Def->FindAttackByKey(AttackKey, AttackMontage, ChosenSection);
+    }
+    else
+    {
+        // 키 없으면 가중치 랜덤
+        bPicked = Def->PickRandomAttack(AttackMontage, ChosenSection);
+    }
+    if (!bPicked || !AttackMontage) return EBTNodeResult::Failed;
 
 	// 이미 같은 몽타주 재생 중이면 재시작 금지
 	if (Anim->Montage_IsPlaying(AttackMontage))
@@ -45,12 +55,17 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 		CachedMontage = AttackMontage;
 		CachedBTC = &OwnerComp;
 
-		if (!bBoundDelegate)
+		if (BoundAnim && BoundAnim != Anim && bBoundDelegate)
 		{
-			// Dynamic 바인딩
-			Anim->OnMontageEnded.AddDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
-			bBoundDelegate = true;
+			BoundAnim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+			bBoundDelegate = false;
 		}
+
+		// 항상 중복 제거 후 유니크 바인딩
+		Anim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+		Anim->OnMontageEnded.AddUniqueDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+		bBoundDelegate = true;
+		BoundAnim = Anim;
 
 		MontageDuration = AttackMontage->GetPlayLength();
 		ElapsedTime = Anim->Montage_GetPosition(AttackMontage);
@@ -74,11 +89,16 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 	MontageDuration = AttackMontage->GetPlayLength();
 	ElapsedTime = 0.f;
 
-	if (!bBoundDelegate)
+	if (BoundAnim && BoundAnim != Anim && bBoundDelegate)
 	{
-		Anim->OnMontageEnded.AddDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
-		bBoundDelegate = true;
+		BoundAnim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+		bBoundDelegate = false;
 	}
+
+	Anim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+	Anim->OnMontageEnded.AddUniqueDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+	bBoundDelegate = true;
+	BoundAnim = Anim;
 
 	ApplyAttackMovementLock(MC);
 	AI->StopMovement();
