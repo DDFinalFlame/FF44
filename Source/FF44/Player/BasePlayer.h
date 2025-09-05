@@ -239,6 +239,21 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UInventoryComponent* InventoryComponent;
 
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* WeaponInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* HeadInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* ChestInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* ArmInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* LegInventory;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Preview")
 	TSubclassOf<ACharacter> PreviewCharacterClass;
 

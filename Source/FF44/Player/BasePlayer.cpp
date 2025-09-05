@@ -561,7 +561,7 @@ void ABasePlayer::SetPreview()
 
 			// 위치와 회전은 원하는 값 지정
 			FVector Location = FVector(10000000.f, 0.f, 0.f);
-			FRotator Rotation = FRotator(0.f, 0.f, 90.f);
+			FRotator Rotation = FRotator(0.f, 90.f, 0.f);
 
 			ACharacter* PreviewPawn = World->SpawnActor<ACharacter>(
 				PreviewCharacterClass, Location, Rotation, SpawnParams);
