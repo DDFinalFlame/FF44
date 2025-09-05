@@ -28,7 +28,7 @@ protected:
 	int32 Rows;
 
 	UPROPERTY(EditAnywhere, Category = "IC Info | Inventory Tile Size")
-	float TileSize = 50.f;
+	float TileSize = 60.f;
 
 	UInventoryGridWidget* GridWidget;
 
