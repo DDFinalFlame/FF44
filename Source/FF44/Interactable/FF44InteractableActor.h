@@ -50,7 +50,7 @@ protected:
     TWeakObjectPtr<AActor> CurrentInteractor;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable|Prompt")
-    float PromptMidAlpha = 0.15f;
+    float PromptMidAlpha = 0.25f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable|Prompt")
     bool bKeepZFromAnchor = true;
