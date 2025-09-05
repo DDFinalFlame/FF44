@@ -5,7 +5,6 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "EnemyRotationComponent.h"
-#include "Engine/TargetPoint.h"
 
 #include "EnemyStateConfig.h"
 #include "BT/BTService_SelectBehavior.h"
@@ -14,7 +13,6 @@
 
 class UHitReactionDataAsset;
 class AEnemyBaseWeapon;
-class UEnemyAttributeSet;
 class UBehaviorTree;
 class UEnemyRotationComponent;
 class UAbilitySystemComponent;
@@ -25,7 +23,7 @@ class UMonsterAttributeSet;
 struct FMonsterStatRow;
 
 UCLASS()  
-class ENEMY_API ABaseEnemy : public ACharacter  , public IAbilitySystemInterface, public IEnemyWeaponControl
+class ENEMY_API ABaseEnemy : public ACharacter, public IAbilitySystemInterface, public IEnemyWeaponControl
 {  
 	GENERATED_BODY()  
 
@@ -72,14 +70,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI | Behavior")
 	bool IsCurrentBehaviorEnd = true;
 
-// Patrol
-protected:
-	UPROPERTY(EditAnywhere, Category = "AI | Patrol")
-	TArray<ATargetPoint*> PatrolPoints;
-
-	UPROPERTY(VisibleAnywhere, Category = "AI | Patrol")
-	int32 PatrolIndex = 0;
-
 // Component Section
 protected:
 	/* Rotation **/
@@ -97,7 +87,7 @@ protected:
 
 	/* Montage **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Montage")
-	UHitReactionDataAsset* HitMontageData;
+	UHitReactionDataAsset* EnemyMontageData;
 
 // Death 연출
 protected:
@@ -113,16 +103,6 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;  
 
-public:
-	FORCEINLINE ATargetPoint* GetPatrolPoint()
-	{
-		return PatrolPoints.Num() >= (PatrolIndex + 1) ? PatrolPoints[PatrolIndex] : nullptr;
-	}
-	FORCEINLINE void IncrementPatrolIndex()
-	{
-		PatrolIndex = (PatrolIndex + 1) % PatrolPoints.Num();
-	}
-
 // GAS Section
 public:
 	void GiveDefaultAbilities();
@@ -135,17 +115,19 @@ public:
 public:
 	virtual void ActivateWeaponCollision() override;
 	virtual void DeactivateWeaponCollision() override;
+	virtual bool IsAttackSuccessful() override;
 
 // AI - State
 public:
-	void SetState(EAIBehavior NewBehavior);
+	UFUNCTION(BlueprintCallable)
+	void SetEnemyState(EAIBehavior NewBehavior);
 	bool ChangeState(EAIBehavior NewBehavior);
 	bool CheckCurrentBehavior(EAIBehavior NewBehavior);
 	bool IsCurrentStateInterruptible();
 	void EndCurrentBehavior();
 	FORCEINLINE EAIBehavior GetCurrentBehavior() const { return CurrentBehavior; }
 	/* Death 애니메이션 처리 중 **/
-	void OnDeath();
+	virtual void OnDeath();
 	/* Death 애니메이션 종료 **/
 	void EndDeath();
 	/* 월드에서 사라지기 **/
@@ -155,6 +137,7 @@ public:
 public:
 	UAnimMontage* GetHitMontage(EHitDirection Direction) const;
 	UAnimMontage* GetDieMontage() const;
+	UAnimMontage* GetAttackMontage(FGameplayTagContainer TargetTags) const;
 
 // Rotation
 public:

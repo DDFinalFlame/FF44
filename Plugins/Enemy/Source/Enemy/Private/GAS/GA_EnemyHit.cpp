@@ -9,11 +9,6 @@
 
 UGA_EnemyHit::UGA_EnemyHit()
 {
-	/* 블루 프린트에서 설정한 tag 부여 **/
-	if (EventTag.IsValid())
-	{
-		AbilityTags.AddTag(EventTag);
-	}
 }
 
 void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -103,7 +98,7 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	else
 	{
 		/* 상태 변경 **/
-		Enemy->SetState(EAIBehavior::Patrol);
+		Enemy->SetEnemyState(EAIBehavior::Patrol);
 		/* 어빌리티 종료 **/
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 
@@ -111,17 +106,12 @@ void UGA_EnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 }
 
-void UGA_EnemyHit::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
-{
-	Super::OnGiveAbility(ActorInfo, Spec);
-}
-
 void UGA_EnemyHit::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	/* 상태 변경 **/
 	if (ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get()))
 	{
-		Enemy->SetState(EAIBehavior::Patrol);
+		Enemy->SetEnemyState(EAIBehavior::Patrol);
 		//Enemy->SetRotationTarget(AttackerLocation);
 	}
 

@@ -92,7 +92,8 @@ ABasePlayer::ABasePlayer()
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
-
+	// Tag
+	Tags.Add(FName("Player"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
