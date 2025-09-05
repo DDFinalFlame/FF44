@@ -1,5 +1,7 @@
 #include "Weapon/EnemyWeaponCollisionComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 
 UEnemyWeaponCollisionComponent::UEnemyWeaponCollisionComponent()
 {
@@ -64,8 +66,6 @@ void UEnemyWeaponCollisionComponent::CollisionTrace()
 				/* Tag È®ÀÎ **/
 				if ( HitActor->ActorHasTag(FName("Player")) )
 				{
-					bIsAttackSuccessful = true;
-
 					FGameplayEventData EventData;
 
 					EventData.EventTag = FGameplayTag::RequestGameplayTag(TriggerEvent);
@@ -80,6 +80,22 @@ void UEnemyWeaponCollisionComponent::CollisionTrace()
 						EventData.EventTag,
 						EventData
 					);
+
+					const IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(HitActor);
+					if (ASCInterface)
+					{
+						if (UAbilitySystemComponent* TargetASC = ASCInterface->GetAbilitySystemComponent())
+						{
+							FGameplayTagContainer TagContainer;
+							TagContainer.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Player.HitReacting")));
+							if (TargetASC->HasAllMatchingGameplayTags(TagContainer))
+							{
+								bIsAttackSuccessful = true;
+							}
+						}
+
+					}
+
 				}
 			}
 		}

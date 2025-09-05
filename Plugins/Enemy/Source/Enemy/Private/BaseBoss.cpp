@@ -5,6 +5,7 @@
 
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
 #include "Weapon/EnemyBaseWeapon.h"
@@ -139,4 +140,17 @@ void ABaseBoss::DeactivateWeaponCollision()
 
 	bMovingHand = false;
 	DistanceAlongSpline = 0.0f;
+}
+
+void ABaseBoss::ToggleCollision(bool bStartEvade)
+{
+	// Evade 시작 ? 콜리전 false
+	// 근데 이럴 필요 없이 Hit 만 막으면 되는 거 아닌가? 
+	//SetActorEnableCollision(!bStartEvade);
+}
+
+void ABaseBoss::ToggleDissolve(bool bStartEvade)
+{
+	// Evade 시작 ? Hidden true
+	SetActorHiddenInGame(bStartEvade);
 }

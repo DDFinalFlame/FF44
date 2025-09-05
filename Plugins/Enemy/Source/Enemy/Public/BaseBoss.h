@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "BaseEnemy.h"
 #include "Interfaces/BossAttack.h"
+#include "Interfaces/EnemyEvade.h"
 #include "BaseBoss.generated.h"
 
 class USplineComponent;
@@ -14,7 +15,7 @@ class UEnvQuery;
  *
  */
 UCLASS()
-class ENEMY_API ABaseBoss : public ABaseEnemy, public IBossAttack
+class ENEMY_API ABaseBoss : public ABaseEnemy, public IBossAttack, public IEnemyEvade
 {
 	GENERATED_BODY()
 
@@ -83,4 +84,9 @@ public:
 	// 경로 컨트롤 추가된 Activate/Deactivate
 	virtual void ActivateWeaponCollision() override;
 	virtual void DeactivateWeaponCollision() override;
+
+public:
+	// Evade Interface
+	virtual void ToggleCollision(bool bStartEvade) override;
+	virtual void ToggleDissolve(bool bStartEvade) override;
 };
