@@ -3,7 +3,6 @@
 
 #include "GAS/GA_EnemyDie.h"
 
-#include "AIController.h"
 #include "BaseEnemy.h"
 
 UGA_EnemyDie::UGA_EnemyDie()
@@ -44,20 +43,4 @@ void UGA_EnemyDie::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		AnimInstance->Montage_Play(Montage);
 	}
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
-}
-
-void UGA_EnemyDie::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
-{
-	Super::OnGiveAbility(ActorInfo, Spec);
-}
-
-void UGA_EnemyDie::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	///* 어빌리티 종료 **/
-	//EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
-
-	//if (ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get()))
-	//{
-	//	Enemy->EndDeath();
-	//}
 }

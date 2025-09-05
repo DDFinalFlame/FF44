@@ -122,11 +122,6 @@ void AEnemyAIController::SetTarget(AActor* NewTarget) const
 		{
 			RotationComponent->SetTargetLocation(NewTarget->GetActorLocation());
 		}
-		//else
-		//{
-		//	FVector V(0, 0, 0);
-		//	RotationComponent->SetTargetLocation(V);
-		//}
 	}
 }
 

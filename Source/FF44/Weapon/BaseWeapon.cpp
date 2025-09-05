@@ -17,7 +17,7 @@ ABaseWeapon::ABaseWeapon()
 	//PrimaryActorTick.bCanEverTick = true;
 
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->SetupAttachment(RootComponent);
+    SetRootComponent(WeaponMesh);
 
 	WeaponCollision = CreateDefaultSubobject<USphereComponent>(TEXT("WeaponCollision"));
 	WeaponCollision->SetupAttachment(WeaponMesh);

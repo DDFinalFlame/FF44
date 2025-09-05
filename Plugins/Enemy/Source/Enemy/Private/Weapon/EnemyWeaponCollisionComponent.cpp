@@ -61,20 +61,26 @@ void UEnemyWeaponCollisionComponent::CollisionTrace()
 			{
 				AlreadyHitActors.Add(HitActor);
 
-				FGameplayEventData EventData;
+				/* Tag 확인 **/
+				if ( HitActor->ActorHasTag(FName("Player")) )
+				{
+					bIsAttackSuccessful = true;
 
-				EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
-				EventData.Instigator = GetOwner()->GetOwner();
-				EventData.Target = HitActor;
+					FGameplayEventData EventData;
 
-				/* HitResult를 TargetData로 포장 **/
-				EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+					EventData.EventTag = FGameplayTag::RequestGameplayTag(TriggerEvent);
+					EventData.Instigator = GetOwner()->GetOwner();
+					EventData.Target = HitActor;
 
-				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-					HitActor,
-					EventData.EventTag,
-					EventData
-				);
+					/* HitResult를 TargetData로 포장 **/
+					EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+
+					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+						HitActor,
+						EventData.EventTag,
+						EventData
+					);
+				}
 			}
 		}
 	}
@@ -84,11 +90,18 @@ void UEnemyWeaponCollisionComponent::ActivateCollision()
 {
 	AlreadyHitActors.Empty();
 	bIsCollisionEnabeld = true;
+
+	// 플레이어 충돌 확인 시에만 true
+	bIsAttackSuccessful = false;
 }
 
 void UEnemyWeaponCollisionComponent::DeactivateCollision()
 {
 	bIsCollisionEnabeld = false;
+
+	// 플레이어 충돌 확인 시에만 true
+	bIsAttackSuccessful = false;
+
 }
 
 // Trace로 변경

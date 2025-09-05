@@ -16,24 +16,26 @@ class ENEMY_API UGA_PerformAttack : public UGameplayAbility
 
 public:
 	UGA_PerformAttack();
+
+// attack 유형별 설정
 protected:
-	/* attack 유형별 설정 **/
+	/* 몽타주 블랜딩 타임 설정**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
-	TObjectPtr<UAnimMontage> AttackAnimMontage;
+	float BlendingTime = 0.1f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackTag")
 	FGameplayTag AbilityTag;
 
-	/* **/
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-	virtual void OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 
 	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	
-
+	UFUNCTION()
+	void OnMontageBlendedIn(UAnimMontage* Montage);
+	UFUNCTION()
+	void OnMontageBlendedOut(UAnimMontage* Montage, bool bSth);
 	
 };

@@ -20,4 +20,5 @@ class ENEMY_API IEnemyWeaponControl
 public:
 	virtual void ActivateWeaponCollision() = 0;
 	virtual void DeactivateWeaponCollision() = 0;
+	virtual bool IsAttackSuccessful() = 0;
 };

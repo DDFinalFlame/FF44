@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnemyWeaponCollisionComponent.h"
 #include "GameFramework/Actor.h"
 #include "EnemyBaseWeapon.generated.h"
 
@@ -20,6 +21,7 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UEnemyWeaponCollisionComponent* SecondWeaponCollision;
 
+
 public:
 	AEnemyBaseWeapon();
 
@@ -30,7 +32,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	void EquipWeapon();
-	void ActivateCollision();
-	void DeactivateCollision();
+	virtual void EquipWeapon();
+	virtual void ActivateCollision();
+	virtual void DeactivateCollision();
+
+public:
+	FORCEINLINE bool IsAttackSuccessful() const { return WeaponCollision->IsAttackSuccessful() || SecondWeaponCollision->IsAttackSuccessful();}
 };
