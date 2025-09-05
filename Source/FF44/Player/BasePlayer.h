@@ -85,6 +85,9 @@ protected:
 	TSubclassOf<UGameplayAbility> HitAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> SpecialHitAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DodgeAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
