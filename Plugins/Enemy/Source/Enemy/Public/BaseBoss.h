@@ -41,6 +41,12 @@ protected:
 	// Spline 경로 이동 관련
 	bool bMovingHand = false;
 
+	// During Choke Animation
+	bool bMovingUp = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName HandSocketName;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DistanceAlongSpline = 0.f;
 
@@ -55,6 +61,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MoveSpeedMultiplier = 3.f; // 스플라인 이동 속도
+
 
 public:
 	ABaseBoss();

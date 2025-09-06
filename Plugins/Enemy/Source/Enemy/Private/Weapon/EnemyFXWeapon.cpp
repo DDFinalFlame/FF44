@@ -23,12 +23,15 @@ void AEnemyFXWeapon::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
+	FRotator TargetRotator = GetActorRotation();
+	TargetRotator.Yaw += 180.0f;
+
 	NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 		NiagaraSystem,         // Niagara 시스템 애셋
 		MeshComponent,       // 부모 컴포넌트
 		"Hand_Middle_Socket",             // 소켓 이름 (없으면 NAME_None)
 		FVector::ZeroVector,   // 상대 위치
-		FRotator::ZeroRotator, // 상대 회전
+		TargetRotator, // 상대 회전
 		EAttachLocation::SnapToTarget,
 		false
 	);

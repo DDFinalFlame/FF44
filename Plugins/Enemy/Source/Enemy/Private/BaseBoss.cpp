@@ -9,6 +9,7 @@
 #include "Components/SplineComponent.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
 #include "Weapon/EnemyBaseWeapon.h"
+#include "Weapon/EnemyFXWeapon.h"
 
 ABaseBoss::ABaseBoss()
 {
@@ -25,10 +26,20 @@ void ABaseBoss::Tick(float DeltaSeconds)
 	if (Weapon->IsAttackSuccessful())
 	{
 		bMovingHand = false;
+		bMovingUp = true;
+	}
+	if (bMovingUp && !bMovingHand)
+	{
+		// TO-DO : 손 위로 조금 움직이기 - tick 해야하는데 
+		// TRY1 : 소켓 z 값 가져오기
 
-		// TO-DO :
-		// Target의 위치에 멈춰야함
-		// 혹은 Target을 손에 붙여주던가
+ 		USkeletalMeshComponent* mesh = GetMesh();
+		FVector BoneWorldPos = mesh->GetSocketLocation(HandSocketName);
+
+		FVector TargetLocation = Weapon->GetActorLocation();
+		TargetLocation.Z = BoneWorldPos.Z;
+
+		Weapon->SetActorLocation(TargetLocation);
 	}
 	if (bMovingHand && SplineComponent)
 	{
@@ -37,6 +48,14 @@ void ABaseBoss::Tick(float DeltaSeconds)
 		DistanceAlongSpline += MoveSpeed * DeltaSeconds * MoveSpeedMultiplier;
 		DistanceAlongSpline = FMath::Clamp(DistanceAlongSpline, 0.f, SplineLength);
 
+		bool bReachedEnd = (DistanceAlongSpline >= SplineLength);
+		if (bReachedEnd)
+		{
+			//bMovingHand = false;
+			// Particle 끄기
+
+			return;
+		}
 		// 2) 현재 위치
 		FVector CurrentLocation = SplineComponent->GetLocationAtDistanceAlongSpline(DistanceAlongSpline, ESplineCoordinateSpace::World);
 
@@ -49,8 +68,8 @@ void ABaseBoss::Tick(float DeltaSeconds)
 		FRotator TargetRot = (TargetLocation - CurrentLocation).Rotation(); // X 축을 '앞'으로 사용하는 회전
 
 		// --- 만약 Weapon의 모델 전방축이 X가 아니라면 보정 필요 (예: Forward가 +Y이면 Yaw 보정 등)
-		// FRotator ModelForwardAdjust = FRotator(0.f, 90.f, 0.f);
-		// TargetRot += ModelForwardAdjust;
+		 FRotator ModelForwardAdjust = FRotator(0.f, 90.f, 0.f);
+		 TargetRot += ModelForwardAdjust;
 
 		// 5) 부드러운 회전 (원하면)
 		FRotator CurrentRot = Weapon->GetActorRotation();
