@@ -4,6 +4,22 @@
 
 #include "Player/UI/BasePlayerStatBarWidget.h"
 
+void UPlayerInGameHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	if (IsProgress)
+	{
+		if (ProgressBarWidget)
+		{
+			ProgressBarWidget->SetRatio(CurrentTime / MaxTime);
+		}
+
+		if (CurrentTime < MaxTime)
+			CurrentTime += InDeltaTime;
+		else
+			EndProgressBar();
+	}
+}
+
 void UPlayerInGameHUDWidget::InitASC(UAbilitySystemComponent* _OwnerASC, const UBasePlayerAttributeSet* _OwnerAttrSet)
 {
 	UBasePlayerHUDWidget::InitASC(_OwnerASC, _OwnerAttrSet);
@@ -17,6 +33,24 @@ void UPlayerInGameHUDWidget::InitASC(UAbilitySystemComponent* _OwnerASC, const U
 	CurrentStaminaChangedDelegateHandle =
 		OwnerASC->GetGameplayAttributeValueChangeDelegate(OwnerAttrSet->GetCurrentStaminaAttribute())
 		.AddUObject(this, &UPlayerInGameHUDWidget::OnCurrentStaminaChanged);
+}
+
+void UPlayerInGameHUDWidget::SetProgressBar(float _MaxTime)
+{
+	ProgressBarWidget->SetVisibility(ESlateVisibility::Visible);
+
+	MaxTime = _MaxTime;
+	CurrentTime = 0.f;
+	IsProgress = true;
+}
+
+void UPlayerInGameHUDWidget::EndProgressBar()
+{
+	ProgressBarWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	MaxTime = 0.f;
+	CurrentTime = 0.f;
+	IsProgress = false;
 }
 
 void UPlayerInGameHUDWidget::OnCurrentHPChanged(const FOnAttributeChangeData& _Data)

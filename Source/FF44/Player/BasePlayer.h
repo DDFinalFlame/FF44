@@ -17,6 +17,7 @@ class USpringArmComponent;
 class UArrowComponent;
 class UInputAction;
 class UGameplayAbility;
+class UAnimMontage;
 
 class UBasePlayerAttributeSet;
 class UBasePlayerHUDWidget;
@@ -234,6 +235,10 @@ protected:
 	virtual void ToggleInventory(const FInputActionValue& Value);
 	virtual void ItemSlot_1(const FInputActionValue& Value);
 
+	// CallBack
+	virtual void OnEndInterAction();
+	void CalculateInteractingTime();
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///									Inventory										///
@@ -264,6 +269,14 @@ protected:
 	void SetPreview();
 
 
+///////////////////////////////////////////////////////////////////////////////////////
+///										Montage										///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
+	UAnimMontage* InteractMontage;
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										State											///
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -283,6 +296,9 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerMoveChanged, bool, DoInputMoving, bool, EnableSprinting);
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerMoveChanged OnPlayerMoveChanged;
+
+protected:
+	bool IsInteracting = false;
 
 protected:
 	UFUNCTION()

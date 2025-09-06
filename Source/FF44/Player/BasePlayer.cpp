@@ -2,6 +2,7 @@
 
 // Components
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -13,9 +14,11 @@
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
 #include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
+#include "DrawDebugHelpers.h"
 
 // Class
 #include "Data/PlayerTags.h"
@@ -27,7 +30,8 @@
 #include "InventorySystem/InventoryComponent.h"
 #include "InventorySystem/Widget/InventoryWidget.h"
 #include "Interactable/FF44Interactable.h"
-#include "DrawDebugHelpers.h"
+#include "Interactable/FF44TrapBase.h"
+#include "UI/PlayerInGameHUDWidget.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -414,6 +418,12 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 			SetDoInputMoving(true);
 		else
 			SetDoInputMoving(false);
+
+		// Interact Montage 실행 취소
+		if (IsInteracting)
+		{
+			GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+		}
 	}
 }
 
@@ -468,11 +478,33 @@ void ABasePlayer::Dodge(const FInputActionValue& Value)
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
 {
-	if (AActor* Cur = FocusedInteractable.Get())
+	// 무기를 들고 있지 않을 때만 상호작용이 가능하다.
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip) ||
+		AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dead)) return;
+
+	if (auto Cur = Cast<AFF44InteractableActor>(FocusedInteractable.Get()))
 	{
-		if (IFF44Interactable::Execute_CanInteract(Cur, this))
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		{
-			IFF44Interactable::Execute_Interact(Cur, this);
+			this->PlayAnimMontage(InteractMontage);
+
+			FTimerHandle TimerHandel;
+
+			if (Cur->GetPlayerActionTime() <= 0.f) return;
+
+			// 시간 경과를 체크해준다.
+			GetWorldTimerManager().SetTimer(
+				TimerHandel,
+				this,
+				&ABasePlayer::OnEndInterAction,
+				Cur->GetPlayerActionTime(),
+				false);
+
+			IsInteracting = true;
+
+			// UI를 띄워준다.
+
+			Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->SetProgressBar(Cur->GetPlayerActionTime());
 		}
 	}
 }
@@ -534,6 +566,7 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 
 void ABasePlayer::ToggleInventory(const FInputActionValue& Value)
 {
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dead)) return;
 	if (!BasePlayerController) return;
 
 	BasePlayerController->GetInventoryWidget()->SetInteractActor(nullptr);
@@ -548,6 +581,23 @@ void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
 
 	// 우선 Potion으로
 	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
+}
+
+void ABasePlayer::OnEndInterAction()
+{
+	if (auto Cur = Cast<AFF44InteractableActor>(FocusedInteractable.Get()))
+	{
+		this->PlayAnimMontage(InteractMontage, 1.f, TEXT("LoopEnd"));
+
+		if (IFF44Interactable::Execute_CanInteract(Cur, this))
+		{
+			IFF44Interactable::Execute_Interact(Cur, this);
+		}
+	}
+}
+
+void ABasePlayer::CalculateInteractingTime()
+{
 }
 
 void ABasePlayer::SetPreview()
