@@ -23,5 +23,6 @@ namespace SLGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_Recall);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_Buff);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_EvadeEnd);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_EndAbility);
 
 }

@@ -54,7 +54,7 @@ void UGA_EnemyEvade::OnDamagedOnEvade(FGameplayEventData Payload)
     }
 
     // 어빌리티 종료
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UGA_EnemyEvade::OnEvadeEnd(FGameplayEventData Payload)

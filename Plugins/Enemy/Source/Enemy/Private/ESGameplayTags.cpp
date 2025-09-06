@@ -22,6 +22,6 @@ namespace SLGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Recall, "Enemy.Event.Recall");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Buff, "Enemy.Event.Buff");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_EvadeEnd, "Enemy.Event.EvadeEnd");
-
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_EndAbility, "Enemy.Event.EndAbility");
 
 }

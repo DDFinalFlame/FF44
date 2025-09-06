@@ -65,6 +65,10 @@ void UGA_PerformAttack::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
     //UE_LOG(LogTemp, Log, TEXT("OnMontageEnded"));
 
+    UE_LOG(LogTemp, Warning, TEXT("Montage Ended: %s, Interrupted: %s"),
+        *Montage->GetName(),
+        bInterrupted ? TEXT("true") : TEXT("false"));
+
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 
     ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get());
