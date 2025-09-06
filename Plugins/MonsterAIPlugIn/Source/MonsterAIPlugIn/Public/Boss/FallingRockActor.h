@@ -37,6 +37,30 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UFieldSystemComponent* FieldSystem;
 
+	UPROPERTY(EditAnywhere, Category = "FX|Marker")
+	TSubclassOf<AActor> GroundMarkerClass;   // 예: BP_Decal_Interact
+
+	UPROPERTY(Transient)
+	AActor* GroundMarkerActor = nullptr;     // 스폰한 마커 핸들
+
+	UPROPERTY(EditAnywhere, Category = "FX|Marker")
+	bool bAlignMarkerToGround = true;        // 바닥 노멀 정렬
+
+	UPROPERTY(EditAnywhere, Category = "FX|Marker")
+	float MarkerUniformScale = 1.f;          // 필요 시 스케일
+
+	// ===== 착지 FX (나이아가라) =====
+	UPROPERTY(EditAnywhere, Category = "FX")
+	UNiagaraSystem* LandFX = nullptr;        // 착지 순간 FX
+
+	UPROPERTY(EditAnywhere, Category = "FX")
+	bool bAlignFXToGround = true;            // 바닥 노멀 정렬
+
+	// ===== 예측값 캐시 (정렬/제거에 사용) =====
+	bool   bHasPredicted = false;
+	FVector PredictedPoint = FVector::ZeroVector;
+	FVector PredictedNormal = FVector::UpVector;
+
 public:
 	// ====== 기존 공개 프로퍼티 유지 ======
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FallingRock")

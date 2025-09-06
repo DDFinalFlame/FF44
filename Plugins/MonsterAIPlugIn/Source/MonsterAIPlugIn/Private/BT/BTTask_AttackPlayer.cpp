@@ -7,11 +7,19 @@
 #include "Data/MonsterDefinition.h"
 #include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
 
 UBTTask_AttackPlayer::UBTTask_AttackPlayer()
 {
 	NodeName = TEXT("Attack Player");
 	bNotifyTick = true;
+	bCreateNodeInstance = true;
+
+	// GrabFlow 런타임 상태 초기화
+	bUseGrabFlowThisTask = false;
+	bSentVictimEvent = false;
+	bRequestedGrabSection = false;
+	StartTimeForGrab = 0.f;
 }
 
 EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -31,12 +39,28 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 	UMonsterDefinition* Def = MC->GetMonsterDef();
 	if (!Def) return EBTNodeResult::Failed;
 
-	if (!Def->AttackMontage.IsValid())
-	{
-		Def->AttackMontage.LoadSynchronous();
-	}
-	UAnimMontage* AttackMontage = Def->AttackMontage.Get();
-	if (!AttackMontage) return EBTNodeResult::Failed;
+    UAnimMontage* AttackMontage = nullptr;
+    ChosenSection = NAME_None;
+
+    bool bPicked = false;
+    if (!AttackKey.IsNone())
+    {
+        // 키로 특정 공격 선택
+        bPicked = Def->FindAttackByKey(AttackKey, AttackMontage, ChosenSection);
+    }
+    else
+    {
+        // 키 없으면 가중치 랜덤
+        bPicked = Def->PickRandomAttack(AttackMontage, ChosenSection);
+    }
+    if (!bPicked || !AttackMontage) return EBTNodeResult::Failed;
+
+
+	// 이번 태스크에서 그랩 플로우 활성화 여부 결정
+	// AttackKey가 "grab"와 같거나, bEnableGrabFlow가 켜져 있으면 활성화
+	bUseGrabFlowThisTask = false;
+	if (!AttackKey.IsNone() && AttackKey == ConfigGrabKey) bUseGrabFlowThisTask = true;
+	if (bEnableGrabFlow) bUseGrabFlowThisTask = true;
 
 	// 이미 같은 몽타주 재생 중이면 재시작 금지
 	if (Anim->Montage_IsPlaying(AttackMontage))
@@ -45,12 +69,17 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 		CachedMontage = AttackMontage;
 		CachedBTC = &OwnerComp;
 
-		if (!bBoundDelegate)
+		if (BoundAnim && BoundAnim != Anim && bBoundDelegate)
 		{
-			// Dynamic 바인딩
-			Anim->OnMontageEnded.AddDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
-			bBoundDelegate = true;
+			BoundAnim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+			bBoundDelegate = false;
 		}
+
+		// 항상 중복 제거 후 유니크 바인딩
+		Anim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+		Anim->OnMontageEnded.AddUniqueDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+		bBoundDelegate = true;
+		BoundAnim = Anim;
 
 		MontageDuration = AttackMontage->GetPlayLength();
 		ElapsedTime = Anim->Montage_GetPosition(AttackMontage);
@@ -59,6 +88,21 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 		AI->StopMovement();
 
 		MC->PushAttackCollision();   // 공격 중 몬스터끼리 Ignore
+
+		// [ADD] Grab 플로우 초기화(이미 재생 중이더라도 신호 대기 가능)
+		if (bUseGrabFlowThisTask)
+		{
+			if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+			{
+				if (!BB_GrabConfirmedKey.IsNone())
+				{
+					BB->SetValueAsBool(BB_GrabConfirmedKey, false);
+				}
+			}
+			StartTimeForGrab = MC->GetWorld()->GetTimeSeconds();
+			bSentVictimEvent = false;
+			bRequestedGrabSection = false;
+		}
 		return EBTNodeResult::InProgress;
 	}
 
@@ -74,16 +118,37 @@ EBTNodeResult::Type UBTTask_AttackPlayer::ExecuteTask(UBehaviorTreeComponent& Ow
 	MontageDuration = AttackMontage->GetPlayLength();
 	ElapsedTime = 0.f;
 
-	if (!bBoundDelegate)
+	if (BoundAnim && BoundAnim != Anim && bBoundDelegate)
 	{
-		Anim->OnMontageEnded.AddDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
-		bBoundDelegate = true;
+		BoundAnim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+		bBoundDelegate = false;
 	}
+
+	Anim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+	Anim->OnMontageEnded.AddUniqueDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+	bBoundDelegate = true;
+	BoundAnim = Anim;
 
 	ApplyAttackMovementLock(MC);
 	AI->StopMovement();
 
 	MC->PushAttackCollision();   // 공격 시작 시 프로필 스위치
+
+	// Grab 플로우 초기화
+	if (bUseGrabFlowThisTask)
+	{
+		if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+		{
+			if (!BB_GrabConfirmedKey.IsNone())
+			{
+				BB->SetValueAsBool(BB_GrabConfirmedKey, false);
+			}
+		}
+		StartTimeForGrab = MC->GetWorld()->GetTimeSeconds();
+		bSentVictimEvent = false;
+		bRequestedGrabSection = false;
+	}
+
 	return EBTNodeResult::InProgress;
 }
 
@@ -95,6 +160,58 @@ void UBTTask_AttackPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	if (BoundAnim && CachedMontage && !BoundAnim->Montage_IsPlaying(CachedMontage))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	}
+
+	// =========================
+	// Grab 플로우 신호 감시
+	// =========================
+	if (bUseGrabFlowThisTask)
+	{
+		UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+		bool bGrabConfirmed = false;
+		if (BB && !BB_GrabConfirmedKey.IsNone())
+		{
+			bGrabConfirmed = BB->GetValueAsBool(BB_GrabConfirmedKey);
+		}
+
+		// 타임아웃 처리
+		if (GrabTimeoutSeconds > 0.f)
+		{
+			AAIController* AI = OwnerComp.GetAIOwner();
+			if (AI && AI->GetWorld())
+			{
+				float Now = AI->GetWorld()->GetTimeSeconds();
+				if (Now - StartTimeForGrab >= GrabTimeoutSeconds)
+				{
+					// [NOTE] 타임아웃 시 실패로 반환하거나, 그냥 일반 공격 마무리로 넘겨도 됩니다.
+					FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+					return;
+				}
+			}
+		}
+
+		if (bGrabConfirmed)
+		{
+			// 피해자 이벤트(피해자 몽타주 시작) 1회 전송
+			if (!bSentVictimEvent)
+			{
+				ACharacter* Victim = GetVictim(OwnerComp);
+				TrySendVictimStartEvent(Victim);
+				bSentVictimEvent = true;
+			}
+
+			// 보스 몽타주를 Grab 섹션으로 점프 (한 번만)
+			if (!bRequestedGrabSection)
+			{
+				ACharacter* Boss = nullptr;
+				if (AAIController* AI = OwnerComp.GetAIOwner())
+				{
+					Boss = Cast<ACharacter>(AI->GetPawn());
+				}
+				JumpToGrabSectionIfNeeded(Boss);
+				bRequestedGrabSection = true;
+			}
+		}
 	}
 }
 
@@ -145,6 +262,13 @@ void UBTTask_AttackPlayer::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uin
 	MontageDuration = 0.f;
 	ElapsedTime = 0.f;
 	bFinishedByEvent = false;
+
+	// Grab 플로우 상태 초기화
+	bUseGrabFlowThisTask = false;
+	bSentVictimEvent = false;
+	bRequestedGrabSection = false;
+	StartTimeForGrab = 0.f;
+
 }
 
 void UBTTask_AttackPlayer::ApplyAttackMovementLock(ACharacter* C)
@@ -181,4 +305,86 @@ void UBTTask_AttackPlayer::RestoreMovementFromLock(ACharacter* C)
 		}
 	}
 	bLockApplied = false;
+}
+
+EBTNodeResult::Type UBTTask_AttackPlayer::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	// 1) 델리게이트 해제
+	if (BoundAnim && bBoundDelegate)
+	{
+		BoundAnim->OnMontageEnded.RemoveDynamic(this, &UBTTask_AttackPlayer::HandleMontageEnded);
+	}
+	bBoundDelegate = false;
+
+	// 2) 이동/RVO/회전 복구 + 충돌 프로필 복원
+	if (AAIController* AI = OwnerComp.GetAIOwner())
+	{
+		if (ACharacter* C = Cast<ACharacter>(AI->GetPawn()))
+		{
+			RestoreMovementFromLock(C);
+
+			if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(C))
+			{
+				MC->PopAttackCollision();
+			}
+		}
+	}
+
+	// 3) 캐시 정리
+	BoundAnim = nullptr;
+	CachedMontage = nullptr;
+	CachedBTC = nullptr;
+	MontageDuration = 0.f;
+	ElapsedTime = 0.f;
+	bFinishedByEvent = false;
+	bLockApplied = false;
+
+	// Grab 플로우 상태 초기화
+	bUseGrabFlowThisTask = false;
+	bSentVictimEvent = false;
+	bRequestedGrabSection = false;
+	StartTimeForGrab = 0.f;
+
+	// 태스크 Abort 결과 반환
+	return EBTNodeResult::Aborted;
+}
+
+
+ACharacter* UBTTask_AttackPlayer::GetVictim(UBehaviorTreeComponent& OwnerComp) const
+{
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+	if (!BB) return nullptr;
+
+	// [NOTE] 프로젝트에서 실제 사용하는 키명에 맞춰 BB_TargetActorKey 변경 가능
+	AActor* Target = Cast<AActor>(BB->GetValueAsObject(BB_TargetActorKey));
+	return Cast<ACharacter>(Target);
+}
+
+void UBTTask_AttackPlayer::TrySendVictimStartEvent(ACharacter* Victim) const
+{
+	if (!Victim) return;
+	if (!VictimStartEventTag.IsValid()) return;
+
+	FGameplayEventData Data;
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Victim, VictimStartEventTag, Data);
+}
+
+void UBTTask_AttackPlayer::JumpToGrabSectionIfNeeded(ACharacter* Boss) const
+{
+	if (!Boss || !CachedMontage || BossGrabSectionName.IsNone()) return;
+	UAnimInstance* Anim = Boss->GetMesh() ? Boss->GetMesh()->GetAnimInstance() : nullptr;
+	if (!Anim) return;
+
+	if (Anim->Montage_IsPlaying(CachedMontage))
+	{
+		Anim->Montage_JumpToSection(BossGrabSectionName, CachedMontage);
+	}
+}
+
+bool UBTTask_AttackPlayer::IsMontagePlaying(ACharacter* Boss, UAnimMontage* Montage) const
+{
+	if (!Boss || !Montage) return false;
+	UAnimInstance* Anim = Boss->GetMesh() ? Boss->GetMesh()->GetAnimInstance() : nullptr;
+	if (!Anim) return false;
+	return Anim->Montage_IsPlaying(Montage);
 }

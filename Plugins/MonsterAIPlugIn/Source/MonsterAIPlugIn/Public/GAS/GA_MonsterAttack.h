@@ -26,4 +26,7 @@ public:
 
 	UFUNCTION()
 	void OnMontageCancelled();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Attack")
+	FName AttackKey;
 };

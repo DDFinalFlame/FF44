@@ -105,17 +105,5 @@ void AWeakPointActor::BreakAndNotify()
     if (bBroken) return;
     bBroken = true;
 
-    //if (OwnerBoss.IsValid())
-    //{
-    //    FGameplayEventData Payload;
-    //    Payload.EventTag = MonsterTags::Event_Boss_P2_WeakPointDestroyed;
-    //    Payload.Instigator = this;
-    //    Payload.Target = OwnerBoss.Get();
-    //    Payload.EventMagnitude = 0; // 피해량을 프로젝타일에 이양
-
-    //    UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-    //        OwnerBoss.Get(), Payload.EventTag, Payload);
-    //}
-
     Destroy(); // 파괴
 }

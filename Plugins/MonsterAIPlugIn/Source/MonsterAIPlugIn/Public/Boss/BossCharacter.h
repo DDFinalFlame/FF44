@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Monster/MonsterCharacter.h"
+#include "GameplayEffectTypes.h"
 #include "BossCharacter.generated.h"
 
 
@@ -30,7 +31,7 @@ class UBossPartsComponent;
 class UBossRewardComponent;
 class UAbilitySystemComponent;
 class UGameplayEffect;
-
+struct FOnAttributeChangeData;
 
 UCLASS()
 class MONSTERAIPLUGIN_API ABossCharacter : public AMonsterCharacter

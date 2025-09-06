@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "InventorySystem/InventorySystemInterface.h"
 
 #include "Data/PlayerDefinition.h"
 #include "Interface/AttackStatProvider.h"
@@ -23,16 +24,24 @@ class UBasePlayerHUDWidget;
 struct FInputActionValue;
 
 UCLASS()
-class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider
+class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider, public IInventorySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 	// IAttackStatProvider Interface
 	virtual float GetAttackPower_Implementation() const override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
+	virtual UInventoryComponent* GetInventoryComponent() const override { return InventoryComponent; }
 
 public:
 	ABasePlayer();
+
+protected:
+	class ABasePlayerController* BasePlayerController;
+
+public:
+	ABasePlayerController* GetBasePlayerController() { return BasePlayerController; }
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -76,6 +85,9 @@ protected:
 	TSubclassOf<UGameplayAbility> HitAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> SpecialHitAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> DodgeAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
@@ -96,10 +108,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TSubclassOf<UGameplayEffect> StaminaRunEffect;
-
-
-public:
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystem; }
 	
 protected:
 	virtual void InitializeAbilities();
@@ -119,19 +127,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraUnequipLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraEquipLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraZoomInLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraRightMoveLook;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cameras | Look")
 	UArrowComponent* CameraLeftMoveLook;
 
 public:
@@ -187,6 +195,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* SkillAction;
 
+	// QuickSlot
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
+	UInputAction* InventoryAction;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "InputAction")
 	UInputAction* ItemSlot_1Action;
 
@@ -212,12 +224,44 @@ protected:
 	virtual void Interact(const FInputActionValue& Value);
 	virtual void LockOn(const FInputActionValue& Value);
 	virtual void ToggleCombat(const FInputActionValue& Value);
-	virtual void ItemSlot_1(const FInputActionValue& Value);
 
 	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);
 	virtual void SpecialAct(const FInputActionValue& Value);
 	virtual void Skill(const FInputActionValue& Value);
+
+	// QuickSlot
+	virtual void ToggleInventory(const FInputActionValue& Value);
+	virtual void ItemSlot_1(const FInputActionValue& Value);
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///									Inventory										///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* WeaponInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* HeadInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* ChestInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* ArmInventory;
+
+	UPROPERTY(EditAnywhere)
+	UInventoryComponent* LegInventory;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Preview")
+	TSubclassOf<ACharacter> PreviewCharacterClass;
+
+protected:
+	void SetPreview();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////

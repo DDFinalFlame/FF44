@@ -17,6 +17,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "EQS")
 	FName TargetKeyName = "F_Target";
 
+
+
 public:
 	virtual void ProvideContext(FEnvQueryInstance& QueryInstance, FEnvQueryContextData& ContextData) const override;
 

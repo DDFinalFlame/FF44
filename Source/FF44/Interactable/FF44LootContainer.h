@@ -2,19 +2,29 @@
 
 #pragma once
 
+#include "InventorySystem/InventorySystemInterface.h"
+
 #include "CoreMinimal.h"
 #include "Interactable/FF44InteractableActor.h"
 #include "GameInstance/FF44GameInstance.h"
 #include "FF44LootContainer.generated.h"
 
+class UDataTable;
+
 UCLASS()
-class FF44_API AFF44LootContainer : public AFF44InteractableActor
+class FF44_API AFF44LootContainer : public AFF44InteractableActor, public IInventorySystemInterface
 {
     GENERATED_BODY()
 
 public:
     AFF44LootContainer();
+    virtual void BeginPlay() override;
 
+    virtual UInventoryComponent* GetInventoryComponent() const override { return InventoryComponent; }
+    virtual bool CanInteract_Implementation(AActor* Interactor) const override;
+    virtual void Interact_Implementation(AActor* Interactor) override;
+
+public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loot")
     TArray<FItemInstance> LootItems;
 
@@ -24,11 +34,14 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Loot")
     bool bOpened = false;
 
-    virtual bool CanInteract_Implementation(AActor* Interactor) const override;
-    virtual void Interact_Implementation(AActor* Interactor) override;
+protected:
+    UPROPERTY(EditAnywhere)
+    UInventoryComponent* InventoryComponent;
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "Loot")
-    void BP_OpenLootUI(AActor* Interactor);
+    UPROPERTY(EditAnywhere, Category = "Data")
+    UDataTable* ItemTable = nullptr;
+
+public:
 
     UFUNCTION(BlueprintCallable, Category = "Loot")
     bool TakeItemToStash(int32 Index);

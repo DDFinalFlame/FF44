@@ -71,6 +71,7 @@ void UEnemyWeaponCollisionComponent::CollisionTrace()
 					EventData.EventTag = FGameplayTag::RequestGameplayTag(TriggerEvent);
 					EventData.Instigator = GetOwner()->GetOwner();
 					EventData.Target = HitActor;
+					EventData.OptionalObject = WeaponMesh;
 
 					/* HitResult를 TargetData로 포장 **/
 					EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);

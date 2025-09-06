@@ -22,7 +22,7 @@ protected:
 
     // ===== 연출/무적 =====
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Invuln")
-    TSubclassOf<UGameplayEffect> GE_Phase2Invuln;
+    TSubclassOf<UGameplayEffect> GE_BossInvuln;
 
 
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Montage")
@@ -61,7 +61,7 @@ protected:
     float ShockwaveDamage = 30.f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Shockwave")
-    float ShockwaveRadius = 800.f;
+    float ShockwaveRadius = 2100.f;
 
     // ===== 발판 =====
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|Platform")
@@ -85,6 +85,8 @@ protected:
     // 보스 HP를 실제로 깎을 때 사용할 GE (SetByCaller: Data.Damage 사용 권장)
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|WeakPoint")
     TSubclassOf<UGameplayEffect> GE_WeakPointDamageToBoss;
+    UPROPERTY(EditDefaultsOnly, Category = "Phase2|ShockWave")
+    TSubclassOf<UGameplayEffect> GE_ShockWave;
 
 
     // 내부 상태
@@ -140,6 +142,13 @@ protected:
     //// 스폰/이벤트 핸들러
     void SpawnWeakPoints();
     UFUNCTION() void OnWeakPointDestroyedEvent(FGameplayEventData Payload);
+
+    // 무적 관련 함수
+    void ApplyInvuln();
+    void RemoveInvuln();
+
+    UFUNCTION()
+    void OnEndMontageFinished();  // 엔딩 몽타주 종료 시 호출
 
     // === Phase 본 로직 ===
     void StartPhase();

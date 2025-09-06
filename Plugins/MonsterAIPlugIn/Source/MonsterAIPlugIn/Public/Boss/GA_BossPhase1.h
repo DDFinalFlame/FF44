@@ -108,7 +108,7 @@ protected:
     FTimerHandle MinionInitTimerHandle;
 
     /** 공격/전투 상태로 세팅할 값(실프로젝트 Enum에 맞게 수정) */
-    uint8 DesiredMinionState = (uint8)3;
+    uint8 DesiredMinionState = (uint8)2;
 
 
     UPROPERTY(EditDefaultsOnly, Category = "Phase|FallingRock")
