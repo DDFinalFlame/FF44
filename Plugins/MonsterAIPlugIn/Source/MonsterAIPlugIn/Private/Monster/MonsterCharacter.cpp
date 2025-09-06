@@ -31,11 +31,27 @@ AMonsterCharacter::AMonsterCharacter()
 	AttributeSet = CreateDefaultSubobject<UMonsterAttributeSet>(TEXT("AttributeSet"));
 
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetReceivesDecals(false);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	AIControllerClass = AMonsterAIController::StaticClass();
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		//RVO 켜기
+		Move->bUseRVOAvoidance = true;
+
+		//RVO가 실제로 동작하도록 기본 파라미터(프로젝트에 맞게 조정)
+		Move->AvoidanceConsiderationRadius = 180.f; // 서로를 인지하는 반경
+		Move->AvoidanceWeight = 0.5f;               // 회피 가중치(0~1)
+
+		// 이동 회전 설정은 기존 그대로 사용 (필요 시만 조정)
+		Move->bOrientRotationToMovement = true;
+		Move->bUseControllerDesiredRotation = false;
+		Move->RotationRate = FRotator(0.f, 540.f, 0.f);
+	}
 }
 
 

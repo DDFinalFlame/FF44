@@ -24,8 +24,8 @@ enum class EMonsterState : uint8
 	AmbushReady,
 	Idle,
 	Patrol,
-	CombatReady,
 	Attack,
+	CombatReady,
 	Hit,
 	Knockback,
 	Ragdoll,
@@ -58,6 +58,9 @@ public:
 	//상태 변경 함수
 	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetMonsterState(EMonsterState NewState);
+
+	UFUNCTION(BlueprintPure, Category = "State")
+	bool IsAttacking() const { return CurrentState == EMonsterState::Attack; }
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	EMonsterState GetMonsterState() const { return CurrentState; }
@@ -218,6 +221,8 @@ private:
 
 public:
 	virtual float GetAttackPower_Implementation() const override;
+
+
 
 	// 레그돌로 시작되는 몬스터 실행 함수
 protected:

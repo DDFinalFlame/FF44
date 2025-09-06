@@ -2,16 +2,21 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
-#include "Navigation/CrowdFollowingComponent.h"
+//#include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Sight.h"
 #include "Perception/AISense_Hearing.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Navigation/PathFollowingComponent.h" 
 
 AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectInitializer)
-// ▼ 기본 Subobject "PathFollowingComponent"를 Crowd로 교체
-    : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+// 기본 Subobject "PathFollowingComponent"를 Crowd로 교체 (기존) 
+// : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+// 기본 PathFollowing 사용(권장)
+    : Super(ObjectInitializer /* .SetDefaultSubobjectClass<UPathFollowingComponent>(TEXT("PathFollowingComponent")) 생략 가능 */)
 {
     PrimaryActorTick.bCanEverTick = true;
 
@@ -22,20 +27,20 @@ AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectIniti
 
     if (SightConfig)
     {
-        SightConfig->SightRadius = SightRadius;             // 값 적당히(예: 1500.f)
-        SightConfig->LoseSightRadius = LoseSightRadius;     // 예: 1800.f
-        SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle; // 예: 90.f
+        SightConfig->SightRadius = SightRadius;
+        SightConfig->LoseSightRadius = LoseSightRadius;
+        SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle;
         SightConfig->DetectionByAffiliation.bDetectEnemies = true;
         SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-        SightConfig->DetectionByAffiliation.bDetectNeutrals = false; // 디버깅 시 true로
+        SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
     }
     if (HearingConfig)
     {
         HearingConfig->HearingRange = HearingRange;
-        HearingConfig->LoSHearingRange = LoSHearingRange;
+        HearingConfig->LoSHearingRange = LoSHearingRange; // (UE5.6에선 deprecated 경고) → 가능하면 제거하고 HearingRange만 사용 권장
         HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
         HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
-        HearingConfig->DetectionByAffiliation.bDetectNeutrals = false; // 디버깅 시 true로
+        HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
     }
     if (PerceptionComp)
     {
@@ -52,6 +57,7 @@ AMonsterAIController::AMonsterAIController(const FObjectInitializer& ObjectIniti
 void AMonsterAIController::BeginPlay()
 {
     Super::BeginPlay();
+  
 }
 
 void AMonsterAIController::OnPossess(APawn* InPawn)
@@ -70,7 +76,23 @@ void AMonsterAIController::OnPossess(APawn* InPawn)
             UE_LOG(LogTemp, Warning, TEXT("RunBehaviorTree failed on %s"), *GetName());
         }
     }
+
 }
+
+
+void AMonsterAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+    Super::OnMoveCompleted(RequestID, Result);
+
+    // 실패/중단 시 제자리 떨림 방지: 즉시 정지
+    if (Result.Code != EPathFollowingResult::Success)
+    {
+        if (ACharacter* C = Cast<ACharacter>(GetPawn()))
+            if (auto* M = C->GetCharacterMovement())
+                M->StopMovementImmediately();
+    }
+}
+
 
 void AMonsterAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {

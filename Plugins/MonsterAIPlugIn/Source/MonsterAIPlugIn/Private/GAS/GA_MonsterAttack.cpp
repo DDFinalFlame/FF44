@@ -32,14 +32,23 @@ void UGA_MonsterAttack::ActivateAbility(
     if (!MC) { EndAbility(Handle, ActorInfo, ActivationInfo, true, true); return; }
 
     UAnimMontage* AttackMontage = nullptr;
+    FName Section = NAME_None;
 
     if (UMonsterDefinition* Def = MC->GetMonsterDef())
     {
-        if (!Def->AttackMontage.IsValid()) Def->AttackMontage.LoadSynchronous();
-        AttackMontage = Def->AttackMontage.Get();
-    }
+        bool bOk = false;
+        if (!AttackKey.IsNone())
+            bOk = Def->FindAttackByKey(AttackKey, AttackMontage, Section);
+        else
+            bOk = Def->PickRandomAttack(AttackMontage, Section);
 
-    if (!AttackMontage)
+        if (!bOk || !AttackMontage)
+        {
+            EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+            return;
+        }
+    }
+    else
     {
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
         return;
