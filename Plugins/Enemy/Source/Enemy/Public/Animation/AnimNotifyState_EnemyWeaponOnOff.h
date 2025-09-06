@@ -14,6 +14,19 @@ class ENEMY_API UAnimNotifyState_EnemyWeaponOnOff : public UAnimNotifyState
 {
 	GENERATED_BODY()
 
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	bool HasCombo = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	bool bShouldBlend = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	FName CurrentSectionName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
+	FName NextSectionName;
+
 public:
 	UAnimNotifyState_EnemyWeaponOnOff(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 

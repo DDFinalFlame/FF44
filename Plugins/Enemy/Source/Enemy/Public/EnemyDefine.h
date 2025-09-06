@@ -18,8 +18,11 @@ enum class EAIBehavior : uint8
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
 {
+	None  UMETA(DisplayName = "None"),
 	Iron UMETA(DisplayName = "Iron"),
-	Archer UMETA(DisplayName = "Archer")
+	Archer UMETA(DisplayName = "Archer"),
+	Ghost UMETA(DisplayName = "Ghost"),
+	Sevarog UMETA(DisplayName = "Sevarog")
 };
 
 // Get FName By Enum
@@ -30,9 +33,21 @@ FName GetEnemyRowName(EEnemyType CharacterType);
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
+	None,
 	LeftHand,
 	RightHand,
 	Bow,
+};
+
+
+// Attack Type
+UENUM(BlueprintType)
+enum class EAttackType : uint8
+{
+	None,
+	Normal,
+	Running,
+	Special,
 };
 
 // Enemy Hit Direction

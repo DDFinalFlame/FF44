@@ -3,4 +3,3 @@
 
 #include "FF44Interactable.h"
 
-// Add default functionality here for any IFF44Interactable functions that are not pure virtual.

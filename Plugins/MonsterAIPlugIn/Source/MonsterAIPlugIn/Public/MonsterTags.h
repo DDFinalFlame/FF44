@@ -25,6 +25,7 @@ namespace MonsterTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Monster_Death);
 
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Hit);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Grabbed);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Assemble);
 
 
