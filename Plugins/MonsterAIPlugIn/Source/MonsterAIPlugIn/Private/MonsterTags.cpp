@@ -44,6 +44,10 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_Land, "Event.Boss.Land");		   // 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_P2_WeakPointDestroyed, "Event.Boss.Phase2.WeakPointDestroyed");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_RockHit, "Event.Boss.Phase1.Rock");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_LightingDamage, "Event.Boss.LightingDamage");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_Grab_Trigger, "Event.Boss.GrabTrigger");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Player_Grab_Trigger, "Event.Player.GrabTrigger");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Player_Grab_AniStart, "Event.Player.GrabAniStart");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Player_Grab_AniEnd, "Event.Player.GrabAniEnd");
 
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Boss_InvulnShield, "GameplayCue.Boss.InvulnShield"); // ¹«Àû½Ã ½¯µå/ÀÌÆåÆ®
