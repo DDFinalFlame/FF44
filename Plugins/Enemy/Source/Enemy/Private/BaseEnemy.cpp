@@ -60,6 +60,11 @@ void ABaseEnemy::BeginPlay()
 			Weapon->SetOwner(this);
 			Weapon->EquipWeapon();
 		}
+
+		//Weapon->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+
+		//FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+		//Weapon->AttachToComponent(GetMesh(), AttachmentRules, FName("Hand_L_Socket"));
 	}
 
 }
