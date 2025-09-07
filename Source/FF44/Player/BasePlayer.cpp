@@ -211,6 +211,8 @@ void ABasePlayer::Tick(float DeltaTime)
 
 	// Interactable
 	UpdateClosestInteractable();
+
+
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -423,6 +425,7 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 		if (IsInteracting)
 		{
 			GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+			GetWorldTimerManager().ClearTimer(InteractTimerHandel);
 		}
 	}
 }
@@ -486,15 +489,17 @@ void ABasePlayer::Interact(const FInputActionValue& Value)
 	{
 		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		{
-			this->PlayAnimMontage(InteractMontage);
+			FOnMontageEnded MontageEndedDelegate;
+			MontageEndedDelegate.BindUObject(this, &ABasePlayer::OnInterruptedInterAction);
 
-			FTimerHandle TimerHandel;
+			AnimInst->Montage_Play(InteractMontage);
+			AnimInst->Montage_SetEndDelegate(MontageEndedDelegate, InteractMontage);
 
 			if (Cur->GetPlayerActionTime() <= 0.f) return;
 
 			// 시간 경과를 체크해준다.
 			GetWorldTimerManager().SetTimer(
-				TimerHandel,
+				InteractTimerHandel,
 				this,
 				&ABasePlayer::OnEndInterAction,
 				Cur->GetPlayerActionTime(),
@@ -581,6 +586,24 @@ void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
 
 	// 우선 Potion으로
 	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
+}
+
+void ABasePlayer::OnInterruptedInterAction(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (bInterrupted)
+	{
+		// 방해 받았을 시,
+		GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+		GetWorldTimerManager().ClearTimer(InteractTimerHandel);
+		Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->EndProgressBar();
+		IsInteracting = false;
+	}
+	else
+	{
+		// 정상 종료
+		Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->EndProgressBar();
+		IsInteracting = false;
+	}
 }
 
 void ABasePlayer::OnEndInterAction()

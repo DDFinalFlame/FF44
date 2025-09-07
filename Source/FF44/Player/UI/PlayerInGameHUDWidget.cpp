@@ -4,6 +4,12 @@
 
 #include "Player/UI/BasePlayerStatBarWidget.h"
 
+void UPlayerInGameHUDWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	ProgressBarWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
 void UPlayerInGameHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	if (IsProgress)

@@ -236,7 +236,9 @@ protected:
 	virtual void ItemSlot_1(const FInputActionValue& Value);
 
 	// CallBack
-	virtual void OnEndInterAction();
+	FTimerHandle InteractTimerHandel;
+	void OnInterruptedInterAction(UAnimMontage* Montage, bool bInterrupted);
+	void OnEndInterAction();
 	void CalculateInteractingTime();
 
 
