@@ -24,6 +24,9 @@ public:
     USceneComponent* Walls;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
+    USceneComponent* Environments;
+
+    UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
     USceneComponent* InteractableSpawnPoints;
 
     UPROPERTY(VisibleAnywhere, Category = "Room|Folders")
