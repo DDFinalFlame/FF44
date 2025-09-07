@@ -28,6 +28,9 @@ namespace PlayerTags
 
     // 이벤트 관련 신호
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Hit);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Grabbed);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_GrabTrigger);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_GrabAniStart);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Death);
 
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Monster_Hit);

@@ -15,6 +15,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
+#include "MotionWarpingComponent.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
@@ -94,6 +95,11 @@ ABasePlayer::ABasePlayer()
 
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
+
+	// Motion Warping
+	MotionWarping = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
+
+	// Inventory
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
 	// Tag
