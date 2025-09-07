@@ -25,6 +25,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Rampage")
 	UAnimMontage* RampageGrapMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Rampage")
+	FName BossSocketName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Rampage")
+	FName EndThrowNotify;
+
 protected:
 	virtual void CommitExecute(const FGameplayAbilitySpecHandle Handle,
 							   const FGameplayAbilityActorInfo* ActorInfo,

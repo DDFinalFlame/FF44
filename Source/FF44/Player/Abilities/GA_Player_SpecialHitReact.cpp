@@ -56,6 +56,11 @@ void UGA_Player_SpecialHitReact::EndAbility(const FGameplayAbilitySpecHandle Han
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
+// Motion Warping을 사용한 Animation
+// Mesh Component를 따라 가도록 AddOrUpdateWarpTargetFromComponent 사용
+// 주요 설정은 다음과 같음
+// 1. SetMovementMode : 시작시 Fly, 마치고 Walk로 변경
+// 2. 
 void UGA_Player_SpecialHitReact::OnWraithBoss()
 {
 	if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
@@ -84,13 +89,13 @@ void UGA_Player_SpecialHitReact::OnWraithBoss()
 
 		UAbilityTask_PlayMontageAndWait* Task =
 			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-				this,           // Ability 자신
-				NAME_None,      // Task Instance Name
-				WraithGrapMontage,  // 재생할 몽타주
-				MontagePlayRate,           // 재생 속도
-				NAME_None,      // Section Name (원하면 섹션 지정)
-				false,          // Stop when ability ends
-				1.0f            // Root Motion Scale
+				this,          
+				NAME_None,     
+				WraithGrapMontage, 
+				MontagePlayRate,   
+				NAME_None,     
+				false,         
+				1.0f           
 			);
 
 		Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
@@ -103,6 +108,24 @@ void UGA_Player_SpecialHitReact::OnWraithBoss()
 
 void UGA_Player_SpecialHitReact::OnRampage()
 {
+	OwnerPlayer->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+	UAbilityTask_PlayMontageAndWait* Task =
+		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+			this,          
+			NAME_None,     
+			HitMontage,  
+			MontagePlayRate,
+			NAME_None,     
+			false,         
+			1.0f           
+		);
+
+	Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
+	Task->OnBlendOut.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
+	Task->OnInterrupted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
+	Task->OnCancelled.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
+	Task->ReadyForActivation();
 }
 
 void UGA_Player_SpecialHitReact::OnPlayerGrapMontage()
@@ -114,13 +137,13 @@ void UGA_Player_SpecialHitReact::OnPlayerGrapMontage()
 
 		UAbilityTask_PlayMontageAndWait* Task =
 			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-				this,           // Ability 자신
-				NAME_None,      // Task Instance Name
-				RampageGrapMontage,  // 재생할 몽타주
-				MontagePlayRate,           // 재생 속도
-				NAME_None,      // Section Name (원하면 섹션 지정)
-				false,          // Stop when ability ends
-				1.0f            // Root Motion Scale
+				this,
+				NAME_None,
+				RampageGrapMontage,
+				MontagePlayRate,
+				NAME_None, 
+				false,  
+				2.0f    
 			);
 
 		Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
@@ -133,6 +156,23 @@ void UGA_Player_SpecialHitReact::OnPlayerGrapMontage()
 
 void UGA_Player_SpecialHitReact::OnBeginNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
+	if (NotifyName == EndThrowNotify)
+	{
+		USceneComponent* Child = OwnerPlayer->GetRootComponent();
+
+		// 부모 회전 영향 차단
+		Child->SetUsingAbsoluteRotation(true);
+
+		if (auto boss = Cast<ACharacter>(EventData.Instigator.Get()))
+		{			
+			FAttachmentTransformRules rule =
+				FAttachmentTransformRules(
+					EAttachmentRule::SnapToTarget,
+					EAttachmentRule::KeepWorld, 
+					EAttachmentRule::KeepWorld, false);
+			OwnerPlayer->AttachToComponent(boss->GetMesh(), rule, BossSocketName);
+		}
+	}
 }
 
 void UGA_Player_SpecialHitReact::OnEndNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
@@ -140,5 +180,15 @@ void UGA_Player_SpecialHitReact::OnEndNotify(FName NotifyName, const FBranchingP
 	if (NotifyName == EndGrabNotify)
 	{
 		OwnerPlayer->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+
+	if (NotifyName == EndThrowNotify)
+	{
+		OwnerPlayer->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		OwnerPlayer->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		USceneComponent* Child = OwnerPlayer->GetRootComponent();
+
+		// 부모 회전 영향 차단
+		Child->SetUsingAbsoluteRotation(false);
 	}
 }
