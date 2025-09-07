@@ -18,6 +18,7 @@ class UArrowComponent;
 class UInputAction;
 class UGameplayAbility;
 class UAnimMontage;
+class UMotionWarpingComponent;
 
 class UBasePlayerAttributeSet;
 class UBasePlayerHUDWidget;
@@ -284,8 +285,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionWarp")
-	class UMotionWarpingComponent* MotionWarping;
+	UMotionWarpingComponent* MotionWarping;
 
+public:
+	UMotionWarpingComponent* GetMotionWarpingComponent() { return MotionWarping; }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										State											///

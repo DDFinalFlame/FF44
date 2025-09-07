@@ -17,6 +17,9 @@ protected:
 	FName WraithSocketName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Wraith")
+	FName GrabMotionWarpingNotify;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Wraith")
 	FName EndGrabNotify;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Rampage")

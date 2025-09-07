@@ -5,6 +5,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Kismet/GameplayStatics.h"
+#include "MotionWarpingComponent.h"
 
 #include "Player/BasePlayer.h"
 #include "Player/Data/PlayerTags.h"
@@ -59,6 +60,25 @@ void UGA_Player_SpecialHitReact::OnWraithBoss()
 {
 	if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
 	{
+		if (auto GrabMesh = Cast<UStaticMeshComponent>(EventData.OptionalObject.Get()))
+		{
+			if (!GrabMesh->DoesSocketExist(WraithSocketName))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Socket %s not found on %s"), *WraithSocketName.ToString(), *GrabMesh->GetName());
+				return;
+			}
+
+			OwnerPlayer->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+			OwnerPlayer->GetMotionWarpingComponent()->AddOrUpdateWarpTargetFromComponent(
+				GrabMotionWarpingNotify,
+				GrabMesh,
+				WraithSocketName,
+				true,
+				FVector::ZeroVector,
+				FRotator::ZeroRotator
+			);
+		}
+
 		AnimInst->OnPlayMontageNotifyBegin.AddDynamic(this, &UGA_Player_SpecialHitReact::OnBeginNotify);
 		AnimInst->OnPlayMontageNotifyEnd.AddDynamic(this, &UGA_Player_SpecialHitReact::OnEndNotify);
 
@@ -113,28 +133,12 @@ void UGA_Player_SpecialHitReact::OnPlayerGrapMontage()
 
 void UGA_Player_SpecialHitReact::OnBeginNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
-	if (NotifyName == EndGrabNotify)
-	{
-		// Attach
-		if (auto GrabMesh = Cast<UStaticMeshComponent>(EventData.OptionalObject.Get()))
-		{
-			const FAttachmentTransformRules rule = FAttachmentTransformRules(
-				EAttachmentRule::SnapToTarget,
-				EAttachmentRule::KeepWorld,
-				EAttachmentRule::KeepWorld, true);
-
-			OwnerPlayer->AttachToComponent(const_cast<UStaticMeshComponent*>(GrabMesh), rule, WraithSocketName);
-
-			OwnerPlayer->GetCharacterMovement()->DisableMovement();
-		}
-	}
 }
 
 void UGA_Player_SpecialHitReact::OnEndNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
 	if (NotifyName == EndGrabNotify)
 	{
-		OwnerPlayer->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		OwnerPlayer->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
 }

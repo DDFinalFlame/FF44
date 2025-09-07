@@ -218,7 +218,17 @@ void ABasePlayer::Tick(float DeltaTime)
 	// Interactable
 	UpdateClosestInteractable();
 
+	if (auto* WarpTarget = MotionWarping->FindWarpTarget(TEXT("ANS_SpecialHit")))
+	{
+		const FVector Loc = WarpTarget->GetLocation();
+		auto Rot = WarpTarget->GetRotation();
 
+		// 구체와 화살표로 시각화
+		DrawDebugSphere(GetWorld(), Loc, 15.f, 12, FColor::Red, false, 2.f);
+		DrawDebugDirectionalArrow(GetWorld(),
+			Loc, Loc + Rot.Vector() * 100.f,
+			10.f, FColor::Blue, false, 2.f, 0, 2.f);
+	}
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
