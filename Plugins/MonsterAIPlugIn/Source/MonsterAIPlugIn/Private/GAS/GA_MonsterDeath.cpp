@@ -181,6 +181,7 @@ void UGA_MonsterDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     if (!bPlaying)
     {
         EnterRagdoll(Chr);
+        TrySpawnDrop(Chr);
         Chr->SetLifeSpan(5.f);
 
         NotifyBossMinionDied(Chr);
@@ -214,7 +215,7 @@ void UGA_MonsterDeath::OnMontageEnded()
         //Chr->SetLifeSpan(15.f);
     }
 
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+   EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UGA_MonsterDeath::EndAbility(const FGameplayAbilitySpecHandle Handle,
@@ -248,5 +249,55 @@ void UGA_MonsterDeath::NotifyBossMinionDied(ACharacter* DeadChr)
             BossActor, MonsterTags::Event_Minion_Died, Data);
 
         bSentBossNotify = true;
+    }
+}
+
+void UGA_MonsterDeath::TrySpawnDrop(ACharacter* DeadChr)
+{
+    if (bDropSpawned) return;
+    if (!DeadChr) return;
+
+    // 서버에서만
+    const UAbilitySystemComponent* ASC =
+        GetCurrentActorInfo() ? GetCurrentActorInfo()->AbilitySystemComponent.Get() : nullptr;
+    if (!ASC || ASC->GetOwnerRole() != ROLE_Authority) return;
+
+    if (!DropActorClass) return;
+    if (FMath::FRand() > DropChance) return; // 확률 미스
+
+    UWorld* World = DeadChr->GetWorld();
+    if (!World) return;
+
+    FVector SpawnLoc = DeadChr->GetActorLocation();
+    FRotator SpawnRot = FRotator::ZeroRotator;
+
+    // 바닥 정렬(선택)
+    if (bDropAlignToGround)
+    {
+        FHitResult Hit;
+        const FVector Start = SpawnLoc + FVector(0, 0, 50.f);
+        const FVector End = SpawnLoc + FVector(0, 0, -2000.f);
+        FCollisionQueryParams Params(SCENE_QUERY_STAT(DeathDropTrace), false, DeadChr);
+        if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+        {
+            SpawnLoc = Hit.ImpactPoint;
+            SpawnRot = Hit.ImpactNormal.Rotation(); // 노멀 기준 회전
+        }
+    }
+
+    SpawnLoc.Z += DropSpawnZOffset;
+
+    FActorSpawnParameters S;
+    S.Owner = DeadChr;
+    S.Instigator = DeadChr;
+    S.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+    // 필요 시 지연 스폰(초기 세팅 필요하면)
+    AActor* Drop = World->SpawnActor<AActor>(DropActorClass, SpawnLoc, SpawnRot, S);
+    if (Drop)
+    {
+        bDropSpawned = true;
+        // 필요하면 인터페이스/초기화 함수 호출
+        // IYourDropInterface::Execute_Init(Drop, …);
     }
 }
