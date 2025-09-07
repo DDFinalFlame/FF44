@@ -10,9 +10,12 @@
 #include "Boss/BossMeleeWeapon.h"
 
 
+
+
 ABossCharacter::ABossCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
+
 }
 
 void ABossCharacter::BeginPlay()
@@ -25,7 +28,11 @@ void ABossCharacter::BeginPlay()
         ActivatePhaseWatcherOnce();
     }
 
+
 }
+
+
+
 
 void ABossCharacter::ActivatePhaseWatcherOnce()
 {

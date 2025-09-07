@@ -30,11 +30,11 @@ public class MonsterAIPlugIn : ModuleRules
 				"GameplayTags",        //태그 시스템
 				"GameplayTasks",       //Task 기반 시스템
 				"GeometryCollectionEngine",
-				"FieldSystemEngine","Chaos",                    // (보조) 타입/헬퍼
+				"FieldSystemEngine","Chaos", 
 				"ChaosSolverEngine",        // FChaosPhysicsCollisionInfo / 콜백 USTRUCT
 				"GeometryCollectionEngine", // UGeometryCollectionComponent
 				"FieldSystemEngine",         // FieldSystemComponent 및 Field 객체들
-                 "Niagara",//필요 시 입력 시스템 (선택사항)
+                 "Niagara","MotionWarping",
             }
 			);
 			
@@ -50,7 +50,11 @@ public class MonsterAIPlugIn : ModuleRules
 				"NavigationSystem",    //네비게이션 기능이 필요한 경우
 				"EnhancedInput",
                  "Niagara",//필요 시 입력 시스템 (선택사항)
-			}
+				 "Slate",
+				"SlateCore",
+				"UMG",
+				"MotionWarping",
+            }
 			);
 		
 		

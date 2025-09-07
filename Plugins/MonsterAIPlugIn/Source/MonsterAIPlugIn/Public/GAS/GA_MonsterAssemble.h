@@ -9,6 +9,8 @@ class USkeletalMeshComponent;
 class UCapsuleComponent;
 class UCharacterMovementComponent;
 class AAIController;
+class UNiagaraSystem;
+class USoundBase;
 
 UCLASS()
 class UGA_MonsterAssemble : public UGameplayAbility
@@ -102,4 +104,15 @@ protected:
     void BeginGetUp(ACharacter* Chr);
     void TickGetUp();
     void FinishGetUp(ACharacter* Chr);
+
+    // 나이아가라
+    // UGA_MonsterAssemble.h
+    UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
+    UNiagaraSystem* NS_AssemblePop = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
+    USoundBase* SFX_AssemblePop = nullptr;
+
+    // === 헬퍼 ===
+    FVector GetFeetOrPelvisLoc(ACharacter* Chr) const;
 };

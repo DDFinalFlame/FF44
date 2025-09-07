@@ -17,11 +17,14 @@ ABossLightningProjectile::ABossLightningProjectile()
 
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
     Movement->UpdatedComponent = Collision;     
-    Movement->InitialSpeed = 2000.f;
+    Movement->InitialSpeed = 500.f;
     Movement->MaxSpeed = 2000.f;
     Movement->ProjectileGravityScale = 0.f;
     Movement->bRotationFollowsVelocity = true;
     Movement->bInitialVelocityInLocalSpace = true;
+    //유도탄처럼 쓰기 위해서 필요.
+    Movement->bIsHomingProjectile = true;
+    Movement->HomingAccelerationMagnitude = 8000.f; // 회전/쫓는 힘. 필요시 조절
 }
 
 void ABossLightningProjectile::BeginPlay()
@@ -42,25 +45,18 @@ void ABossLightningProjectile::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-  /*  if (bDebugDraw && Collision)
-    {
-        const FVector Center = Collision->GetComponentLocation();
-        const float Radius = Collision->GetScaledSphereRadius();
-
-        DrawDebugSphere(GetWorld(), Center, Radius, 12, FColor::Green, false, -1.f, 0, DebugLineThickness);
-
-        if (Movement)
-        {
-            const FVector Velocity = Movement->Velocity;
-            DrawDebugLine(GetWorld(), Center, Center + Velocity.GetSafeNormal() * 150.f, FColor::Cyan, false, -1.f, 0, DebugLineThickness);
-        }
-    }*/
 }
 
 void ABossLightningProjectile::InitProjectile(AActor* InTargetBoss, float InDamage)
 {
     TargetBoss = InTargetBoss;
     DamageValue = InDamage;
+
+    if (TargetBoss.IsValid())
+    {
+        USceneComponent* TargetComp = TargetBoss->GetRootComponent();
+        Movement->HomingTargetComponent = TargetComp;
+    }
 }
 
 void ABossLightningProjectile::OnOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,

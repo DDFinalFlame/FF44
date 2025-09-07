@@ -4,13 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "AITypes.h"                               // FAIRequestID
+#include "Navigation/PathFollowingComponent.h"     // FPathFollowingResult (대부분 이걸로 해결)
+//#include "Navigation/CrowdFollowingComponent.h"    // 이미 쓰고 있으면 유지
 #include "Perception/AIPerceptionTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "MonsterAIController.generated.h"
 
-/**
- * 
- */
+struct FPathFollowingResult;
+
 UCLASS()
 class MONSTERAIPLUGIN_API AMonsterAIController : public AAIController
 {
@@ -29,6 +31,8 @@ protected:
 	virtual void BeginPlay() override;
     virtual void OnPossess(APawn* InPawn) override;
 	
+    virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
+
     // Perception 콜백
     UFUNCTION()
     void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
@@ -38,6 +42,8 @@ protected:
 
     // 필요시 BB 업데이트 헬퍼
     void UpdateBlackboardKeys();
+
+;
 
 protected:
     // === BehaviorTree/BB ===
