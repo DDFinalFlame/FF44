@@ -28,7 +28,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_MoveSpeed, "Data.MoveSpeed");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Defense, "Data.Defense");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Impact_Hit, "GameplayCue.Impact.Hit");
-
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Monster_Hit, "GameplayCue.Monster.Hit");
 //보스 관련 tag
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Ability_Boss_Summon, "Ability.Boss.Summon");        // 보스 소환 패턴 GA
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Ability_Boss_Channel, "Ability.Boss.Channel");      // 보스 캐스팅 루프 GA

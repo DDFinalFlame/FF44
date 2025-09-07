@@ -38,6 +38,7 @@ namespace MonsterTags
 
     //Cue 태그
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(GC_Impact_Hit);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(GC_Monster_Hit);
 
 
     // 보스 전용 Ability

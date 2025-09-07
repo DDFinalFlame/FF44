@@ -204,7 +204,7 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                 UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor))
             {
                 //GCN_Burst의 OnBurst가 여기서 호출됩니다.
-                TargetASC->ExecuteGameplayCue(MonsterTags::GC_Impact_Hit, Params);
+                TargetASC->ExecuteGameplayCue(MonsterTags::GC_Monster_Hit, Params);
                 
 
             }
@@ -214,7 +214,7 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             // 폴백(그래도 보이게 하려면 시전자 ASC에 실행)
             if (Info && Info->AbilitySystemComponent.IsValid())
             {
-                Info->AbilitySystemComponent->ExecuteGameplayCue(MonsterTags::GC_Impact_Hit, Params);
+                Info->AbilitySystemComponent->ExecuteGameplayCue(MonsterTags::GC_Monster_Hit, Params);
             }
         }
     }
