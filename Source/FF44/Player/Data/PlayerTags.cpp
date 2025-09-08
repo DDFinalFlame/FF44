@@ -16,6 +16,7 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_HitReacting, "State.Player.HitRe
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Dodge, "State.Player.Dodge");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Dead, "State.Player.Dead");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Attack, "State.Player.Attack");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_KeyDownAttack, "State.Player.Attack.KeyDown");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_1, "State.Player.Attack.Combo.1");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_2, "State.Player.Attack.Combo.2");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_3, "State.Player.Attack.Combo.3");
@@ -23,6 +24,9 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_Enable, "State.Player.Atta
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Drink, "State.Player.Drink");
 
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Hit, "Event.Player.Hit");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Grabbed, "Event.Player.Grabbed");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_GrabTrigger, "Event.Player.GrabTrigger");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_GrabAniStart, "Event.Player.GrabAniStart");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Death, "Event.Player.Death");
 
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Monster_Hit, "Event.Monster.Hit");

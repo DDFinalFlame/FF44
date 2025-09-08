@@ -30,6 +30,8 @@ public:
     virtual void OnFocus_Implementation(AActor* Interactor) override;
     virtual void OnUnfocus_Implementation(AActor* Interactor) override;
 
+    float GetPlayerActionTime() { return PlayerActionTime; }
+
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interactable")
     UStaticMeshComponent* Mesh;
@@ -46,6 +48,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable")
     TSubclassOf<UUserWidget> PromptWidgetClass;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable")
+    TSubclassOf<UUserWidget> ProgressWidgetClass;
+
     UPROPERTY()
     TWeakObjectPtr<AActor> CurrentInteractor;
 
@@ -54,6 +59,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable|Prompt")
     bool bKeepZFromAnchor = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactable|ActionTime")
+    float PlayerActionTime = 2.f;
 
     void SetPromptVisible(bool bVisible);
     void UpdatePromptFacing();
