@@ -60,6 +60,12 @@ public:
 	virtual void ToggleHUD();
 	virtual void ToggleInventory();
 
+	UFUNCTION()
+	virtual void OpenInventory();
+
+	UFUNCTION()
+	virtual void CloseInventory();
+
 	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 	virtual UInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
 	virtual UBasePlayerHUDWidget* GetHUDWIdget() const { return PlayerHUD; }

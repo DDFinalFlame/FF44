@@ -8,6 +8,7 @@ class UCanvasPanel;
 class UBorder;
 class UBackgroundBlur;
 class UInventoryGridWidget;
+class UButton;
 
 UCLASS()
 class FF44_API UInventoryWidget : public UUserWidget
@@ -25,6 +26,9 @@ protected:
 	UBackgroundBlur* Blur;
 
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
+	UButton* EscapeButton;
+
+	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
 	UInventoryGridWidget* PlayerGrid;
 
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
@@ -35,6 +39,7 @@ protected:
 
 public:
 	void SetInteractActor(AActor* _InterAct) { OtherActor = _InterAct; }
+	UButton* GetEscapeButton() const { return EscapeButton; }
 
 protected:
 	virtual void NativeConstruct() override;

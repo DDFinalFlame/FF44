@@ -5,6 +5,7 @@
 #include "InputMappingContext.h"
 #include "AbilitySystemComponent.h"
 #include "BasePlayerAttributeSet.h"
+#include "Components/Button.h"
 
 #include "UI/BasePlayerHUDWidget.h"
 #include "UI/BaseMonsterHUDWidget.h"
@@ -60,6 +61,7 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 		InventoryWidget->SetOwningPlayer(this);
 		InventoryWidget->AddToViewport();
 		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+		InventoryWidget->GetEscapeButton()->OnReleased.AddDynamic(this, &ABasePlayerController::CloseInventory);
 	}
 }
 
@@ -102,15 +104,21 @@ void ABasePlayerController::ToggleInventory()
 	UE_LOG(LogTemp, Log, TEXT("Inventory Toggle"));
 
 	if (InventoryWidget->GetVisibility() == ESlateVisibility::Collapsed)
-	{
-		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-	}
+		OpenInventory();
 	else
-	{
-		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
-		SetShowMouseCursor(false);
-		SetInputMode(FInputModeGameOnly());
-	}
+		CloseInventory();
+}
+
+void ABasePlayerController::OpenInventory()
+{
+	InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+	SetInputMode(FInputModeUIOnly());
+	SetShowMouseCursor(true);
+}
+
+void ABasePlayerController::CloseInventory()
+{
+	InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
 }

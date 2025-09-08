@@ -240,6 +240,12 @@ void ABasePlayer::Tick(float DeltaTime)
 			Loc, Loc + Rot.Vector() * 100.f,
 			10.f, FColor::Blue, false, 2.f, 0, 2.f);
 	}
+
+	if (BasePlayerController->GetInventoryWidget()->IsVisible())
+	{
+		if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_HitReacting))
+			BasePlayerController->CloseInventory();
+	}
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
