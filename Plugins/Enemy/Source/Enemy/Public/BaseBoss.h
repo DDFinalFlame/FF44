@@ -83,6 +83,8 @@ public:
 	virtual TArray<TWeakObjectPtr<ABaseEnemy>> GetGhostList() override;
 	virtual FVector GetBossLocation() override;
 
+	virtual void SendEventToTarget(FGameplayTag EventTag);
+
 public:
 	// EQS Finish 바인딩할 델리게이트 함수
 	void OnSummonQueryFinished(TSharedPtr<FEnvQueryResult> Result);

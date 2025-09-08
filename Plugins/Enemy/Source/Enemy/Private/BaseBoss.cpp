@@ -3,6 +3,7 @@
 
 #include "BaseBoss.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -98,6 +99,30 @@ TArray<TWeakObjectPtr<ABaseEnemy>> ABaseBoss::GetGhostList()
 FVector ABaseBoss::GetBossLocation()
 {
 	return GetActorLocation();
+}
+
+void ABaseBoss::SendEventToTarget(FGameplayTag EventTag)
+{
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
+		{
+			if (AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(FName("F_Target"))))
+			{
+				FGameplayEventData EventData;
+
+				EventData.EventTag = EventTag;
+				EventData.Instigator = GetOwner()->GetOwner();
+				EventData.Target = TargetActor;
+
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+					TargetActor,
+					EventData.EventTag,
+					EventData
+				);
+			}
+		}
+	}
 }
 
 int ABaseBoss::GetSummonNum() const
