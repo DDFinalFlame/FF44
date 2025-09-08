@@ -467,15 +467,17 @@ const FFF44DGThemeRow* AFF44DungeonGenerator::FindThemeRowForFloor(int32 FloorIn
     TArray<FFF44DGThemeRow*> Rows;
     ThemeTable->GetAllRows<FFF44DGThemeRow>(Ctx, Rows);
 
-    for (const FFF44DGThemeRow* Row : Rows)
+    FFF44DGThemeRow* RetRow = nullptr;
+
+    for (auto Row : Rows)
     {
         if (!Row) continue;
         if (FloorIndex >= Row->MinFloor && FloorIndex <= Row->MaxFloor)
         {
-            return Row;
+            RetRow = Row;
         }
     }
-    return nullptr;
+    return RetRow;
 }
 
 void AFF44DungeonGenerator::DestroyAllOfClass(UClass* Cls)
