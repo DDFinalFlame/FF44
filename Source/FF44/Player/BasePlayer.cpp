@@ -2,6 +2,7 @@
 
 // Components
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -13,9 +14,12 @@
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
 #include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
+#include "MotionWarpingComponent.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
+#include "DrawDebugHelpers.h"
 
 // Class
 #include "Data/PlayerTags.h"
@@ -27,7 +31,8 @@
 #include "InventorySystem/InventoryComponent.h"
 #include "InventorySystem/Widget/InventoryWidget.h"
 #include "Interactable/FF44Interactable.h"
-#include "DrawDebugHelpers.h"
+#include "Interactable/FF44TrapBase.h"
+#include "UI/PlayerInGameHUDWidget.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -90,6 +95,11 @@ ABasePlayer::ABasePlayer()
 
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
+
+	// Motion Warping
+	MotionWarping = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
+
+	// Inventory
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
 	// Tag
@@ -192,6 +202,17 @@ void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bKeyDown)
+		if (EnterKeyDownTemp <= EnterKeyDownAttackTime)
+			EnterKeyDownTemp += DeltaTime;
+		else
+			bKeyDownAttack = true;
+	else
+	{
+		EnterKeyDownTemp = 0.f;
+		bKeyDownAttack = false;
+	}
+
 	CurrentInputDirection = 0;	
 
 	if (!AbilitySystem) return;
@@ -207,6 +228,18 @@ void ABasePlayer::Tick(float DeltaTime)
 
 	// Interactable
 	UpdateClosestInteractable();
+
+	if (auto* WarpTarget = MotionWarping->FindWarpTarget(TEXT("ANS_SpecialHit")))
+	{
+		const FVector Loc = WarpTarget->GetLocation();
+		auto Rot = WarpTarget->GetRotation();
+
+		// 구체와 화살표로 시각화
+		DrawDebugSphere(GetWorld(), Loc, 15.f, 12, FColor::Red, false, 2.f);
+		DrawDebugDirectionalArrow(GetWorld(),
+			Loc, Loc + Rot.Vector() * 100.f,
+			10.f, FColor::Blue, false, 2.f, 0, 2.f);
+	}
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -346,7 +379,10 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// Combat Actions
 		if(AttackAction)
 		{
-			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ABasePlayer::Attack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ABasePlayer::Attack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Ongoing, this, &ABasePlayer::KeyDownAttack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Canceled, this, &ABasePlayer::EndAttack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ABasePlayer::EndAttack);
 		}
 		if(SpecialAction)
 		{
@@ -414,6 +450,13 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 			SetDoInputMoving(true);
 		else
 			SetDoInputMoving(false);
+
+		// Interact Montage 실행 취소
+		if (IsInteracting)
+		{
+			GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+			GetWorldTimerManager().ClearTimer(InteractTimerHandel);
+		}
 	}
 }
 
@@ -468,11 +511,35 @@ void ABasePlayer::Dodge(const FInputActionValue& Value)
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
 {
-	if (AActor* Cur = FocusedInteractable.Get())
+	// 무기를 들고 있지 않을 때만 상호작용이 가능하다.
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip) ||
+		AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dead)) return;
+
+	if (auto Cur = Cast<AFF44InteractableActor>(FocusedInteractable.Get()))
 	{
-		if (IFF44Interactable::Execute_CanInteract(Cur, this))
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		{
-			IFF44Interactable::Execute_Interact(Cur, this);
+			FOnMontageEnded MontageEndedDelegate;
+			MontageEndedDelegate.BindUObject(this, &ABasePlayer::OnInterruptedInterAction);
+
+			AnimInst->Montage_Play(InteractMontage);
+			AnimInst->Montage_SetEndDelegate(MontageEndedDelegate, InteractMontage);
+
+			if (Cur->GetPlayerActionTime() <= 0.f) return;
+
+			// 시간 경과를 체크해준다.
+			GetWorldTimerManager().SetTimer(
+				InteractTimerHandel,
+				this,
+				&ABasePlayer::OnEndInterAction,
+				Cur->GetPlayerActionTime(),
+				false);
+
+			IsInteracting = true;
+
+			// UI를 띄워준다.
+
+			Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->SetProgressBar(Cur->GetPlayerActionTime());
 		}
 	}
 }
@@ -518,6 +585,26 @@ void ABasePlayer::Attack(const FInputActionValue& Value)
 		AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility[i]);
 }
 
+void ABasePlayer::KeyDownAttack(const FInputActionValue& Value)
+{
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
+		return;
+
+	//if (bKeyDownAttack)
+	//	AbilitySystem->TryActivateAbilityByClass(KeyDownAttackAbility);
+
+	bKeyDown = true;
+}
+
+void ABasePlayer::EndAttack(const FInputActionValue& Value)
+{
+	//if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_KeyDownAttack))
+	//	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+	//		Anim->Montage_Stop(0.5f);
+
+	bKeyDown = false;
+}
+
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
 {
 	// Change State
@@ -534,6 +621,7 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 
 void ABasePlayer::ToggleInventory(const FInputActionValue& Value)
 {
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dead)) return;
 	if (!BasePlayerController) return;
 
 	BasePlayerController->GetInventoryWidget()->SetInteractActor(nullptr);
@@ -548,6 +636,41 @@ void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
 
 	// 우선 Potion으로
 	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
+}
+
+void ABasePlayer::OnInterruptedInterAction(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (bInterrupted)
+	{
+		// 방해 받았을 시,
+		GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+		GetWorldTimerManager().ClearTimer(InteractTimerHandel);
+		Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->EndProgressBar();
+		IsInteracting = false;
+	}
+	else
+	{
+		// 정상 종료
+		Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->EndProgressBar();
+		IsInteracting = false;
+	}
+}
+
+void ABasePlayer::OnEndInterAction()
+{
+	if (auto Cur = Cast<AFF44InteractableActor>(FocusedInteractable.Get()))
+	{
+		this->PlayAnimMontage(InteractMontage, 1.f, TEXT("LoopEnd"));
+
+		if (IFF44Interactable::Execute_CanInteract(Cur, this))
+		{
+			IFF44Interactable::Execute_Interact(Cur, this);
+		}
+	}
+}
+
+void ABasePlayer::CalculateInteractingTime()
+{
 }
 
 void ABasePlayer::SetPreview()

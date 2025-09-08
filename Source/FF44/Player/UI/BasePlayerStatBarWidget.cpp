@@ -1,13 +1,16 @@
 #include "Player/UI/BasePlayerStatBarWidget.h"
 #include "Components/ProgressBar.h"
+#include "Components/Image.h"
 
 void UBasePlayerStatBarWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
-	if (!StatBar) return;
-
 	StatBar->SetFillColorAndOpacity(FillColorAndOpacity);
+
+	FSlateBrush Brush = StatOutline->Brush;
+	Brush.DrawAs = ESlateBrushDrawType::Box;
+	StatOutline->SetBrush(Brush);
 }
 
 void UBasePlayerStatBarWidget::SetRatio(float Ratio)
