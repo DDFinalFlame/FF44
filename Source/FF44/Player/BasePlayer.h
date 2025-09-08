@@ -17,6 +17,8 @@ class USpringArmComponent;
 class UArrowComponent;
 class UInputAction;
 class UGameplayAbility;
+class UAnimMontage;
+class UMotionWarpingComponent;
 
 class UBasePlayerAttributeSet;
 class UBasePlayerHUDWidget;
@@ -80,6 +82,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> ComboAttackAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> KeyDownAttackAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> HitAbility;
@@ -205,9 +210,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
 	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WheelWind | Time")
+	float EnterKeyDownAttackTime = 0.2f;
+
+	bool bKeyDown = false;
+	bool bKeyDownAttack = false;
+	float EnterKeyDownTemp = 0.f;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual int GetCurrentInputDirection() const { return CurrentInputDirection; }
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual bool IsKeyDownAttack() { return bKeyDownAttack; }
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -227,12 +242,20 @@ protected:
 
 	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);
+	virtual void KeyDownAttack(const FInputActionValue& Value);
+	virtual void EndAttack(const FInputActionValue& Value);
 	virtual void SpecialAct(const FInputActionValue& Value);
 	virtual void Skill(const FInputActionValue& Value);
 
 	// QuickSlot
 	virtual void ToggleInventory(const FInputActionValue& Value);
 	virtual void ItemSlot_1(const FInputActionValue& Value);
+
+	// CallBack
+	FTimerHandle InteractTimerHandel;
+	void OnInterruptedInterAction(UAnimMontage* Montage, bool bInterrupted);
+	void OnEndInterAction();
+	void CalculateInteractingTime();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -264,6 +287,24 @@ protected:
 	void SetPreview();
 
 
+///////////////////////////////////////////////////////////////////////////////////////
+///										Montage										///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
+	UAnimMontage* InteractMontage;
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///									MotionWarping									///
+///////////////////////////////////////////////////////////////////////////////////////
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionWarp")
+	UMotionWarpingComponent* MotionWarping;
+
+public:
+	UMotionWarpingComponent* GetMotionWarpingComponent() { return MotionWarping; }
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///										State											///
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -283,6 +324,9 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerMoveChanged, bool, DoInputMoving, bool, EnableSprinting);
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerMoveChanged OnPlayerMoveChanged;
+
+protected:
+	bool IsInteracting = false;
 
 protected:
 	UFUNCTION()

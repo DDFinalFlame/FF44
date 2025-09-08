@@ -106,13 +106,17 @@ void UGA_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                     if (BB)
                     {
 
-
                         // 현재 상태를 Prev로 저장
                         uint8 Cur = BB->GetValueAsEnum(KEY_BossState);
+                        if(Cur != (uint8)EBossState_BB::Hit)
                         BB->SetValueAsEnum(KEY_PrevBossState, Cur);
 
                         // Hit로 전환
                         BB->SetValueAsEnum(KEY_BossState, (uint8)EBossState_BB::Hit);
+
+
+
+                        
                     }
                 }
             }

@@ -11,6 +11,9 @@
 #include "PhysicsEngine/BodyInstance.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "Monster/MonsterCharacter.h"
+#include "NiagaraFunctionLibrary.h"  
+#include "Kismet/GameplayStatics.h"  
+
 
 static bool HasPhysicsBody(USkeletalMeshComponent* Sk, const FName& Bone)
 {
@@ -24,7 +27,12 @@ UGA_MonsterAssemble::UGA_MonsterAssemble()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-    AbilityTags.AddTag(MonsterTags::Ability_Assemble);
+    {
+        FGameplayTagContainer AssetTags;
+        AssetTags.AddTag(MonsterTags::Ability_Assemble);
+        SetAssetTags(AssetTags);
+    }
+
     ActivationOwnedTags.AddTag(MonsterTags::State_Assembling);
 
     FAbilityTriggerData Trig;
@@ -376,6 +384,21 @@ void UGA_MonsterAssemble::RestoreRotateFlags(ACharacter* Chr)
 
 void UGA_MonsterAssemble::BeginGetUp(ACharacter* Chr)
 {
+    if (NS_AssemblePop || SFX_AssemblePop)
+    {
+        FVector FXLoc = GetFeetOrPelvisLoc(Chr);
+        if (FHitResult H = TraceFloor(Chr, Chr->GetActorLocation(), FloorTraceDist, FloorTraceChannel);
+            H.IsValidBlockingHit())
+            FXLoc.Z = H.ImpactPoint.Z + 2.f;
+
+        if (NS_AssemblePop)
+            UNiagaraFunctionLibrary::SpawnSystemAtLocation(Chr->GetWorld(), NS_AssemblePop, FXLoc);
+
+        if (SFX_AssemblePop)
+            UGameplayStatics::PlaySoundAtLocation(Chr, SFX_AssemblePop, FXLoc);
+
+    }
+
     if (!Chr) return;
     USkeletalMeshComponent* Sk = GetMesh(Chr);
     UCapsuleComponent* Cap = GetCapsule(Chr);
@@ -507,4 +530,27 @@ void UGA_MonsterAssemble::FinishGetUp(ACharacter* Chr)
     }
 
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+FVector UGA_MonsterAssemble::GetFeetOrPelvisLoc(ACharacter* Chr) const
+{
+    if (!Chr) return FVector::ZeroVector;
+
+    USkeletalMeshComponent* Sk = GetMesh(Chr);
+    if (!Sk) return Chr->GetActorLocation();
+
+    static const FName FootL(TEXT("foot_l"));
+    static const FName FootR(TEXT("foot_r"));
+
+    if (Sk->DoesSocketExist(FootL) && Sk->DoesSocketExist(FootR))
+    {
+        const FVector L = Sk->GetSocketLocation(FootL);
+        const FVector R = Sk->GetSocketLocation(FootR);
+        return (L + R) * 0.5f;
+    }
+
+    if (Sk->GetBoneIndex(PelvisBone) != INDEX_NONE)
+        return Sk->GetBoneLocation(PelvisBone);
+
+    return Chr->GetActorLocation();
 }

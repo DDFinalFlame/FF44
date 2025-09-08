@@ -33,7 +33,7 @@ void UBTService_LockPlayerTarget::InitializeFromAsset(UBehaviorTree& Asset)
     BossStateKey.ResolveSelectedKey(*BB);
     PrevBossStateKey.ResolveSelectedKey(*BB);
 
-    bHitResolved = ResolveHitFromBlackboardEnum();
+   // bHitResolved = ResolveHitFromBlackboardEnum();
 }
 
 void UBTService_LockPlayerTarget::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) // [추가]
@@ -116,7 +116,7 @@ void UBTService_LockPlayerTarget::TickNode(UBehaviorTreeComponent& OwnerComp, ui
         // 필요시 재해석(런타임에 BB 변경 가능성 대비)
         if (!bHitResolved)
         {
-            bHitResolved = ResolveHitFromBlackboardEnum();
+            //bHitResolved = ResolveHitFromBlackboardEnum();
         }
 
         if (BossStateKey.SelectedKeyType && PrevBossStateKey.SelectedKeyType)

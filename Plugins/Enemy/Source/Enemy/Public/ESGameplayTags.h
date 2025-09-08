@@ -16,10 +16,13 @@ namespace SLGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Boss_Attack_Summon);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Boss_Attack_Recall);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Boss_Attack_Grab);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Boss_Attack_EvadeStart);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Boss_Attack_EvadeEnd);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_SummonStart);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_Recall);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_Buff);
-
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_EvadeEnd);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_EndAbility);
 
 }

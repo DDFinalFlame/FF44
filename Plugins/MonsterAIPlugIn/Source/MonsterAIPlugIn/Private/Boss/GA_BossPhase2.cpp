@@ -15,6 +15,7 @@
 #include "Components/SkeletalMeshComponent.h" 
 #include "Boss/WeakPointActor.h"
 #include "NavigationSystem.h"
+#include "Boss/ShockwaveActor.h"
 static FVector RandomOnRing2D(const FVector& _Center, float _Radius)
 {
     float Theta = FMath::FRandRange(0.f, 2.f * PI);
@@ -53,9 +54,11 @@ void UGA_BossPhase2::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     const float CurHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetHealthAttribute());
     const float MaxHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetMaxHealthAttribute());
     const float Ratio = (MaxHP > 0.f) ? (CurHP / MaxHP) : 0.f;
-
+   
+   
     if (Ratio <= EndHpRatioThreshold)
     {
+
         bShouldEndAfterCurrentSmash = true;
         // 타이머 미가동 상태 보장
         if (AActor* Boss = GetAvatarActorFromActorInfo())
@@ -69,6 +72,7 @@ void UGA_BossPhase2::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     if (Ratio <= StartHpRatioThreshold && !bPhaseStarted)
     {
+       
         StartPhase();
         return;
     }
@@ -131,6 +135,7 @@ void UGA_BossPhase2::OnHPChangedNative(const FOnAttributeChangeData& Data)
         // Start 조건: 아직 Phase 시작 안 했을 때만
         if (!bPhaseStarted && Ratio <= StartHpRatioThreshold)
         {
+
             UnbindHPThresholdWatch();
             StartPhase();
         }
@@ -146,7 +151,34 @@ void UGA_BossPhase2::StartPhase()
     {
         BossCharacter->SetBossState_EBB((uint8)EBossState_BB::InPhase2);
     }
+
+    if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+    {
+        const float CurHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetHealthAttribute());
+        const float MaxHP = ASC->GetNumericAttribute(UMonsterAttributeSet::GetMaxHealthAttribute());
+        const float TargetHP = MaxHP * EndHpRatioThreshold;  // 예: 0.20 → 20%
+
+        const float Need = FMath::Max(0.f, CurHP - TargetHP);   // 지금부터 목표까지 깎아야 할 총량
+        const int32 Count = FMath::Max(1, WeakPointSpawnCount); // 0 나눗셈 방지
+
+        float perWeak = Need / Count;
+
+        // “혹시 모르니까 1 정도만 키우자”
+        if (Need > KINDA_SMALL_NUMBER)
+        {
+            perWeak += 1.f;
+        }
+
+        // 요청하신 대로 ‘음수’로 저장(Health를 Add로 줄이는 GE라면 음수여야 체력이 감소)
+        WeakPointDamageToBoss = -perWeak;
+
+        UE_LOG(LogTemp, Log, TEXT("[Phase2] Cur=%.1f Max=%.1f Target=%.1f Need=%.1f Count=%d PerWeak=%.1f(neg)"),
+            CurHP, MaxHP, TargetHP, Need, Count, WeakPointDamageToBoss);
+    }
+
     BindHPThresholdWatch();
+
+    ApplyInvuln();
 
     BeginStartSequence();
 }
@@ -180,6 +212,8 @@ void UGA_BossPhase2::EndAbility(const FGameplayAbilitySpecHandle Handle,
         // 캐스팅/소환 페이즈 종료 → 공격 페이즈로
         Boss->SetBossState_EBB((uint8)EBossState_BB::Phase2_Attack);
     }
+
+    RemoveInvuln();
 
     Super::EndAbility(Handle, Info, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -241,14 +275,68 @@ void UGA_BossPhase2::OnLandEvent(FGameplayEventData Payload)
             Anim->Montage_JumpToSection(SEC_End, GroundSmashMontage);
         }
     }
-
-    // 충격파 스폰
-    if (ShockwaveActorClass)
+    
+    if (ShockwaveActorClass && C && C->HasAuthority())
     {
-        FTransform T(C->GetActorRotation(), C->GetActorLocation());
-        C->GetWorld()->SpawnActor<AActor>(ShockwaveActorClass, T);
+        UWorld* World = C->GetWorld();
+        const FVector Start = C->GetActorLocation() + FVector(0, 0, 50.f);
+        const FVector End = Start + FVector(0, 0, -3000.f);
+
+        FCollisionQueryParams Params(SCENE_QUERY_STAT(ShockwaveGroundTrace), false, C);
+        FHitResult Hit;
+        FVector SpawnLoc = C->GetActorLocation();
+        FRotator SpawnRot = C->GetActorRotation();
+
+        if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+        {
+            // 바닥에 살짝 띄워 지프라깅 방지
+            const float GroundOffset = 2.f;
+            SpawnLoc = Hit.ImpactPoint + Hit.Normal * GroundOffset;
+
+            // 경사면이면 법선에 맞춰 위쪽(Z)이 서도록 회전
+            SpawnRot = FRotationMatrix::MakeFromZ(Hit.Normal).Rotator();
+        }
+
+        FTransform T(SpawnRot, SpawnLoc);
+        if (AActor* Spawned = World->SpawnActor<AActor>(ShockwaveActorClass, T))
+        {
+            if (AShockwaveActor* SW = Cast<AShockwaveActor>(Spawned))
+            {
+                UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+                SW->Initialize(
+                    SourceASC,
+                    /*DamageGE*/      GE_ShockWave /* 플레이어용 GE로 교체 권장 */,
+                    /*Damage*/        ShockwaveDamage,
+                    /*MaxRadius*/     ShockwaveRadius,
+                    /*ExpandSpeed*/   5000.f,
+                    /*SourceActor*/   C
+                );
+            }
+        }
     }
-    // 또는 여기서 플레이어에게 라디얼 데미지/GE 적용 로직
+
+    //if (ShockwaveActorClass)
+    //{
+    //    FTransform T(C->GetActorRotation(), C->GetActorLocation());
+
+    //    // 서버에서만 스폰/초기화 권장
+    //    if (C->HasAuthority())
+    //    {
+    //        AActor* Spawned = C->GetWorld()->SpawnActor<AActor>(ShockwaveActorClass, T);
+    //        if (AShockwaveActor* SW = Cast<AShockwaveActor>(Spawned))
+    //        {
+    //            UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+    //            SW->Initialize(
+    //                SourceASC,
+    //                /* InDamageGE   */ GE_ShockWave /* or 전용 GE_PlayerDamage */,
+    //                /* InDamage     */ ShockwaveDamage,
+    //                /* InMaxRadius  */ ShockwaveRadius,
+    //                /* InExpandSpd  */ 2500.f,     // 확산 속도, 필요시 튜닝
+    //                /* InSourceActor*/ C
+    //            );
+    //        }
+    //    }
+    //}
 }
 
 void UGA_BossPhase2::OnSmashMontageFinished()
@@ -484,14 +572,52 @@ void UGA_BossPhase2::OnWeakPointDestroyedEvent(FGameplayEventData Payload)
             EffectCauser = const_cast<AActor*>(Payload.Instigator.Get());
         }
 
-        // 보스가 대상(Self-apply)이므로 이렇게 세팅
+        // 보스가 대상(Self-apply)이므로 이렇게 세팅 
         Ctx.AddInstigator(BossActor, EffectCauser);
 
         FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(GE_WeakPointDamageToBoss, 1.f, Ctx);
         if (Spec.IsValid())
         {
-            Spec.Data->SetSetByCallerMagnitude(MonsterTags::Data_Damage, Damage);
+            Spec.Data->SetSetByCallerMagnitude(MonsterTags::Data_Boss_Damaged, Damage);
             ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
         }
     }
+}
+
+
+void UGA_BossPhase2::ApplyInvuln()
+{
+    if (InvulnHandle.IsValid()) return;
+
+    UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+    AActor* Boss = GetAvatarActorFromActorInfo();
+    if (!ASC || !Boss || !GE_BossInvuln) return;
+
+    FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
+    Ctx.AddInstigator(Boss, Boss->GetInstigatorController());
+
+    FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(GE_BossInvuln, 1.f, Ctx);
+    if (Spec.IsValid())
+    {
+        InvulnHandle = ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+        // 주의: GE_BossInvuln 내부에 GameplayCue(쉴드 VFX)가 세팅되어 있으면 자동 재생됩니다.
+    }
+}
+
+void UGA_BossPhase2::RemoveInvuln()
+{
+    UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+    if (ASC && InvulnHandle.IsValid())
+    {
+        ASC->RemoveActiveGameplayEffect(InvulnHandle);
+        InvulnHandle.Invalidate();
+    }
+}
+
+void UGA_BossPhase2::OnEndMontageFinished()
+{
+    RemoveInvuln();
+
+    // 그리고 최종 종료
+    K2_EndAbility();
 }

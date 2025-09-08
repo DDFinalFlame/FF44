@@ -54,6 +54,7 @@ public:
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 	virtual UInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
+	virtual UBasePlayerHUDWidget* GetHUDWIdget() const { return PlayerHUD; }
 protected:
 	FGenericTeamId TeamId;
 };

@@ -25,26 +25,23 @@ void UGA_Player_Attack_Combo::CommitExecute(const FGameplayAbilitySpecHandle Han
         AnimInst->OnPlayMontageNotifyBegin.AddDynamic(this, &UGA_Player_Attack_Combo::OnEnableAttack);
         AnimInst->OnPlayMontageNotifyEnd.AddDynamic(this, &UGA_Player_Attack_Combo::OnDisableAttack);
 
-        if (USkeletalMeshComponent* Mesh = OwnerPlayer->GetMesh())
-        {
-            // 없다면 Combo_1 몽타주를 재생
-            UAbilityTask_PlayMontageAndWait* Task =
-                UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-                    this,           // Ability 자신
-                    NAME_None,      // Task Instance Name
-                    AttackMontage,  // 재생할 몽타주
-                    MontagePlayRate,           // 재생 속도
-                    NAME_None,      // Section Name (원하면 섹션 지정)
-                    false,          // Stop when ability ends
-                    1.0f            // Root Motion Scale
-                );
+        // 없다면 Combo_1 몽타주를 재생
+        UAbilityTask_PlayMontageAndWait* Task =
+            UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+                this,           // Ability 자신
+                NAME_None,      // Task Instance Name
+                AttackMontage,  // 재생할 몽타주
+                MontagePlayRate,           // 재생 속도
+                NAME_None,      // Section Name (원하면 섹션 지정)
+                false,          // Stop when ability ends
+                1.0f            // Root Motion Scale
+            );
 
-            Task->OnCompleted.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
-            Task->OnBlendOut.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
-            Task->OnInterrupted.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
-            Task->OnCancelled.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
-            Task->ReadyForActivation();
-        }
+        Task->OnCompleted.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+        Task->OnBlendOut.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+        Task->OnInterrupted.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+        Task->OnCancelled.AddDynamic(this, &UGA_Player_Attack_Combo::K2_EndAbility);
+        Task->ReadyForActivation();
     }
 }
 

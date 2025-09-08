@@ -214,7 +214,7 @@ bool UGA_BossPhase1::TrySetupMinionBlackboard(AMonsterCharacter* MC, AActor* Pla
     if (!BB) return false; // BB 아직 초기화 전 → 재시도
 
     // 값 세팅
-    BB->SetValueAsObject(KEY_TargetActor, Player);
+    //BB->SetValueAsObject(KEY_TargetActor, Player);
     BB->SetValueAsEnum(KEY_MonsterState, DesiredMinionState);
 
 
