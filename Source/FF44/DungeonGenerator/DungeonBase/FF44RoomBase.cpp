@@ -17,6 +17,9 @@ AFF44RoomBase::AFF44RoomBase()
     Walls = CreateDefaultSubobject<USceneComponent>(TEXT("Walls"));
     Walls->SetupAttachment(RootComponent);
 
+    Environments = CreateDefaultSubobject<USceneComponent>(TEXT("Environments"));
+    Environments->SetupAttachment(RootComponent);
+
     InteractableSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("InteractableSpawnPoints"));
     InteractableSpawnPoints->SetupAttachment(RootComponent);
 
