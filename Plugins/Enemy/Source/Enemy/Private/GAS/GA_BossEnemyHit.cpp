@@ -6,14 +6,15 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "MonsterAttributeSet.h"
 #include "BaseBoss.h"
+#include "ESGameplayTags.h"
 
 UGA_BossEnemyHit::UGA_BossEnemyHit()
 {
 }
 
 void UGA_BossEnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                       const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-                                       const FGameplayEventData* TriggerEventData)
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
@@ -40,7 +41,14 @@ void UGA_BossEnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	/* Damage 입기 (AttributeSet 정보 가져와서 Effect 적용 ( MonsterAIPlugin 참고 )) **/
 	// Target Source ASC 가져오기
-	UAbilitySystemComponent* TargetASC = ActorInfo->AbilitySystemComponent.Get();
+	IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(ActorInfo->OwnerActor.Get());
+	UAbilitySystemComponent* TargetASC = nullptr;
+	if (AbilitySystemInterface)
+	{
+		TargetASC = AbilitySystemInterface->GetAbilitySystemComponent();
+	}
+	if (!TargetASC) { return; }
+
 
 	if (!TriggerEventData) { return; }
 	const AActor* InstigatorActor = TriggerEventData->Instigator.Get();
@@ -82,33 +90,25 @@ void UGA_BossEnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		}
 	}
 
-	// TO-DO : 리액션 관련 추가 처리
-	/* Animation 과 BT를 위한 Enemy State 처리 **/
-	if (!Enemy->ChangeState(EAIBehavior::Hit))
+	// Evade 상태일 떄만 몽타주 실행
+	if (TargetASC->HasMatchingGameplayTag(SLGameplayTags::Enemy_Boss_Attack_EvadeStart))
 	{
-		/* 데미지는 입지만, 피격 애니메이션이 실행되지 않는 Enemy **/
-		// TO-DO : 경감률 설정하고 그에 따라 데미지 반감하기
+
+		if (UAnimMontage* Montage = Enemy->GetHitMontage(EHitDirection::Front))
+		{
+			// 몽타주 실행
+			FOnMontageEnded MontageDelegate;
+			MontageDelegate.BindUObject(this, &UGA_BossEnemyHit::OnMontageEnded);
+			AnimInstance->Montage_Play(Montage);
+			AnimInstance->Montage_SetEndDelegate(MontageDelegate, Montage);
+		}
+	}
+	else
+	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 		return;
 	}
 
-	/* 몽타주 끝날 때 델리게이트 연결 **/
-	FOnMontageEnded MontageDelegate;
-
-	if (UAnimMontage* Montage = Enemy->GetHitMontage(EHitDirection::Front))
-	{
-		MontageDelegate.BindUObject(this, &UGA_BossEnemyHit::OnMontageEnded);
-		AnimInstance->Montage_Play(Montage);
-		AnimInstance->Montage_SetEndDelegate(MontageDelegate, Montage);
-	}
-	else
-	{
-		/* 상태 변경 **/
-		Enemy->SetEnemyState(EAIBehavior::Patrol);
-		/* 어빌리티 종료 **/
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
-
-	}
 }
 
 void UGA_BossEnemyHit::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)

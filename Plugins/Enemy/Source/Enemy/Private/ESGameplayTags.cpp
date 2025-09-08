@@ -24,4 +24,8 @@ namespace SLGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_EvadeEnd, "Enemy.Event.EvadeEnd");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_EndAbility, "Enemy.Event.EndAbility");
 
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_DuringEvade, "GameplayCue.Sevarog.DuringEvade");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_StartEvade, "GameplayCue.Sevarog.StartEvade");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_EndEvade, "GameplayCue.Sevarog.EndEvade");
+
 }

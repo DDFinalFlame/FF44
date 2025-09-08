@@ -205,7 +205,10 @@ void ABaseBoss::ToggleCollision(bool bStartEvade)
 void ABaseBoss::ToggleDissolve(bool bStartEvade)
 {
 	// Evade 시작 ? Hidden true
-	SetActorHiddenInGame(bStartEvade);
+	//SetActorHiddenInGame(bStartEvade);
+	// Mesh 만 끄자
+	// Evade 시작 ? Visible false
+	GetMesh()->SetVisibility(!bStartEvade);
 }
 
 void ABaseBoss::SetPhase(float currentHP, float maxHp)

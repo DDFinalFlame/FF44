@@ -28,7 +28,6 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	FBlackboardKeySelector bOpeningPatternDoneKey;
-
 public:
 	UBTService_SelectBossBehavior();
 
