@@ -44,4 +44,7 @@ public:
 
 private:
     float RunningTime = 0.f;
+
+    FRotator BaseRotation;
+    FVector  HingeAxisWorld;
 };

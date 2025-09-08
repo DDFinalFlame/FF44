@@ -19,6 +19,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Monster_Death, "Event.Monster.Death");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Player_Hit, "Event.Player.Hit");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Player_Grabbed, "Event.Player.Grabbed");
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Player_Lift, "Event.Player.Lift");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Assemble, "Event.Assemble");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_MaxHealth, "Data.MaxHealth");
