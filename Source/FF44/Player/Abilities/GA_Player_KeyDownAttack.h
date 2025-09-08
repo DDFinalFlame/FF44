@@ -10,14 +10,17 @@ UCLASS()
 class FF44_API UGA_Player_KeyDownAttack : public UGA_Player_Attack
 {
 	GENERATED_BODY()
-
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
-	class UAnimMontage* StartAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
-	class UAnimMontage* EndAttackMontage;
 	
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Section")
+	FName EndSectionName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notify")
+	FName BeginAttackName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notify")
+	FName EndAttackName;
+
 public:
 	UGA_Player_KeyDownAttack();
 
@@ -31,6 +34,12 @@ protected:
 							const FGameplayAbilityActivationInfo ActivationInfo,
 							bool bReplicateEndAbility, bool bWasCancelled) override;
 
-	virtual void LoopAttack();
+	UFUNCTION()
+	virtual void BeginNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+
+	UFUNCTION()
+	virtual void EndNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+
+	UFUNCTION()
 	virtual void EndAttack();
 };
