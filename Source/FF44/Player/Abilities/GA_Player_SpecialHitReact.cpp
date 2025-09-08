@@ -95,7 +95,7 @@ void UGA_Player_SpecialHitReact::OnWraithBoss()
 				MontagePlayRate,   
 				NAME_None,     
 				false,         
-				1.0f           
+				1.f           
 			);
 
 		Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
