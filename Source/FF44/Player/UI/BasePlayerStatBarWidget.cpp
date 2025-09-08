@@ -4,13 +4,22 @@
 
 void UBasePlayerStatBarWidget::NativePreConstruct()
 {
-	Super::NativePreConstruct();
+    Super::NativePreConstruct();
 
-	StatBar->SetFillColorAndOpacity(FillColorAndOpacity);
+    if (StatBar)
+    {
+        StatBar->SetFillColorAndOpacity(FillColorAndOpacity);
+    }
 
-	FSlateBrush Brush = StatOutline->Brush;
-	Brush.DrawAs = ESlateBrushDrawType::Box;
-	StatOutline->SetBrush(Brush);
+    if (StatOutline)
+    {
+        FSlateBrush Brush = StatOutline->GetBrush();
+
+        Brush.DrawAs = ESlateBrushDrawType::Box;
+        Brush.Margin = FMargin(0.25f);          
+
+        StatOutline->SetBrush(Brush);
+    }
 }
 
 void UBasePlayerStatBarWidget::SetRatio(float Ratio)

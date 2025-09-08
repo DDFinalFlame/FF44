@@ -12,6 +12,7 @@ class UAbilitySystemComponent;
 class UBasePlayerAttributeSet;
 
 class UBasePlayerHUDWidget;
+class UBaseMonsterHUDWidget;
 class UInventoryWidget;
 
 UCLASS()
@@ -39,6 +40,12 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UBasePlayerHUDWidget> PlayerHUD;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UBaseMonsterHUDWidget> BossHUDClass;
+
+	UPROPERTY()
+	TObjectPtr<UBaseMonsterHUDWidget> BossHUD;
+
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
 
@@ -48,6 +55,7 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void InitPlayerUI(UAbilitySystemComponent* _AbilitySystem);
+	void InitBossUI(UAbilitySystemComponent* _AbilitySystem);
 
 	virtual void ToggleHUD();
 	virtual void ToggleInventory();

@@ -7,6 +7,7 @@
 #include "BasePlayerAttributeSet.h"
 
 #include "UI/BasePlayerHUDWidget.h"
+#include "UI/BaseMonsterHUDWidget.h"
 #include "InventorySystem/Widget/InventoryWidget.h"
 
 
@@ -35,6 +36,7 @@ void ABasePlayerController::OnUnPossess()
 		PlayerHUD->RemoveFromParent();
 	}
 
+
 	if (InventoryWidget->IsInViewport()) {
 		InventoryWidget->RemoveFromParent();
 	}
@@ -49,7 +51,7 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 		PlayerHUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
 		PlayerHUD->SetOwningPlayer(this);
 		PlayerHUD->AddToViewport();
-		PlayerHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+		PlayerHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UAttributeSet>());
 	}
 
 	// Inventory Set
@@ -58,6 +60,28 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 		InventoryWidget->SetOwningPlayer(this);
 		InventoryWidget->AddToViewport();
 		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
+void ABasePlayerController::InitBossUI(UAbilitySystemComponent* _AbilitySystem)
+{
+	if (!_AbilitySystem) return;
+
+	if (BossHUD)
+	{
+		if (!BossHUD->IsVisible())
+		{
+			BossHUD->Destruct();
+			BossHUD = nullptr;
+		}
+		return;
+	}
+
+	if (BossHUDClass) {
+		BossHUD = CreateWidget<UBaseMonsterHUDWidget>(GetWorld(), BossHUDClass);
+		BossHUD->SetOwningPlayer(this);
+		BossHUD->AddToViewport();
+		BossHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UAttributeSet>());
 	}
 }
 

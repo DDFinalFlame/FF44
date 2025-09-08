@@ -37,13 +37,6 @@ protected:
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Collision")
 	USphereComponent* WeaponCollision;
 
-protected:
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = "Player")
-	ABasePlayer* OwnerPlayer;
-
 public:
-	void SetPlayer(ABasePlayer* _OwnerPlayer) { _OwnerPlayer = OwnerPlayer; }
-	ABasePlayer* GetPlayer() { return OwnerPlayer; }
-
 	USphereComponent* GetWeaponCollision() const { return WeaponCollision; }
 };

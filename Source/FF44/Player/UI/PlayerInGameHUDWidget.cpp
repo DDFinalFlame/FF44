@@ -26,18 +26,20 @@ void UPlayerInGameHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 	}
 }
 
-void UPlayerInGameHUDWidget::InitASC(UAbilitySystemComponent* _OwnerASC, const UBasePlayerAttributeSet* _OwnerAttrSet)
+void UPlayerInGameHUDWidget::InitASC(UAbilitySystemComponent* _OwnerASC, const UAttributeSet* _OwnerAttrSet)
 {
 	UBasePlayerHUDWidget::InitASC(_OwnerASC, _OwnerAttrSet);
 
-	if (!OwnerASC || !OwnerAttrSet) return;
+	PlayerAttrSet = Cast<UBasePlayerAttributeSet>(_OwnerAttrSet);
+
+	if (!OwnerASC.Get() || !PlayerAttrSet.Get()) return;
 
 	CurrentHPChangedDelegateHandle =
-		OwnerASC->GetGameplayAttributeValueChangeDelegate(OwnerAttrSet->GetCurrentHPAttribute())
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(PlayerAttrSet->GetCurrentHPAttribute())
 		.AddUObject(this, &UPlayerInGameHUDWidget::OnCurrentHPChanged);
 
 	CurrentStaminaChangedDelegateHandle =
-		OwnerASC->GetGameplayAttributeValueChangeDelegate(OwnerAttrSet->GetCurrentStaminaAttribute())
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(PlayerAttrSet->GetCurrentStaminaAttribute())
 		.AddUObject(this, &UPlayerInGameHUDWidget::OnCurrentStaminaChanged);
 }
 
@@ -61,16 +63,16 @@ void UPlayerInGameHUDWidget::EndProgressBar()
 
 void UPlayerInGameHUDWidget::OnCurrentHPChanged(const FOnAttributeChangeData& _Data)
 {
-	if (HPBarWidget && OwnerAttrSet)
+	if (HPBarWidget && PlayerAttrSet.Get())
 	{
-		HPBarWidget->SetRatio(OwnerAttrSet->GetCurrentHP() / OwnerAttrSet->GetMaxHP());
+		HPBarWidget->SetRatio(PlayerAttrSet->GetCurrentHP() / PlayerAttrSet->GetMaxHP());
 	}
 }
 
 void UPlayerInGameHUDWidget::OnCurrentStaminaChanged(const FOnAttributeChangeData& _Data)
 {
-	if (StaminaBarWidget && OwnerAttrSet)
+	if (StaminaBarWidget && PlayerAttrSet.Get())
 	{
-		StaminaBarWidget->SetRatio(OwnerAttrSet->GetCurrentStamina() / OwnerAttrSet->GetMaxStamina());
+		StaminaBarWidget->SetRatio(PlayerAttrSet->GetCurrentStamina() / PlayerAttrSet->GetMaxStamina());
 	}
 }
