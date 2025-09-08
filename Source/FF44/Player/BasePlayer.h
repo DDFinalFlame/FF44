@@ -84,6 +84,9 @@ protected:
 	TArray<TSubclassOf<UGameplayAbility>> ComboAttackAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> KeyDownAttackAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayAbility> HitAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
@@ -207,9 +210,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
 	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WheelWind | Time")
+	float EnterKeyDownAttackTime = 0.2f;
+
+	bool bKeyDown = false;
+	bool bKeyDownAttack = false;
+	float EnterKeyDownTemp = 0.f;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual int GetCurrentInputDirection() const { return CurrentInputDirection; }
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual bool IsKeyDownAttack() { return bKeyDownAttack; }
 
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -229,6 +242,8 @@ protected:
 
 	// Combat Actions
 	virtual void Attack(const FInputActionValue& Value);
+	virtual void KeyDownAttack(const FInputActionValue& Value);
+	virtual void EndAttack(const FInputActionValue& Value);
 	virtual void SpecialAct(const FInputActionValue& Value);
 	virtual void Skill(const FInputActionValue& Value);
 

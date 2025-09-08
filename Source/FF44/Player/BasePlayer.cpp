@@ -202,6 +202,17 @@ void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bKeyDown)
+		if (EnterKeyDownTemp <= EnterKeyDownAttackTime)
+			EnterKeyDownTemp += DeltaTime;
+		else
+			bKeyDownAttack = true;
+	else
+	{
+		EnterKeyDownTemp = 0.f;
+		bKeyDownAttack = false;
+	}
+
 	CurrentInputDirection = 0;	
 
 	if (!AbilitySystem) return;
@@ -368,7 +379,10 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// Combat Actions
 		if(AttackAction)
 		{
-			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ABasePlayer::Attack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ABasePlayer::Attack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Ongoing, this, &ABasePlayer::KeyDownAttack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Canceled, this, &ABasePlayer::EndAttack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ABasePlayer::EndAttack);
 		}
 		if(SpecialAction)
 		{
@@ -569,6 +583,26 @@ void ABasePlayer::Attack(const FInputActionValue& Value)
 {
 	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
 		AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility[i]);
+}
+
+void ABasePlayer::KeyDownAttack(const FInputActionValue& Value)
+{
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
+		return;
+
+	//if (bKeyDownAttack)
+	//	AbilitySystem->TryActivateAbilityByClass(KeyDownAttackAbility);
+
+	bKeyDown = true;
+}
+
+void ABasePlayer::EndAttack(const FInputActionValue& Value)
+{
+	//if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_KeyDownAttack))
+	//	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+	//		Anim->Montage_Stop(0.5f);
+
+	bKeyDown = false;
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)

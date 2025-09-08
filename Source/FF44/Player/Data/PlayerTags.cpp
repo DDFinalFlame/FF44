@@ -16,6 +16,7 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_HitReacting, "State.Player.HitRe
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Dodge, "State.Player.Dodge");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Dead, "State.Player.Dead");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Attack, "State.Player.Attack");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_KeyDownAttack, "State.Player.Attack.KeyDown");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_1, "State.Player.Attack.Combo.1");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_2, "State.Player.Attack.Combo.2");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_3, "State.Player.Attack.Combo.3");
