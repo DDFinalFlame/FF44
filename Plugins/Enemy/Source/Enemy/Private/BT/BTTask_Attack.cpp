@@ -41,7 +41,9 @@ void UBTTask_Attack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* No
 	CachedASC = nullptr;
 	CachedOwnerComp = nullptr;
 
-	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
+	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+
+	//Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 }
 
 void UBTTask_Attack::OnAbilityEnded(const FAbilityEndedData& EndData)
