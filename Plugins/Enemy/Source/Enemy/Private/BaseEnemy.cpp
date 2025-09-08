@@ -41,15 +41,15 @@ void ABaseEnemy::BeginPlay()
 
 	//TO-DO : 위치 ? 
 	// Weapon 생성
-	if (WeaponClass)
+	for (auto& WeaponClass : WeaponClasses)
 	{
 		// GetWorld()로 액터 생성
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
 
-		Weapon = GetWorld()->SpawnActor<AEnemyBaseWeapon>(
-			WeaponClass,
+		AEnemyBaseWeapon* Weapon = GetWorld()->SpawnActor<AEnemyBaseWeapon>(
+			WeaponClass.Value,
 			GetActorLocation(),
 			GetActorRotation(),
 			SpawnParams
@@ -61,12 +61,9 @@ void ABaseEnemy::BeginPlay()
 			Weapon->EquipWeapon();
 		}
 
-		//Weapon->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		WeaponMap.Add(WeaponClass.Key, Weapon);
 
-		//FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-		//Weapon->AttachToComponent(GetMesh(), AttachmentRules, FName("Hand_L_Socket"));
 	}
-
 }
 
 UAbilitySystemComponent* ABaseEnemy::GetAbilitySystemComponent() const
@@ -154,19 +151,34 @@ void ABaseEnemy::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UG
 
 }
 
-void ABaseEnemy::ActivateWeaponCollision()
+void ABaseEnemy::ActivateWeaponCollision(EWeaponType WeaponType)
 {
-	Weapon->ActivateCollision();
+	if (auto FoundValue = WeaponMap.Find(WeaponType))
+	{
+		(*FoundValue)->ActivateCollision();
+	}
 }
 
-void ABaseEnemy::DeactivateWeaponCollision()
+void ABaseEnemy::DeactivateWeaponCollision(EWeaponType WeaponType)
 {
-	Weapon->DeactivateCollision();
+	if (auto FoundValue = WeaponMap.Find(WeaponType))
+	{
+		(*FoundValue)->DeactivateCollision();
+	}
+
 }
 
 bool ABaseEnemy::IsAttackSuccessful()
 {
-	return Weapon->IsAttackSuccessful();
+	for (auto& Weapon : WeaponMap)
+	{
+		if (Weapon.Value->IsAttackSuccessful())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void ABaseEnemy::SetEnemyState(EAIBehavior NewBehavior)
@@ -337,7 +349,7 @@ UAnimMontage* ABaseEnemy::GetAttackMontage(FGameplayTagContainer TargetTags) con
 	return nullptr;
 }
 
-bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior) 
+bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior)
 {
 	if (CurrentBehavior == NewBehavior)
 	{

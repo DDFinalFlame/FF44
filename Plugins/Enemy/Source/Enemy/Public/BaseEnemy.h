@@ -80,10 +80,10 @@ protected:
 protected:
 	/* Weapon **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Weapon CDO");
-	TSubclassOf<AEnemyBaseWeapon> WeaponClass;
+	TMap<EWeaponType, TSubclassOf<AEnemyBaseWeapon>> WeaponClasses;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat | Weapon");
-	AEnemyBaseWeapon* Weapon;
+	TMap<EWeaponType, AEnemyBaseWeapon*> WeaponMap;
 
 	/* Montage **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Montage")
@@ -113,8 +113,8 @@ public:
 
 // Weapon Control
 public:
-	virtual void ActivateWeaponCollision() override;
-	virtual void DeactivateWeaponCollision() override;
+	virtual void ActivateWeaponCollision(EWeaponType WeaponType) override;
+	virtual void DeactivateWeaponCollision(EWeaponType WeaponType) override;
 	virtual bool IsAttackSuccessful() override;
 
 // AI - State

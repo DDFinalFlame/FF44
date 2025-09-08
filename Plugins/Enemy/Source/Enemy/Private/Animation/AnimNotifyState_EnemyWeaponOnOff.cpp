@@ -3,8 +3,12 @@
 
 #include "Animation/AnimNotifyState_EnemyWeaponOnOff.h"
 
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "Interfaces/EnemyWeaponControl.h"
 
+
+class UAbilitySystemComponent;
 
 UAnimNotifyState_EnemyWeaponOnOff::UAnimNotifyState_EnemyWeaponOnOff(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -20,7 +24,7 @@ void UAnimNotifyState_EnemyWeaponOnOff::NotifyBegin(USkeletalMeshComponent* Mesh
 	{
 		if (IEnemyWeaponControl* WeaponControl = Cast<IEnemyWeaponControl>(OwnerActor))
 		{
-			WeaponControl->ActivateWeaponCollision();
+			WeaponControl->ActivateWeaponCollision(WeaponType);
 		}
 	}
 }
@@ -29,6 +33,7 @@ void UAnimNotifyState_EnemyWeaponOnOff::NotifyTick(USkeletalMeshComponent* MeshC
 	float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
+
 	/* 필요 요소 확인 **/
 	//AActor* OwnerActor = MeshComp->GetOwner();
 	//if (!OwnerActor) { return; }
@@ -134,7 +139,22 @@ void UAnimNotifyState_EnemyWeaponOnOff::NotifyEnd(USkeletalMeshComponent* MeshCo
 			}
 		}
 	}
+	else
+	{
+		// Owner가 Ability System Component를 가진 경우
+		UAbilitySystemComponent* ASC = OwnerActor->FindComponentByClass<UAbilitySystemComponent>();
+		if (!ASC) return;
+
+		// FGameplayEventData 생성
+		FGameplayEventData EventData;
+		EventData.Instigator = OwnerActor;
+		EventData.Target = nullptr;
+		EventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Enemy.Event.EndAbility"));
+
+		// Event 전송
+		ASC->HandleGameplayEvent(EventData.EventTag, &EventData);
+	}
 
 	/* 콤보 확인 후 Deactive **/
-	WeaponControl->DeactivateWeaponCollision();
+	WeaponControl->DeactivateWeaponCollision(WeaponType);
 }

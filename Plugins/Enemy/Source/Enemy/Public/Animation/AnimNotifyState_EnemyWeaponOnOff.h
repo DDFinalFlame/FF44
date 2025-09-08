@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnemyDefine.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "AnimNotifyState_EnemyWeaponOnOff.generated.h"
 
@@ -26,6 +27,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combo")
 	FName NextSectionName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponType")
+	EWeaponType WeaponType = EWeaponType::None;
 
 public:
 	UAnimNotifyState_EnemyWeaponOnOff(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
