@@ -37,6 +37,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Ability_Boss_Swing1, "Ability.Boss.Swing1");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Boss_Invuln, "State.Boss.Invuln");   // 무적 상태
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Boss_Channeling, "State.Boss.Channeling"); // 제자리 캐스팅 중
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Boss_Grab_CoolTime, "State.Boss.GrabCoolDown"); // 제자리 캐스팅 중
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_PhaseStart, "Event.Boss.PhaseStart");   // 페이즈 시작 트리거
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Minion_Died, "Event.Minion.Died");           // 소환몹 사망 → 보스 알림

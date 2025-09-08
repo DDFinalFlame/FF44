@@ -210,10 +210,22 @@ void UGA_BossPhase2::EndAbility(const FGameplayAbilitySpecHandle Handle,
     if (ABossCharacter* Boss = Cast<ABossCharacter>(GetAvatarActorFromActorInfo()))
     {
         // 캐스팅/소환 페이즈 종료 → 공격 페이즈로
-        Boss->SetBossState_EBB((uint8)EBossState_BB::Phase2_Attack);
+        Boss->SetBossState_EBB((uint8)EBossState_BB::InPhase3);
     }
 
     RemoveInvuln();
+
+    if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+    {
+        if (GA_BossPhase3Class) // UPROPERTY로 GA_BossPhase3Class를 받아두면 됨
+        {
+            FGameplayAbilitySpec Spec(GA_BossPhase3Class, 1, INDEX_NONE, GetAvatarActorFromActorInfo());
+            FGameplayAbilitySpecHandle NewHandle = ASC->GiveAbility(Spec);
+            ASC->TryActivateAbility(NewHandle);
+        }
+    }
+
+    
 
     Super::EndAbility(Handle, Info, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -515,19 +527,47 @@ void UGA_BossPhase2::SpawnWeakPoints()
     UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(World);
     FVector Origin = Boss->GetActorLocation();
 
+    TArray<FVector> SpawnedLocations;
+    const float MinDist = 300.f;            // 원하는 최소 간격
+    const float MinDistSq = MinDist * MinDist;
+
     for (int32 i = 0; i < WeakPointSpawnCount; ++i)
     {
-        FVector Desired = RandomOnRing2D(Origin, WeakPointSpawnRadius);
+        FVector Desired;
+        bool bValid = false;
 
-        // 내비 위 보정(선택)
-        if (Nav)
+        // 여러 번 시도해서 조건 맞는 위치 찾기
+        for (int32 Try = 0; Try < 30; ++Try)
         {
-            FNavLocation Out;
-            if (Nav->ProjectPointToNavigation(Desired, Out, FVector(200.f)))
+            Desired = RandomOnRing2D(Origin, WeakPointSpawnRadius);
+
+            // 내비 위 보정
+            if (Nav)
             {
-                Desired = Out.Location;
+                FNavLocation Out;
+                if (Nav->ProjectPointToNavigation(Desired, Out, FVector(200.f)))
+                {
+                    Desired = Out.Location;
+                }
             }
+
+            // 기존 위치들과 XY 거리 확인
+            bValid = true;
+            for (const FVector& P : SpawnedLocations)
+            {
+                const float DistSq = FMath::Square(P.X - Desired.X) + FMath::Square(P.Y - Desired.Y);
+                if (DistSq < MinDistSq)
+                {
+                    bValid = false;
+                    break;
+                }
+            }
+
+            if (bValid) break; // 조건 맞으면 채택
         }
+
+        // 조건 불충족해도 마지막 후보 강제로 사용
+        SpawnedLocations.Add(Desired);
 
         FTransform T(FRotator::ZeroRotator, Desired);
         AActor* Spawned = World->SpawnActor<AActor>(WeakPointClass, T);
@@ -537,6 +577,7 @@ void UGA_BossPhase2::SpawnWeakPoints()
             WP->InitializeWeakPoint(Boss, WeakPointDamageToBoss);
         }
     }
+
 
     // 파괴 이벤트 수신 대기(여러 개가 올 수 있으므로 WaitGameplayEvent는 재사용 안전)
     if (UAbilityTask_WaitGameplayEvent* Wait =

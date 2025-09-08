@@ -17,6 +17,7 @@ enum class EBossState_BB : uint8
     Phase1_Attack,
     InPhase2,
     Phase2_Attack,
+    InPhase3,
     Hit,
     Dead
 };

@@ -50,6 +50,7 @@ namespace MonsterTags
     // 보스 전용 State
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Invuln);         // 무적
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Channeling);     // 캐스팅 중
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Grab_CoolTime);     // 그랩 쿨 타임
 
     // 보스 전용 Event
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_PhaseStart);     // 페이즈 시작
