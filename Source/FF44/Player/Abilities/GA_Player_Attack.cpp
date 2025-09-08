@@ -13,6 +13,7 @@ UGA_Player_Attack::UGA_Player_Attack()
 	SetAssetTags(AssetTags);
 
 	ActivationRequiredTags.AddTag(PlayerTags::State_Player_Weapon_Equip);
+	ActivationBlockedTags.AddTag(PlayerTags::State_Player_Dead);
 }
 
 void UGA_Player_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,

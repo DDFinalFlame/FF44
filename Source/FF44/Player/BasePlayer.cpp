@@ -265,6 +265,8 @@ void ABasePlayer::InitializeAbilities()
 
 	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
 		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
+
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(KeyDownAttackAbility));
 }
 
 void ABasePlayer::InitializeEffects()
@@ -290,6 +292,15 @@ void ABasePlayer::InitializeEffects()
 	if(StaminaRunEffect)
 	{
 		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaRunEffect, 1, EffectContext);
+		if (Spec.IsValid())
+		{
+			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+
+	if (StaminaKeyDownEffect)
+	{
+		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaKeyDownEffect, 1, EffectContext);
 		if (Spec.IsValid())
 		{
 			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
@@ -411,6 +422,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ABasePlayer::Move(const FInputActionValue& Value)
 {
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller)
@@ -487,11 +499,13 @@ void ABasePlayer::Look(const FInputActionValue& Value)
 
 void ABasePlayer::Running(const FInputActionValue& Value)
 {
+	if (!bMoveEnd) return;
 	if (!BaseAttribute) return;
 
 	if (BaseAttribute->GetCurrentStamina() <= 0.f)
 	{
 		SetEnableSprinting(false);
+		bMoveEnd = false;
 		return;
 	}
 
@@ -502,6 +516,7 @@ void ABasePlayer::Running(const FInputActionValue& Value)
 void ABasePlayer::StopRun(const FInputActionValue& Value)
 {
 	SetEnableSprinting(false);
+	bMoveEnd = true;
 }
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
@@ -587,22 +602,34 @@ void ABasePlayer::Attack(const FInputActionValue& Value)
 
 void ABasePlayer::KeyDownAttack(const FInputActionValue& Value)
 {
+	if (!bKeyDownEnd) return;
+
 	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
 		return;
 
-	//if (bKeyDownAttack)
-	//	AbilitySystem->TryActivateAbilityByClass(KeyDownAttackAbility);
+	if (bKeyDownAttack)
+		AbilitySystem->TryActivateAbilityByClass(KeyDownAttackAbility);
 
-	bKeyDown = true;
+	if (BaseAttribute->GetCurrentStamina() <= 0.f && !bKeyNoStamina)
+	{
+		bKeyDown = false;
+		bKeyNoStamina = true;
+		OnKeyDownAttackEnd.Broadcast();
+		bKeyDownEnd = false;
+		return;
+	}
+	else if (BaseAttribute->GetCurrentStamina() > 0.f)
+	{
+		bKeyNoStamina = false;
+		bKeyDown = true;
+	}
 }
 
 void ABasePlayer::EndAttack(const FInputActionValue& Value)
 {
-	//if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_KeyDownAttack))
-	//	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	//		Anim->Montage_Stop(0.5f);
-
+	OnKeyDownAttackEnd.Broadcast();
 	bKeyDown = false;
+	bKeyDownEnd = true;
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
