@@ -411,6 +411,73 @@ TSubclassOf<AFF44RoomBase> AFF44DungeonGenerator::PickWeightedRoom(const TArray<
     return Pool.Last();
 }
 
+void AFF44DungeonGenerator::ApplyThemeForFloor(int32 FloorIndex)
+{
+    const FFF44DGThemeRow* Row = FindThemeRowForFloor(FloorIndex);
+    if (!Row) return;
+
+    auto LoadRB = [](const TSoftClassPtr<AFF44RoomBase>& S) -> TSubclassOf<AFF44RoomBase>
+        {
+            return S.IsNull() ? nullptr : S.LoadSynchronous();
+        };
+    auto LoadStarter = [](const TSoftClassPtr<AFF44StarterRoom>& S) -> TSubclassOf<AFF44StarterRoom>
+        {
+            return S.IsNull() ? nullptr : S.LoadSynchronous();
+        };
+    auto LoadActor = [](const TSoftClassPtr<AActor>& S) -> TSubclassOf<AActor>
+        {
+            return S.IsNull() ? nullptr : S.LoadSynchronous();
+        };
+
+    if (auto C = LoadStarter(Row->StarterRoomClass)) { StarterRoomClass = C; }
+    if (auto C = LoadRB(Row->PortalRoomClass)) { PortalRoomClass = C; }
+    if (auto C = LoadRB(Row->BossRoomClass)) { BossRoomClass = C; }
+    if (auto C = LoadRB(Row->BossArenaRoomClass)) { BossArenaRoomClass = C; }
+
+    RoomsToBeSpawned.Reset();
+    RoomsToBeSpawned.Reserve(Row->RoomsToBeSpawned.Num());
+    for (const auto& Soft : Row->RoomsToBeSpawned)
+    {
+        if (auto C = LoadRB(Soft)) { RoomsToBeSpawned.Add(C); }
+    }
+
+    SmallRoomsToBeSpawned.Reset();
+    SmallRoomsToBeSpawned.Reserve(Row->SmallRoomsToBeSpawned.Num());
+    for (const auto& Soft : Row->SmallRoomsToBeSpawned)
+    {
+        if (auto C = LoadRB(Soft)) { SmallRoomsToBeSpawned.Add(C); }
+    }
+
+    RoomsToSpawn = Row->RoomsToSpawn;
+    MaxTotalRooms = FMath::Max(1, Row->MaxTotalRooms);
+    RoomSpawnInterval = Row->RoomSpawnInterval;
+
+    if (auto C = LoadActor(Row->ExitCapClass)) { ExitCapClass = C; }
+    else { ExitCapClass = nullptr; }
+    if (auto C = LoadActor(Row->SmallExitCapClass)) { SmallExitCapClass = C; }
+    else { SmallExitCapClass = nullptr; }
+}
+
+
+const FFF44DGThemeRow* AFF44DungeonGenerator::FindThemeRowForFloor(int32 FloorIndex) const
+{
+    if (!ThemeTable) return nullptr;
+    static const FString Ctx(TEXT("DGThemeLookup"));
+
+    TArray<FFF44DGThemeRow*> Rows;
+    ThemeTable->GetAllRows<FFF44DGThemeRow>(Ctx, Rows);
+
+    for (const FFF44DGThemeRow* Row : Rows)
+    {
+        if (!Row) continue;
+        if (FloorIndex >= Row->MinFloor && FloorIndex <= Row->MaxFloor)
+        {
+            return Row;
+        }
+    }
+    return nullptr;
+}
+
 void AFF44DungeonGenerator::DestroyAllOfClass(UClass* Cls)
 {
     if (!Cls) return;
@@ -462,6 +529,9 @@ void AFF44DungeonGenerator::EnterBossArena()
         if (BossArenaRoom)
         {
             SpawnedRooms.Add(BossArenaRoom);
+
+            CollectMonsterMarkersFromRoom(BossArenaRoom);
+            CollectInteractableMarkersFromRoom(BossArenaRoom);
 
             if (auto* ArenaRoom = Cast<AFF44BossArenaRoom>(BossArenaRoom))
             {

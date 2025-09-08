@@ -187,6 +187,10 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
     {
         OnFloorEnded.Broadcast(CurrentFloor);
         CurrentFloor = FMath::Max(1, CurrentFloor + 1);
+        if (Dungeon)
+        {
+            Dungeon->ApplyThemeForFloor(CurrentFloor);
+        }
         NextFloor();
         return;
     }
