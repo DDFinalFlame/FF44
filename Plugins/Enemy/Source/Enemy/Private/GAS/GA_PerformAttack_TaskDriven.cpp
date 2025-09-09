@@ -55,4 +55,10 @@ void UGA_PerformAttack_TaskDriven::ActivateAbility(const FGameplayAbilitySpecHan
 void UGA_PerformAttack_TaskDriven::OnEndTask(FGameplayEventData Payload)
 {
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
+
+    ABaseEnemy* Enemy = Cast<ABaseEnemy>(CurrentActorInfo->AvatarActor.Get());
+    if (Enemy)
+    {
+        Enemy->EndCurrentBehavior();
+    }
 }

@@ -21,6 +21,8 @@ ABaseBoss::ABaseBoss()
 
 void ABaseBoss::Tick(float DeltaSeconds)
 {
+	if (CurrentBehavior == EAIBehavior::Die) { return; }
+
 	Super::Tick(DeltaSeconds);
 
 	AEnemyBaseWeapon** FoundValue = WeaponMap.Find(EWeaponType::FXHand);

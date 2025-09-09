@@ -16,21 +16,14 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	CachedASC = Enemy->FindComponentByClass<UAbilitySystemComponent>();
 	if (!CachedASC) return EBTNodeResult::Failed;
 
-	//// 기존 방식
-	//// Enemy 클래스 통해 Ability 발동 요청
-	//if (!Enemy->RequestAbilityByTag(AbilityTag))
-	//{
-	//	return EBTNodeResult::Failed;
-	//}
-
 	CachedSpecHandle = Enemy->RequestAbilityByTag(AbilityTag);
-	if (CachedSpecHandle.IsValid())
+	if (CachedSpecHandle != FGameplayAbilitySpecHandle())
 	{
 		// Ability 종료 델리게이트 등록
 		AbilityEndedDelegateHandle = CachedASC->OnAbilityEnded.AddUObject(this, &UBTTask_Attack::OnAbilityEnded);
 		CachedOwnerComp = &OwnerComp;
 
-		return EBTNodeResult::Succeeded;
+		return EBTNodeResult::InProgress;
 
 	}
 	else

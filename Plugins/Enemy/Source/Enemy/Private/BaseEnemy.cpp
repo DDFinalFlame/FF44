@@ -67,7 +67,10 @@ void ABaseEnemy::BeginPlay()
 		{
 			Weapon->SetOwner(this);
 			Weapon->EquipWeapon();
-			Weapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+			if (WeaponClass.Key != EWeaponType::FXHand)
+			{
+				Weapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+			}
 		}
 
 		WeaponMap.Add(WeaponClass.Key, Weapon);
