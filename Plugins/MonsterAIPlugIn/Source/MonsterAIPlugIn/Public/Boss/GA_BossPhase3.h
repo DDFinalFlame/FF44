@@ -138,6 +138,21 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	AActor* GetOwnerBoss() const { return OwnerBoss.Get(); }
 
+	// 남은 소환수 제거
+		// 3페이즈 동안 스폰된 미니언 추적용
+	UPROPERTY() TArray<TWeakObjectPtr<ACharacter>> PhaseMinions;
+
+	// 보스 사망 시: 남아있는 미니언 체력을 0으로 깎기
+	UFUNCTION() void ForceKillPhaseMinions();
+
+    // 보스가 죽으면 소환몹 데미지
+	UPROPERTY(EditDefaultsOnly, Category = "Boss|P3")
+	TSubclassOf<UGameplayEffect> GE_ForceKillMinion;
+	// 보스 사망플래그
+	UPROPERTY() bool bDisableWeakpointSpawns = false;
+
+	// 보스 죽었을때,
+	void EnterDeathCleanupFromP3(bool bTriggerDeathGA = true);
 private:
 	FAIRequestID CurrentMoveId;
 	FDelegateHandle MoveFinishedHandle;

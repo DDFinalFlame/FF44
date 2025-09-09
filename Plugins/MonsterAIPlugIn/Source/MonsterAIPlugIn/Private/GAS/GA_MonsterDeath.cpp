@@ -10,6 +10,9 @@
 #include "Components/CapsuleComponent.h"
 #include "MonsterTags.h" 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Data/MonsterDefinition.h"
+
+
 
 
 UGA_MonsterDeath::UGA_MonsterDeath()
@@ -141,6 +144,7 @@ void UGA_MonsterDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     //데스 시작과 동시에 모든 간섭 제거
     HardStopEverything(Chr, ActorInfo);
+    TrySpawnDrop(Chr);
 
     UAnimMontage* MontageToPlay = nullptr;
 
@@ -181,7 +185,7 @@ void UGA_MonsterDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     if (!bPlaying)
     {
         EnterRagdoll(Chr);
-        TrySpawnDrop(Chr);
+        
         Chr->SetLifeSpan(5.f);
 
         NotifyBossMinionDied(Chr);
@@ -254,24 +258,28 @@ void UGA_MonsterDeath::NotifyBossMinionDied(ACharacter* DeadChr)
 
 void UGA_MonsterDeath::TrySpawnDrop(ACharacter* DeadChr)
 {
-    if (bDropSpawned) return;
-    if (!DeadChr) return;
+    if (bDropSpawned || !DeadChr) return;
 
-    // 서버에서만
     const UAbilitySystemComponent* ASC =
         GetCurrentActorInfo() ? GetCurrentActorInfo()->AbilitySystemComponent.Get() : nullptr;
     if (!ASC || ASC->GetOwnerRole() != ROLE_Authority) return;
 
-    if (!DropActorClass) return;
-    if (FMath::FRand() > DropChance) return; // 확률 미스
-
     UWorld* World = DeadChr->GetWorld();
     if (!World) return;
 
+    // DA에서 스폰 액터만 읽음(확률/갯수 없음)
+    const UMonsterDefinition* Def = nullptr;
+    if (const AMonsterCharacter* MC = Cast<AMonsterCharacter>(DeadChr))
+    {
+        Def = MC->GetMonsterDef();
+    }
+    if (!Def || !Def->DropActorClass) return;
+
+    // 기본 위치/회전
     FVector SpawnLoc = DeadChr->GetActorLocation();
     FRotator SpawnRot = FRotator::ZeroRotator;
 
-    // 바닥 정렬(선택)
+    // (선택) 바닥 정렬: 기존 Ability 멤버(bDropAlignToGround/DropSpawnZOffset) 그대로 사용
     if (bDropAlignToGround)
     {
         FHitResult Hit;
@@ -281,7 +289,8 @@ void UGA_MonsterDeath::TrySpawnDrop(ACharacter* DeadChr)
         if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
         {
             SpawnLoc = Hit.ImpactPoint;
-            SpawnRot = Hit.ImpactNormal.Rotation(); // 노멀 기준 회전
+            // 경사면 회전이 싫으면 다음 줄 대신 SpawnRot = FRotator(0.f, DeadChr->GetActorRotation().Yaw, 0.f);
+            SpawnRot = Hit.ImpactNormal.Rotation();
         }
     }
 
@@ -292,12 +301,9 @@ void UGA_MonsterDeath::TrySpawnDrop(ACharacter* DeadChr)
     S.Instigator = DeadChr;
     S.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-    // 필요 시 지연 스폰(초기 세팅 필요하면)
-    AActor* Drop = World->SpawnActor<AActor>(DropActorClass, SpawnLoc, SpawnRot, S);
-    if (Drop)
+    if (AActor* Drop = World->SpawnActor<AActor>(Def->DropActorClass, SpawnLoc, SpawnRot, S))
     {
         bDropSpawned = true;
-        // 필요하면 인터페이스/초기화 함수 호출
-        // IYourDropInterface::Execute_Init(Drop, …);
+        // 필요하면 여기서 외부 드랍 매니저(확률/추가 스폰 등) 호출
     }
 }

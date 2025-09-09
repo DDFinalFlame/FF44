@@ -22,6 +22,32 @@ static FVector RandomOnRing2D(const FVector& _Center, float _Radius)
     return _Center + FVector(_Radius * FMath::Cos(Theta), _Radius * FMath::Sin(Theta), 0.f);
 }
 
+static bool ProjectToGround_NoTilt(
+    UWorld* World,
+    const FVector& XY,                   // X,Y만 의미 있음
+    FVector& OutGroundLoc,               // 최종 스폰 위치(Z 확정)
+    float TraceUp = 1500.f,
+    float TraceDown = 4000.f,
+    float GroundOffset = 2.f,            // 지프라깅 방지
+    ECollisionChannel GroundChannel = ECC_Visibility,
+    const FCollisionQueryParams* InParams = nullptr
+)
+{
+    if (!World) return false;
+
+    FCollisionQueryParams Params = InParams ? *InParams : FCollisionQueryParams(SCENE_QUERY_STAT(P2_WeakGround), false);
+    const FVector Start = FVector(XY.X, XY.Y, XY.Z + TraceUp);
+    const FVector End = FVector(XY.X, XY.Y, XY.Z - TraceDown);
+
+    FHitResult Hit;
+    if (World->LineTraceSingleByChannel(Hit, Start, End, GroundChannel, Params))
+    {
+        OutGroundLoc = Hit.ImpactPoint + FVector(0, 0, GroundOffset); // Z만 보정
+        return true;
+    }
+    return false;
+}
+
 UGA_BossPhase2::UGA_BossPhase2()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -525,61 +551,97 @@ void UGA_BossPhase2::SpawnWeakPoints()
     if (!World) return;
 
     UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(World);
-    FVector Origin = Boss->GetActorLocation();
+    const FVector Origin = Boss->GetActorLocation();
 
-    TArray<FVector> SpawnedLocations;
-    const float MinDist = 300.f;            // 원하는 최소 간격
+    TArray<FVector> PlacedXYs;
+    const float MinDist = 300.f;
     const float MinDistSq = MinDist * MinDist;
+
+    // 바닥 트레이스에서 보스/약점끼리 무시
+    FCollisionQueryParams QP(SCENE_QUERY_STAT(P2_WeakSpawn), false, Boss);
+    QP.AddIgnoredActor(Boss);
 
     for (int32 i = 0; i < WeakPointSpawnCount; ++i)
     {
-        FVector Desired;
-        bool bValid = false;
+        // XY 후보 선정
+        FVector CandidateXY;
+        bool bOk = false;
 
-        // 여러 번 시도해서 조건 맞는 위치 찾기
         for (int32 Try = 0; Try < 30; ++Try)
         {
-            Desired = RandomOnRing2D(Origin, WeakPointSpawnRadius);
+            CandidateXY = RandomOnRing2D(Origin, WeakPointSpawnRadius);
 
-            // 내비 위 보정
+            // Nav 위로 XY 보정 (Z는 신뢰 금지)
             if (Nav)
             {
                 FNavLocation Out;
-                if (Nav->ProjectPointToNavigation(Desired, Out, FVector(200.f)))
-                {
-                    Desired = Out.Location;
-                }
+                if (Nav->ProjectPointToNavigation(CandidateXY, Out, FVector(200.f)))
+                    CandidateXY = Out.Location;
             }
 
-            // 기존 위치들과 XY 거리 확인
-            bValid = true;
-            for (const FVector& P : SpawnedLocations)
+            // 이미 뽑힌 위치들과 XY 간격 유지
+            bOk = true;
+            for (const FVector& P : PlacedXYs)
             {
-                const float DistSq = FMath::Square(P.X - Desired.X) + FMath::Square(P.Y - Desired.Y);
-                if (DistSq < MinDistSq)
-                {
-                    bValid = false;
-                    break;
-                }
+                const float d2 = FMath::Square(P.X - CandidateXY.X) + FMath::Square(P.Y - CandidateXY.Y);
+                if (d2 < MinDistSq) { bOk = false; break; }
             }
-
-            if (bValid) break; // 조건 맞으면 채택
+            if (bOk) break;
         }
 
-        // 조건 불충족해도 마지막 후보 강제로 사용
-        SpawnedLocations.Add(Desired);
+        PlacedXYs.Add(CandidateXY);
 
-        FTransform T(FRotator::ZeroRotator, Desired);
-        AActor* Spawned = World->SpawnActor<AActor>(WeakPointClass, T);
+        // 바닥으로 Z만 투영
+        FVector GroundLoc;
+        if (!ProjectToGround_NoTilt(World, CandidateXY, GroundLoc, 1500.f, 4000.f, 2.f, ECC_Visibility, &QP))
+        {
+            // 실패 시 보스 발밑 근처로 안전 배치
+            GroundLoc = FVector(CandidateXY.X, CandidateXY.Y, Origin.Z - 50.f);
+        }
 
+        // 회전은 "피치/롤 0", Yaw만(원하면 보스 Yaw 사용)
+        const float Yaw = Boss->GetActorRotation().Yaw; // 또는 0.f
+        const FRotator SpawnRot(0.f, Yaw, 0.f);
+
+        // 디페네트레이션 방지: Deferred + 충돌 비활성 → 위치 세팅 → Finish 후 충돌 켜기
+        FTransform SpawnTM(SpawnRot, GroundLoc);
+        AActor* Spawned = World->SpawnActorDeferred<AActor>(
+            WeakPointClass,
+            SpawnTM,
+            Boss,                                // Owner
+            nullptr,
+            ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+        if (!Spawned) continue;
+
+        // 루트 충돌 잠시 OFF (밀려 위로 튀는 것 방지)
+        if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(Spawned->GetRootComponent()))
+        {
+            RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
+
+        // 여기서 필요한 초기화 먼저
         if (AWeakPointActor* WP = Cast<AWeakPointActor>(Spawned))
         {
             WP->InitializeWeakPoint(Boss, WeakPointDamageToBoss);
         }
+
+        // 실제 스폰 완료
+        UGameplayStatics::FinishSpawningActor(Spawned, SpawnTM);
+
+        // 위치/회전 한 번 더 확정(스폰 직후 물리 텔레포트로 고정)
+        Spawned->SetActorLocation(GroundLoc, /*bSweep=*/false, nullptr, ETeleportType::TeleportPhysics);
+        Spawned->SetActorRotation(SpawnRot, ETeleportType::TeleportPhysics);
+
+        // 충돌 재활성 (QueryOnly 또는 프로젝트 규칙에 맞추어 세팅)
+        if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(Spawned->GetRootComponent()))
+        {
+            RootPrim->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+            // 필요 시 프로파일 지정: RootPrim->SetCollisionProfileName(TEXT("WorldDynamic"));
+        }
     }
 
-
-    // 파괴 이벤트 수신 대기(여러 개가 올 수 있으므로 WaitGameplayEvent는 재사용 안전)
+    // 파괴 이벤트 수신(기존 그대로)
     if (UAbilityTask_WaitGameplayEvent* Wait =
         UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, MonsterTags::Event_Boss_P2_WeakPointDestroyed, nullptr, false, true))
     {
