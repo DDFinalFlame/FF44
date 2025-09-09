@@ -14,6 +14,7 @@
 #include "Boss/WeakPointActor.h"
 #include "Monster/MonsterCharacter.h"
 #include "Kismet/GameplayStatics.h"
+
 UGA_BossPhase3::UGA_BossPhase3()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -85,12 +86,25 @@ void UGA_BossPhase3::EndAbility(const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActivationInfo ActivationInfo,
     bool bReplicateEndAbility, bool bWasCancelled)
 {
-    if (AActor* Boss = GetAvatarActorFromActorInfo())
+    if (ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
     {
         FTimerManager& TM = Boss->GetWorldTimerManager();
         TM.ClearTimer(RockTimer);
         TM.ClearTimer(AttackTimer);
         TM.ClearTimer(MinionTimer);
+
+        if (AAIController* AI = Cast<AAIController>(Boss->GetController()))
+        {
+            if (MoveFinishedHandle.IsValid())
+            {
+                if (UPathFollowingComponent* PFC = AI->GetPathFollowingComponent())
+                {
+                    PFC->OnRequestFinished.Remove(MoveFinishedHandle);
+                }
+                MoveFinishedHandle.Reset();
+            }
+            AI->StopMovement();
+        }
     }
 
     if (ACharacter* C = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
@@ -141,37 +155,7 @@ void UGA_BossPhase3::Tick_Attack()
         return;
     }
 
-    // 사용할 몽타주 수집
-    TArray<UAnimMontage*> Candidates;
-    for (UAnimMontage* M : AttackMontages)
-    {
-        if (M) Candidates.Add(M);
-    }
-    if (Candidates.Num() == 0)
-    {
-        // 몽타주가 없으면 다음 체크만 예약
-        const float Delay = FMath::FRandRange(AttackIntervalMin, AttackIntervalMax);
-        Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, /*bLoop*/false);
-        return;
-    }
-
-    UAnimMontage* Pick = Candidates[FMath::RandRange(0, Candidates.Num() - 1)];
-    bAttackPlaying = true;
-
-    if (UAbilityTask_PlayMontageAndWait* Task =
-        UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, Pick, 1.f, NAME_None, /*bStopWhenAbilityEnds*/false))
-    {
-        Task->OnCompleted.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
-        Task->OnBlendOut.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
-        Task->OnInterrupted.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
-        Task->OnCancelled.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
-        Task->ReadyForActivation();
-    }
-    else
-    {
-        // 실패 시 바로 플래그 해제 및 예약
-        OnSmashMontageFinished();
-    }
+    StartMoveToTargetOrAttack();
 }
 
 void UGA_BossPhase3::Tick_Minion()
@@ -314,108 +298,237 @@ void UGA_BossPhase3::RemoveInvuln()
 
 void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 {
-    if (AActor* Boss = GetAvatarActorFromActorInfo())
-    {
-        UWorld* World = Boss->GetWorld();
-        if (!World || !WeakPointClass) return;
+    AActor* Boss = GetAvatarActorFromActorInfo();
+    UWorld* World = Boss ? Boss->GetWorld() : nullptr;
+    if (!World || !WeakPointClass) return;
 
-        ACharacter* Player = UGameplayStatics::GetPlayerCharacter(World, 0);
-        if (!Player) return;
+    // 1) 죽은 미니언 액터 추출 (Target → Instigator → OptionalObject 순)
+    AActor* DeadMinion = const_cast<AActor*>(
+        Payload.Target.Get() ? Payload.Target.Get() :
+        (Payload.Instigator.Get() ? Payload.Instigator.Get() :
+            Cast<AActor>(Payload.OptionalObject))
+        );
 
-        const float MinForwardDist = 600.f;   // 플레이어 기준 최소 전방 거리
-        const float MaxForwardDist = 900.f;   // 최대 전방 거리
-        const float LateralJitter = 250.f;   // 좌우 흔들림 폭
-        const float PlaceCheckRadius = 80.f;    // 자리 비었는지 검사할 구 반경
-        const float GroundTraceUp = 1200.f;  // 위에서 내리찍는 높이
-        const float GroundTraceDown = 3000.f;  // 바닥 찾기 하향 길이
-        const int32 MaxTries = 18;      // 후보 시도 횟수
-        const float YawStepDeg = 20.f;    // 전방 기준 좌/우 각도 스텝
+    if (!DeadMinion) DeadMinion = Boss; // 안전망: 없으면 보스 주변
 
-        const FVector PLoc = Player->GetActorLocation();
-        const FRotator PRot(0.f, Player->GetActorRotation().Yaw, 0.f);
-        const FVector Fwd = PRot.Vector();
-        const FVector Right = FRotationMatrix(PRot).GetUnitAxis(EAxis::Y);
+    // 2) 파라미터(간단)
+    const float Rmin = 350.f;
+    const float Rmax = 900.f;
+    const int32 MaxTries = 24;
+    const float GroundTraceUp = 1200.f;
+    const float GroundTraceDown = 3000.f;
+    const float PlaceCheckRadius = 80.f;   // 스폰물 대략 반경
+    const ECollisionChannel GroundChannel = ECC_Visibility;
+    const ECollisionChannel PlaceCheckChannel = ECC_Pawn; // 필요시 커스텀 채널로 교체
 
-        // 충돌 무시 목록
-        FCollisionQueryParams QP(SCENE_QUERY_STAT(P3_SpawnWeakPoint), false, Boss);
-        QP.AddIgnoredActor(Boss);
-        QP.AddIgnoredActor(Player);
+    // 충돌 무시 목록
+    FCollisionQueryParams QP(SCENE_QUERY_STAT(P3_SpawnWeakPoint), false, Boss);
+    QP.AddIgnoredActor(Boss);
+    QP.AddIgnoredActor(DeadMinion);
 
-        // 후보 생성 & 검사
-        auto FindGround = [&](const FVector& XY, FVector& OutLoc, FRotator& OutRot)->bool
+    // 3) 후보 샘플링 → 바닥 트레이스 → 자리 비었는지 구 스윕
+    auto TryFindSpot = [&](FVector& OutLoc, FRotator& OutRot)->bool
+        {
+            for (int32 i = 0; i < MaxTries; ++i)
             {
+                const float r = FMath::Sqrt(FMath::FRandRange(Rmin * Rmin, Rmax * Rmax));
+                const float th = FMath::FRandRange(0.f, 2.f * PI);
+                const FVector XY = DeadMinion->GetActorLocation() + FVector(r * FMath::Cos(th), r * FMath::Sin(th), 0.f);
+
                 // 바닥 찾기
+                FHitResult Hit;
                 const FVector Start = XY + FVector(0, 0, GroundTraceUp);
                 const FVector End = XY - FVector(0, 0, GroundTraceDown);
-                FHitResult Hit;
-                if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QP))
-                    return false;
+                if (!World->LineTraceSingleByChannel(Hit, Start, End, GroundChannel, QP)) continue;
 
-                // 경사면 정렬
-                OutLoc = Hit.ImpactPoint + Hit.Normal * 2.f; // 살짝 띄움
-                OutRot = FRotationMatrix::MakeFromZ(Hit.Normal).Rotator();
+                // 살짝 띄우고 경사 정렬
+                const FVector Loc = Hit.ImpactPoint + Hit.Normal * 2.f;
+                const FRotator Rot = FRotationMatrix::MakeFromZ(Hit.Normal).Rotator();
 
-                // 자리 비었는지 구 스윕 검사
-                FHitResult BlockHit;
+                // 자리 비었는지(구 스윕)
                 const FCollisionShape Sphere = FCollisionShape::MakeSphere(PlaceCheckRadius);
-                bool bBlocked = World->SweepSingleByChannel(
-                    BlockHit,
-                    OutLoc + FVector(0, 0, 50.f),         // 살짝 위에서
-                    OutLoc + FVector(0, 0, 50.f),         // 제자리 스윕
-                    FQuat::Identity,
-                    ECC_Pawn,                            // 혹은 커스텀 채널
-                    Sphere,
-                    QP);
+                FHitResult Block;
+                const FVector P = Loc + FVector(0, 0, 50.f); // 살짝 위에서 정지 스윕
+                const bool bBlocked = World->SweepSingleByChannel(Block, P, P, FQuat::Identity, PlaceCheckChannel, Sphere, QP);
+                if (!bBlocked) { OutLoc = Loc; OutRot = Rot; return true; }
+            }
+            return false;
+        };
 
-                return !bBlocked;
-            };
+    FVector SpawnLoc;  FRotator SpawnRot;
+    if (!TryFindSpot(SpawnLoc, SpawnRot))
+    {
+        // 4) 마지막 안전망: 미니언 위치 조금 옆
+        SpawnLoc = DeadMinion->GetActorLocation() + FVector(200.f, 0.f, -30.f);
+        SpawnRot = FRotator::ZeroRotator;
+    }
 
-        FVector ChosenLoc;
-        FRotator ChosenRot;
-        bool bFound = false;
-
-        // 0번째: 정면 + 좌우 랜덤 흔들림
+    // 5) 스폰 & 초기화
+    if (AActor* Spawned = World->SpawnActor<AActor>(WeakPointClass, FTransform(SpawnRot, SpawnLoc)))
+    {
+        if (AWeakPointActor* WP = Cast<AWeakPointActor>(Spawned))
         {
-            const float Dist = FMath::FRandRange(MinForwardDist, MaxForwardDist);
-            const float Side = FMath::FRandRange(-LateralJitter, LateralJitter);
-            const FVector XY = PLoc + Fwd * Dist + Right * Side;
-            bFound = FindGround(XY, ChosenLoc, ChosenRot);
-        }
-
-        // 못 찾았으면 전방을 기준으로 부채꼴 탐색
-        for (int32 Try = 0; !bFound && Try < MaxTries; ++Try)
-        {
-            const float Sign = (Try % 2 == 0) ? 1.f : -1.f;                 // 좌/우 번갈아
-            const float Steps = (Try + 1) * 0.5f;                               // 0.5,1.0,1.5...
-            const float Yaw = Sign * Steps * YawStepDeg;
-
-            const FVector Dir = FRotationMatrix(FRotator(0.f, Yaw, 0.f)).TransformVector(Fwd);
-            const float Dist = FMath::FRandRange(MinForwardDist, MaxForwardDist);
-            const float Side = FMath::FRandRange(-LateralJitter, LateralJitter);
-
-            const FVector XY = PLoc + Dir * Dist + Right * Side;
-            bFound = FindGround(XY, ChosenLoc, ChosenRot);
-        }
-
-        // 마지막 안전망: 못 찾았으면 플레이어 자리 조금 앞
-        if (!bFound)
-        {
-            FVector DummyLoc; FRotator DummyRot;
-            FindGround(PLoc + Fwd * MinForwardDist, DummyLoc, DummyRot);
-            ChosenLoc = DummyLoc; ChosenRot = DummyRot;
-        }
-
-        // 스폰!
-        FTransform T(ChosenRot, ChosenLoc);
-        if (AActor* Spawned = World->SpawnActor<AActor>(WeakPointClass, T))
-        {
-            if (AWeakPointActor* WP = Cast<AWeakPointActor>(Spawned))
+            if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
             {
-                if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
-                {
-                    WP->InitializeWeakPoint(Boss, WeakPointDamageToBoss);
-                }
+                WP->InitializeWeakPoint(Boss, WeakPointDamageToBoss);
             }
         }
+    }
+}
+
+AActor* UGA_BossPhase3::GetTargetFromBlackboard() const
+{
+    ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+    if (!Boss) return nullptr;
+
+    AAIController* AI = Cast<AAIController>(Boss->GetController());
+    if (!AI) return nullptr;
+
+    UBlackboardComponent* BB = AI->GetBlackboardComponent();
+    if (!BB || BB_TargetActorKeyName.IsNone()) return nullptr;
+
+    return Cast<AActor>(BB->GetValueAsObject(BB_TargetActorKeyName));
+}
+
+void UGA_BossPhase3::StartMoveToTargetOrAttack()
+{
+    ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+    if (!Boss) return;
+
+    AActor* Target = GetTargetFromBlackboard();
+    if (!Target)
+    {
+        // 타겟이 없으면 잠깐 뒤 재시도
+        const float Delay = FMath::FRandRange(0.5f, 1.0f);
+        Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
+        return;
+    }
+
+    const float DistXY = FVector::Dist2D(Boss->GetActorLocation(), Target->GetActorLocation());
+    if (DistXY <= ApproachAcceptanceRadius)
+    {
+        // 이미 도착 범위 → 곧바로 공격
+        StartRandomAttackMontageOrReschedule();
+        return;
+    }
+
+    AAIController* AI = Cast<AAIController>(Boss->GetController());
+    if (!AI)
+    {
+        // 컨트롤러 없으면 바로 공격(최소한으로 동작 보장)
+        StartRandomAttackMontageOrReschedule();
+        return;
+    }
+
+    // 기존 델리게이트 중복 방지
+    if (MoveFinishedHandle.IsValid())
+    {
+        AI->GetPathFollowingComponent()->OnRequestFinished.Remove(MoveFinishedHandle);
+        MoveFinishedHandle.Reset();
+    }
+
+    FAIMoveRequest Req;
+    Req.SetGoalActor(Target);
+    Req.SetAcceptanceRadius(ApproachAcceptanceRadius);
+    Req.SetUsePathfinding(true);
+
+    bMovingToAttack = true;
+
+    FPathFollowingRequestResult R = AI->MoveTo(Req);
+    CurrentMoveId = R.MoveId;
+
+    // 결과가 바로 판정나는 경우 처리
+    if (R.Code == EPathFollowingRequestResult::AlreadyAtGoal)
+    {
+        bMovingToAttack = false;
+        StartRandomAttackMontageOrReschedule();
+        return;
+    }
+    if (R.Code == EPathFollowingRequestResult::Failed)
+    {
+        bMovingToAttack = false;
+        // 이동 실패 → 짧게 쉬고 재시도
+        const float Delay = FMath::FRandRange(0.6f, 1.2f);
+        Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
+        return;
+    }
+
+    // 정상적으로 이동 시작 → 완료 콜백 바인딩
+    if (UPathFollowingComponent* PFC = AI->GetPathFollowingComponent())
+    {
+        MoveFinishedHandle = PFC->OnRequestFinished.AddUObject(
+            this, &UGA_BossPhase3::OnMoveFinished);
+    }
+}
+
+
+void UGA_BossPhase3::OnMoveFinished(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+    bMovingToAttack = false;
+
+    ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+    AAIController* AI = Boss ? Cast<AAIController>(Boss->GetController()) : nullptr;
+    if (AI && MoveFinishedHandle.IsValid())
+    {
+        AI->GetPathFollowingComponent()->OnRequestFinished.Remove(MoveFinishedHandle);
+        MoveFinishedHandle.Reset();
+    }
+
+    // 내가 요청한 MoveTo가 아니면 무시(다른 시스템과 충돌 방지)
+    if (RequestID.IsValid() && CurrentMoveId.IsValid() && RequestID != CurrentMoveId)
+    {
+        return;
+    }
+
+    // 도착했으면 공격, 실패면 재시도
+    if (Result.IsSuccess())
+    {
+        StartRandomAttackMontageOrReschedule();
+    }
+    else
+    {
+        if (Boss)
+        {
+            const float Delay = FMath::FRandRange(0.5f, 1.0f);
+            Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
+        }
+    }
+}
+
+void UGA_BossPhase3::StartRandomAttackMontageOrReschedule()
+{
+    ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+    if (!Boss) return;
+
+    // 사용할 몽타주 수집
+    TArray<UAnimMontage*> Candidates;
+    for (UAnimMontage* M : AttackMontages)
+    {
+        if (M) Candidates.Add(M);
+    }
+
+    if (Candidates.Num() == 0)
+    {
+        // 몽타주 없으면 다음 시도 예약
+        const float Delay = FMath::FRandRange(AttackIntervalMin, AttackIntervalMax);
+        Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
+        return;
+    }
+
+    UAnimMontage* Pick = Candidates[FMath::RandRange(0, Candidates.Num() - 1)];
+    bAttackPlaying = true;
+
+    if (UAbilityTask_PlayMontageAndWait* Task =
+        UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, Pick, 1.f, NAME_None, false))
+    {
+        Task->OnCompleted.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
+        Task->OnBlendOut.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
+        Task->OnInterrupted.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
+        Task->OnCancelled.AddDynamic(this, &UGA_BossPhase3::OnSmashMontageFinished);
+        Task->ReadyForActivation();
+    }
+    else
+    {
+        OnSmashMontageFinished();
     }
 }
