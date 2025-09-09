@@ -41,6 +41,21 @@ private:
     // 래그돌 진입(프로파일/물리/애님 정지)
     void EnterRagdoll(ACharacter* Chr);
 
+    UPROPERTY(EditAnywhere, Category = "Death|Drop")
+    TSubclassOf<AActor> DropActorClass;      // 스폰할 BP 클래스
+
+    UPROPERTY(EditAnywhere, Category = "Death|Drop", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float DropChance = 0.25f;                // 25% 확률 예시
+
+    UPROPERTY(EditAnywhere, Category = "Death|Drop")
+    float DropSpawnZOffset = 10.f;           // 약간 띄워 스폰(겹침 방지)
+
+    UPROPERTY(EditAnywhere, Category = "Death|Drop")
+    bool bDropAlignToGround = true;          // 바닥에 정렬해서 두고 싶으면 true
+
+    bool bDropSpawned = false;               // 중복 스폰 방지
+
+    void TrySpawnDrop(ACharacter* DeadChr);
 protected:
     UPROPERTY()
     bool bSentBossNotify = false;

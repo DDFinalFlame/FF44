@@ -67,6 +67,13 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "Blackboard")
     FName BB_CinematicLockKey = TEXT("bCinematicLock"); // BT에서 막을 키
 
+    //Cool Down
+    UPROPERTY(EditDefaultsOnly, Category = "Grab|Cooldown")
+    TSubclassOf<UGameplayEffect> GE_GrabCooldown;   // Duration형 GE (예: 4s)
+
+    UPROPERTY(EditDefaultsOnly, Category = "Grab|Cooldown")
+    FGameplayTag Tag_GrabCooldown; // "Cooldown.Boss.Grab" 같은 태그
+
 protected:
     // 실행 중 캐시
     TWeakObjectPtr<class ACharacter> CachedBoss;

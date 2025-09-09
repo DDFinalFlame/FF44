@@ -9,6 +9,7 @@
 #include "GameFramework/Character.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
+#include "Sound/SoundBase.h"
 
 #include "MonsterTags.h"
 #include "MonsterAttributeSet.h"
@@ -187,7 +188,7 @@ void UGA_BossPhase1::StartPhase()
 
 
     // E) 캐스팅 루프 시작
-    StartCastTick();
+    //StartCastTick();
 }
 
 AActor* UGA_BossPhase1::GetPhaseTargetPlayer() const
@@ -324,12 +325,13 @@ void UGA_BossPhase1::StartCastTick()
     AActor* Boss = GetAvatarActorFromActorInfo();
     if (!Boss || CastInterval <= 0.f) return;
 
+
     Boss->GetWorldTimerManager().SetTimer(
         CastTimerHandle,
         [this]() { DoCastOnce(); },
         CastInterval,
         true,
-        CastInterval // 초기 지연
+        CastInterval
     );
 }
 
@@ -347,7 +349,8 @@ void UGA_BossPhase1::DoCastOnce()
 
         UWorld* World = GetWorld();
         AActor* Player = GetPhaseTargetPlayer();
-        if (!World || !Player) return;
+        AActor* Boss = GetAvatarActorFromActorInfo();
+        if (!World || !Player || !Boss) return;
 
         int32 numRocks = FMath::Clamp(FMath::RandRange(RocksPerCastMin, RocksPerCastMax), 1, 50);
         FVector playerLoc = Player->GetActorLocation();
@@ -382,6 +385,40 @@ void UGA_BossPhase1::DoCastOnce()
 
                 rock->FinishSpawning(T);
             }
+
+            if (RockImpactSound && RockImpactSfxDelay > 0.f)
+            {
+                // 지면 위치 추정(간단 라인트레이스)
+                FVector s = spawnLoc;
+                FVector e = s + FVector(0, 0, -10000.f);
+                FHitResult hit;
+                FCollisionQueryParams qp(SCENE_QUERY_STAT(Phase1_RockSFXGround), false, Boss);
+                qp.AddIgnoredActor(Boss);
+                bool bHit = World->LineTraceSingleByObjectType(
+                    hit, s, e,
+                    FCollisionObjectQueryParams(FCollisionObjectQueryParams::AllStaticObjects),
+                    qp
+                );
+
+                const FVector impactLoc = bHit ? hit.ImpactPoint : FVector(groundXY.X, groundXY.Y, playerLoc.Z);
+
+                // 타이머로 n초 후 재생
+                FTimerHandle th;
+                Boss->GetWorldTimerManager().SetTimer(
+                    th,
+                    FTimerDelegate::CreateWeakLambda(this, [this, Boss, impactLoc]()
+                        {
+                            if (!IsValid(Boss)) return; // 월드 종료 등
+                            if (RockImpactSound)
+                            {
+                                UGameplayStatics::PlaySoundAtLocation(Boss, RockImpactSound, impactLoc);
+                            }
+                        }),
+                    RockImpactSfxDelay,
+                    false
+                );
+                RockSfxTimerHandles.Add(th);
+            }
         }
     }
 
@@ -413,6 +450,17 @@ void UGA_BossPhase1::EndAbility(const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActivationInfo ActivationInfo,
     bool bReplicateEndAbility, bool bWasCancelled)
 {
+    if (AActor* Boss = GetAvatarActorFromActorInfo())
+    {
+        Boss->GetWorldTimerManager().ClearTimer(CastTimerHandle);
+        // 대기중인 임팩트 사운드 타이머 모두 정리
+        for (FTimerHandle& H : RockSfxTimerHandles)
+        {
+            Boss->GetWorldTimerManager().ClearTimer(H);
+        }
+        RockSfxTimerHandles.Empty();
+    }
+
     if (AActor* Boss = GetAvatarActorFromActorInfo())
     {
         Boss->GetWorldTimerManager().ClearTimer(CastTimerHandle);

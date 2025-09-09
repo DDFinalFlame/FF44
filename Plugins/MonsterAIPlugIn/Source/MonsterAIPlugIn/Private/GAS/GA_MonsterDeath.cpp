@@ -10,6 +10,9 @@
 #include "Components/CapsuleComponent.h"
 #include "MonsterTags.h" 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Data/MonsterDefinition.h"
+
+
 
 
 UGA_MonsterDeath::UGA_MonsterDeath()
@@ -141,6 +144,7 @@ void UGA_MonsterDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     //데스 시작과 동시에 모든 간섭 제거
     HardStopEverything(Chr, ActorInfo);
+    TrySpawnDrop(Chr);
 
     UAnimMontage* MontageToPlay = nullptr;
 
@@ -181,6 +185,7 @@ void UGA_MonsterDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     if (!bPlaying)
     {
         EnterRagdoll(Chr);
+        
         Chr->SetLifeSpan(5.f);
 
         NotifyBossMinionDied(Chr);
@@ -214,7 +219,7 @@ void UGA_MonsterDeath::OnMontageEnded()
         //Chr->SetLifeSpan(15.f);
     }
 
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+   EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UGA_MonsterDeath::EndAbility(const FGameplayAbilitySpecHandle Handle,
@@ -248,5 +253,57 @@ void UGA_MonsterDeath::NotifyBossMinionDied(ACharacter* DeadChr)
             BossActor, MonsterTags::Event_Minion_Died, Data);
 
         bSentBossNotify = true;
+    }
+}
+
+void UGA_MonsterDeath::TrySpawnDrop(ACharacter* DeadChr)
+{
+    if (bDropSpawned || !DeadChr) return;
+
+    const UAbilitySystemComponent* ASC =
+        GetCurrentActorInfo() ? GetCurrentActorInfo()->AbilitySystemComponent.Get() : nullptr;
+    if (!ASC || ASC->GetOwnerRole() != ROLE_Authority) return;
+
+    UWorld* World = DeadChr->GetWorld();
+    if (!World) return;
+
+    // DA에서 스폰 액터만 읽음(확률/갯수 없음)
+    const UMonsterDefinition* Def = nullptr;
+    if (const AMonsterCharacter* MC = Cast<AMonsterCharacter>(DeadChr))
+    {
+        Def = MC->GetMonsterDef();
+    }
+    if (!Def || !Def->DropActorClass) return;
+
+    // 기본 위치/회전
+    FVector SpawnLoc = DeadChr->GetActorLocation();
+    FRotator SpawnRot = FRotator::ZeroRotator;
+
+    // (선택) 바닥 정렬: 기존 Ability 멤버(bDropAlignToGround/DropSpawnZOffset) 그대로 사용
+    if (bDropAlignToGround)
+    {
+        FHitResult Hit;
+        const FVector Start = SpawnLoc + FVector(0, 0, 50.f);
+        const FVector End = SpawnLoc + FVector(0, 0, -2000.f);
+        FCollisionQueryParams Params(SCENE_QUERY_STAT(DeathDropTrace), false, DeadChr);
+        if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+        {
+            SpawnLoc = Hit.ImpactPoint;
+            // 경사면 회전이 싫으면 다음 줄 대신 SpawnRot = FRotator(0.f, DeadChr->GetActorRotation().Yaw, 0.f);
+            SpawnRot = Hit.ImpactNormal.Rotation();
+        }
+    }
+
+    SpawnLoc.Z += DropSpawnZOffset;
+
+    FActorSpawnParameters S;
+    S.Owner = DeadChr;
+    S.Instigator = DeadChr;
+    S.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+    if (AActor* Drop = World->SpawnActor<AActor>(Def->DropActorClass, SpawnLoc, SpawnRot, S))
+    {
+        bDropSpawned = true;
+        // 필요하면 여기서 외부 드랍 매니저(확률/추가 스폰 등) 호출
     }
 }

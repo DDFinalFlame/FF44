@@ -12,11 +12,13 @@ UENUM(BlueprintType)
 enum class EBossState_BB : uint8
 {
     Idle,
+    CombatReady,
     Phase0_Attack,
     InPhase1,
     Phase1_Attack,
     InPhase2,
     Phase2_Attack,
+    InPhase3,
     Hit,
     Dead
 };
