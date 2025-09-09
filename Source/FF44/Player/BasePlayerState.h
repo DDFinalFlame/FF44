@@ -6,6 +6,7 @@
 #include "BasePlayerState.generated.h"
 
 class UAbilitySystemComponent;
+class UInventoryComponent;
 
 UCLASS()
 class FF44_API ABasePlayerState : public APlayerState, public IAbilitySystemInterface
@@ -18,5 +19,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystemComponent")
 	UAbilitySystemComponent* ASC;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "InventoryComponent")
+	UInventoryComponent* IC;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return ASC; }
+	virtual UInventoryComponent* GetInventoryComponent() const { return IC; }
 };

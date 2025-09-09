@@ -100,7 +100,7 @@ ABasePlayer::ABasePlayer()
 	MotionWarping = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
 
 	// Inventory
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	// InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
 	// Tag
 	Tags.Add(FName("Player"));
@@ -111,11 +111,17 @@ void ABasePlayer::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
+	{
 		if (auto ASC = PS->GetAbilitySystemComponent())
 		{
 			AbilitySystem = ASC;
 			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
 		}
+		if (auto IC = PS->GetInventoryComponent())
+		{
+			InventoryComponent = IC;
+		}
+	}
 }
 
 // ¸®½º´× Àü¿ë
@@ -124,11 +130,17 @@ void ABasePlayer::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 
 	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
+	{
 		if (auto ASC = PS->GetAbilitySystemComponent())
 		{
 			AbilitySystem = ASC;
 			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
 		}
+		if (auto IC = PS->GetInventoryComponent())
+		{
+			InventoryComponent = IC;
+		}
+	}
 }
 
 void ABasePlayer::BeginPlay()
