@@ -33,6 +33,7 @@
 #include "Interactable/FF44Interactable.h"
 #include "Interactable/FF44TrapBase.h"
 #include "UI/PlayerInGameHUDWidget.h"
+#include "GameInstance/FF44GameInstance.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
@@ -93,6 +94,8 @@ ABasePlayer::ABasePlayer()
 	CameraLeftMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraLeftMoveLook"));
 	CameraLeftMoveLook->SetupAttachment(RootComponent);
 
+	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+
 	// Camera Logic 처리는 여기서
 	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
 
@@ -106,34 +109,12 @@ ABasePlayer::ABasePlayer()
 	Tags.Add(FName("Player"));
 }
 
-void ABasePlayer::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-
-	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
-		if (auto ASC = PS->GetAbilitySystemComponent())
-		{
-			AbilitySystem = ASC;
-			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
-		}
-}
-
-// 리스닝 전용
-void ABasePlayer::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-
-	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
-		if (auto ASC = PS->GetAbilitySystemComponent())
-		{
-			AbilitySystem = ASC;
-			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
-		}
-}
-
 void ABasePlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (auto* GI = GetGameInstance<UFF44GameInstance>())
+		GI->PendingCompState.ApplyTo(AbilitySystem, InventoryComponent);
 
 	MetaDataSetup();
 
@@ -239,6 +220,12 @@ void ABasePlayer::Tick(float DeltaTime)
 		DrawDebugDirectionalArrow(GetWorld(),
 			Loc, Loc + Rot.Vector() * 100.f,
 			10.f, FColor::Blue, false, 2.f, 0, 2.f);
+	}
+
+	if (BasePlayerController->GetInventoryWidget()->IsVisible())
+	{
+		if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_HitReacting))
+			BasePlayerController->CloseInventory();
 	}
 }
 
@@ -346,7 +333,6 @@ void ABasePlayer::MetaDataSetup()
 
 		AbilitySystem->AddAttributeSetSubobject(BaseAttribute);
 	}
-
 }
 
 void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

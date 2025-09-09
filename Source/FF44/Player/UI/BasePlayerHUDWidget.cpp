@@ -1,8 +1,7 @@
 #include "Player/UI/BasePlayerHUDWidget.h"
 #include "AbilitySystemComponent.h"
-#include "Player/BasePlayerAttributeSet.h"
 
-void UBasePlayerHUDWidget::InitASC(UAbilitySystemComponent* _OwnerASC, const UBasePlayerAttributeSet* _OwnerAttrSet)
+void UBasePlayerHUDWidget::InitASC(UAbilitySystemComponent* _OwnerASC, const UAttributeSet* _OwnerAttrSet)
 {
 	OwnerASC = _OwnerASC;
 	OwnerAttrSet = _OwnerAttrSet;

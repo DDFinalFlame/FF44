@@ -5,7 +5,7 @@
 #include "BasePlayerHUDWidget.generated.h"
 
 class UAbilitySystemComponent;
-class UBasePlayerAttributeSet;
+class UAttributeSet;
 
 UCLASS()
 class FF44_API UBasePlayerHUDWidget : public UUserWidget
@@ -14,13 +14,13 @@ class FF44_API UBasePlayerHUDWidget : public UUserWidget
 	
 public:
 	UFUNCTION(BlueprintCallable, Category = "Init")
-	virtual void InitASC(UAbilitySystemComponent* _OwnerASC, const UBasePlayerAttributeSet* _OwnerAttrSet);
+	virtual void InitASC(UAbilitySystemComponent* _OwnerASC, const UAttributeSet* _OwnerAttrSet);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ASC")
-	TObjectPtr<UAbilitySystemComponent> OwnerASC;
+	TWeakObjectPtr<UAbilitySystemComponent> OwnerASC;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ASC")
-	TObjectPtr<const UBasePlayerAttributeSet> OwnerAttrSet;
+	TWeakObjectPtr<const UAttributeSet> OwnerAttrSet;
 
 };

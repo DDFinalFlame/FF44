@@ -22,6 +22,9 @@ protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadWrite)
 	class UBasePlayerStatBarWidget* ProgressBarWidget;
 
+	UPROPERTY()
+	TWeakObjectPtr<const class UBasePlayerAttributeSet> PlayerAttrSet;
+
 	float MaxTime = 0.f;
 	float CurrentTime = 0.f;
 	bool IsProgress = false;
@@ -30,7 +33,7 @@ public:
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-	virtual void InitASC(UAbilitySystemComponent* _OwnerASC, const UBasePlayerAttributeSet* _OwnerAttrSet) override;
+	virtual void InitASC(UAbilitySystemComponent* _OwnerASC, const UAttributeSet* _OwnerAttrSet) override;
 
 	FDelegateHandle CurrentHPChangedDelegateHandle;
 	FDelegateHandle CurrentStaminaChangedDelegateHandle;

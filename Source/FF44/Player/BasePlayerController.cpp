@@ -5,8 +5,10 @@
 #include "InputMappingContext.h"
 #include "AbilitySystemComponent.h"
 #include "BasePlayerAttributeSet.h"
+#include "Components/Button.h"
 
 #include "UI/BasePlayerHUDWidget.h"
+#include "UI/BaseMonsterHUDWidget.h"
 #include "InventorySystem/Widget/InventoryWidget.h"
 
 
@@ -31,10 +33,12 @@ void ABasePlayerController::SetupInputComponent()
 
 void ABasePlayerController::OnUnPossess()
 {
+	if(PlayerHUD)
 	if (PlayerHUD->IsInViewport()) {
 		PlayerHUD->RemoveFromParent();
 	}
 
+	if(InventoryWidget)
 	if (InventoryWidget->IsInViewport()) {
 		InventoryWidget->RemoveFromParent();
 	}
@@ -49,7 +53,7 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 		PlayerHUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
 		PlayerHUD->SetOwningPlayer(this);
 		PlayerHUD->AddToViewport();
-		PlayerHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+		PlayerHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UAttributeSet>());
 	}
 
 	// Inventory Set
@@ -58,6 +62,29 @@ void ABasePlayerController::InitPlayerUI(UAbilitySystemComponent* _AbilitySystem
 		InventoryWidget->SetOwningPlayer(this);
 		InventoryWidget->AddToViewport();
 		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+		InventoryWidget->GetEscapeButton()->OnReleased.AddDynamic(this, &ABasePlayerController::CloseInventory);
+	}
+}
+
+void ABasePlayerController::InitBossUI(UAbilitySystemComponent* _AbilitySystem)
+{
+	if (!_AbilitySystem) return;
+
+	if (BossHUD)
+	{
+		if (!BossHUD->IsVisible())
+		{
+			BossHUD->Destruct();
+			BossHUD = nullptr;
+		}
+		return;
+	}
+
+	if (BossHUDClass) {
+		BossHUD = CreateWidget<UBaseMonsterHUDWidget>(GetWorld(), BossHUDClass);
+		BossHUD->SetOwningPlayer(this);
+		BossHUD->AddToViewport();
+		BossHUD->InitASC(_AbilitySystem, _AbilitySystem->GetSet<UAttributeSet>());
 	}
 }
 
@@ -78,15 +105,21 @@ void ABasePlayerController::ToggleInventory()
 	UE_LOG(LogTemp, Log, TEXT("Inventory Toggle"));
 
 	if (InventoryWidget->GetVisibility() == ESlateVisibility::Collapsed)
-	{
-		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-		SetInputMode(FInputModeGameAndUI());
-		SetShowMouseCursor(true);
-	}
+		OpenInventory();
 	else
-	{
-		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
-		SetShowMouseCursor(false);
-		SetInputMode(FInputModeGameOnly());
-	}
+		CloseInventory();
+}
+
+void ABasePlayerController::OpenInventory()
+{
+	InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+	SetInputMode(FInputModeUIOnly());
+	SetShowMouseCursor(true);
+}
+
+void ABasePlayerController::CloseInventory()
+{
+	InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
 }
