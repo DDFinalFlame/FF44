@@ -137,6 +137,10 @@ public:
 	/* 월드에서 사라지기 **/
 	void StartDissolve();
 
+protected:
+	// mesh가 단일 구조가 아닌 경우 이거 override해서 Dissolve 적용
+	virtual void GetAllMetarials(TArray<UMaterialInstanceDynamic*>& OutArray);
+
 // Montage
 public:
 	UAnimMontage* GetHitMontage(EHitDirection Direction) const;

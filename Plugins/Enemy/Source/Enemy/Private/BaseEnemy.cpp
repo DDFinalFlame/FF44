@@ -1,6 +1,14 @@
 #include "BaseEnemy.h"
 
 #include "AIController.h"
+
+#include "Components/MeshComponent.h"
+#include "GameFramework/Actor.h"
+#include "Components/MeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+
+
 #include "EnemyRotationComponent.h"
 #include "HitReactionDataAsset.h"
 #include "MonsterAttributeSet.h"
@@ -288,20 +296,9 @@ void ABaseEnemy::EndDeath()
 
 void ABaseEnemy::StartDissolve()
 {
-	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (!MeshComp) return;
-
-	int32 MaterialCount = MeshComp->GetNumMaterials();
 	TArray<UMaterialInstanceDynamic*> DynMats;
 
-	for (int32 i = 0; i < MaterialCount; ++i)
-	{
-		UMaterialInstanceDynamic* DynMat = MeshComp->CreateAndSetMaterialInstanceDynamic(i);
-		if (DynMat)
-		{
-			DynMats.Add(DynMat);
-		}
-	}
+	GetAllMetarials(DynMats);
 
 	float Duration = 3.0f;
 	float StepTime = 0.05f;
@@ -331,6 +328,23 @@ void ABaseEnemy::StartDissolve()
 		StepTime,
 		true
 	);
+}
+
+void ABaseEnemy::GetAllMetarials(TArray<UMaterialInstanceDynamic*>& OutArray)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp) return;
+
+	int32 MaterialCount = MeshComp->GetNumMaterials();
+
+	for (int32 i = 0; i < MaterialCount; ++i)
+	{
+		UMaterialInstanceDynamic* DynMat = MeshComp->CreateAndSetMaterialInstanceDynamic(i);
+		if (DynMat)
+		{
+			OutArray.Add(DynMat);
+		}
+	}
 }
 
 UAnimMontage* ABaseEnemy::GetHitMontage(EHitDirection Direction) const
