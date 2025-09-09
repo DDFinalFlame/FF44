@@ -91,22 +91,39 @@ void ABaseEnemy::GiveDefaultAbilities()
 	{
 		if (AbilityClass)
 		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(INDEX_NONE), this));
+			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(INDEX_NONE), this));
+			Handles.Add(Handle);
 		}
 	}
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
-bool ABaseEnemy::RequestAbilityByTag(FGameplayTag AbilityTag)
+FGameplayAbilitySpecHandle ABaseEnemy::RequestAbilityByTag(FGameplayTag AbilityTag)
 {
 	if (!AbilitySystemComponent)
 	{
-		return false;
+		return FGameplayAbilitySpecHandle();
 	}
 
-	FGameplayTagContainer TagContainer(AbilityTag);
-	return AbilitySystemComponent->TryActivateAbilitiesByTag(TagContainer);
+	for (const FGameplayAbilitySpecHandle& Handle : Handles)
+	{
+		FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(Handle);
+		if (!Spec || !Spec->Ability) continue;
+
+		// Ability 클래스(CDO)에 달린 Tags 확인
+		const UGameplayAbility* AbilityCDO = Spec->Ability;
+		if (AbilityCDO->AbilityTags.HasTagExact(AbilityTag))
+		{
+			// 실행
+			if (AbilitySystemComponent->TryActivateAbility(Handle))
+			{
+				return Handle; // 성공적으로 실행한 Handle 반환
+			}
+		}
+	}
+
+	return FGameplayAbilitySpecHandle();
 }
 
 void ABaseEnemy::InitializeAttributeSet()

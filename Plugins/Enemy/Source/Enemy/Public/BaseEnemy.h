@@ -47,6 +47,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS | Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FGameplayAbilitySpecHandle> Handles;
+
+
 	/* AttributeSet 초기값 Data Table **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS | Attribute")
 	UDataTable* EnemyDataTable;
@@ -106,7 +110,7 @@ public:
 // GAS Section
 public:
 	void GiveDefaultAbilities();
-	bool RequestAbilityByTag(FGameplayTag AbilityTag);
+	FGameplayAbilitySpecHandle RequestAbilityByTag(FGameplayTag AbilityTag);
 	void InitializeAttributeSet();
 	/* Set Attribute ( MonsterAIPlugin 참조 ) **/
 	void ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
