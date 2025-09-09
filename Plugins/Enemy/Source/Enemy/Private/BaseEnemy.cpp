@@ -59,6 +59,7 @@ void ABaseEnemy::BeginPlay()
 		{
 			Weapon->SetOwner(this);
 			Weapon->EquipWeapon();
+			Weapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		}
 
 		WeaponMap.Add(WeaponClass.Key, Weapon);
@@ -242,6 +243,7 @@ void ABaseEnemy::OnDeath()
 		AIController->GetBrainComponent()->StopLogic(TEXT("Death"));
 		AIController->StopMovement();
 		AIController->UnPossess();
+		AIController->Destroy();
 	}
 
 	GetCharacterMovement()->DisableMovement();
@@ -255,6 +257,13 @@ void ABaseEnemy::OnDeath()
 
 	/* Rotation 중지 **/
 	RotationComponent->ToggleShouldRotate(false);
+
+	/* Weapon 없애기 **/
+	for (auto& Weapon : WeaponMap)
+	{
+		Weapon.Value->Destroy();
+	}
+	WeaponMap.Empty();
 }
 
 // 사용하지 않고 있음. Iron Asset의 Ragdoll 문제
