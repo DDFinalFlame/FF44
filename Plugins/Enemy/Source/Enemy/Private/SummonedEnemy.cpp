@@ -5,8 +5,10 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "MonsterAttributeSet.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Interfaces/EnemyAIState.h"
+#include "Kismet/GameplayStatics.h"
 
 ASummonedEnemy::ASummonedEnemy()
 {
@@ -20,10 +22,26 @@ void ASummonedEnemy::BeginPlay()
 	Super::BeginPlay();
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ASummonedEnemy::OnCapsuleBeginOverlap);
 
+	AudioComponent = UGameplayStatics::SpawnSoundAttached(
+		SoundAsset,               // 재생할 SoundBase
+		GetMesh(),       // 부모 컴포넌트
+		SoundSocketName,          // 소켓 이름
+		FVector::ZeroVector, // 로컬 위치 오프셋
+		FRotator::ZeroRotator, // 로컬 회전 오프셋
+		EAttachLocation::SnapToTarget, // 붙는 방식
+		true,
+		0.7f,
+		0.7f
+	);
+
 }
 
 void ASummonedEnemy::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (AudioComponent)
+	{
+		AudioComponent->Stop();
+	}
 	//UE_LOG(LogTemp, Log, TEXT("Begin Overlap with: %s"), *OtherActor->GetName());
 	if (IsValid(OtherActor) && OtherActor->ActorHasTag(FName("Player")))
 	{

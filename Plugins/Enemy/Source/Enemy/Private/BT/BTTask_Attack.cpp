@@ -60,6 +60,7 @@ void UBTTask_Attack::OnAbilityEnded(const FAbilityEndedData& EndData)
 	ABaseEnemy* Enemy = Cast<ABaseEnemy>(AICon->GetPawn());
 	if (!Enemy) return;
 
+	// TO-DO : End 확인 필요 ? 
 	if (EndData.AbilitySpecHandle == CachedSpecHandle)
 	{
 		CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);

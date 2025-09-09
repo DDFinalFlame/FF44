@@ -27,5 +27,7 @@ namespace SLGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_DuringEvade, "GameplayCue.Sevarog.DuringEvade");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_StartEvade, "GameplayCue.Sevarog.StartEvade");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_EndEvade, "GameplayCue.Sevarog.EndEvade");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Sevarog_Buff, "GameplayCue.Sevarog.Buff");
+
 
 }

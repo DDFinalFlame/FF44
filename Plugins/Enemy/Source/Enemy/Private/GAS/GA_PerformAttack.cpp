@@ -6,6 +6,8 @@
 #include "BaseEnemy.h"
 #include <Abilities/Tasks/AbilityTask_PlayMontageAndWait.h>
 
+#include "Kismet/GameplayStatics.h"
+
 UGA_PerformAttack::UGA_PerformAttack()
 {
 
@@ -84,6 +86,15 @@ void UGA_PerformAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	//   AnimInstance->Montage_SetBlendedInDelegate(MontageBlendedInDeletage, TargetMontage);
 	//   AnimInstance->Montage_SetBlendingOutDelegate(MontageBlendedOutDeletage, TargetMontage);
 
+	//// SFX
+	//if (AttackSound)
+	//{
+	//	UGameplayStatics::PlaySoundAtLocation(
+	//		this,
+	//		AttackSound,
+	//		Enemy->GetActorLocation()
+	//	);
+	//}
 }
 
 void UGA_PerformAttack::OnMontageCompleted()

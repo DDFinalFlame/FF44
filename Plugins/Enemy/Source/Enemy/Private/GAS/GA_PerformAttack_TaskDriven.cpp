@@ -5,6 +5,7 @@
 
 #include "BaseEnemy.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "Kismet/GameplayStatics.h"
 
 UGA_PerformAttack_TaskDriven::UGA_PerformAttack_TaskDriven()
 {
@@ -50,6 +51,16 @@ void UGA_PerformAttack_TaskDriven::ActivateAbility(const FGameplayAbilitySpecHan
         this, TagA, nullptr, true, true);
     TaskA->EventReceived.AddDynamic(this, &UGA_PerformAttack_TaskDriven::OnEndTask);
     TaskA->ReadyForActivation();
+
+    //// SFX
+    //if (AttackSound)
+    //{
+    //    UGameplayStatics::PlaySoundAtLocation(
+    //        this,
+    //        AttackSound,
+    //        Enemy->GetActorLocation()
+    //    );
+    //}
 }
 
 void UGA_PerformAttack_TaskDriven::OnEndTask(FGameplayEventData Payload)
