@@ -25,6 +25,9 @@ class UBasePlayerHUDWidget;
 
 struct FInputActionValue;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnKeyDownAttackEnd);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerMoveChanged, bool, DoInputMoving, bool, EnableSprinting);
+
 UCLASS()
 class FF44_API ABasePlayer : public ACharacter, public IAbilitySystemInterface, public IAttackStatProvider, public IInventorySystemInterface
 {
@@ -113,6 +116,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TSubclassOf<UGameplayEffect> StaminaRunEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TSubclassOf<UGameplayEffect> StaminaKeyDownEffect;
 	
 protected:
 	virtual void InitializeAbilities();
@@ -211,10 +217,13 @@ protected:
 	int CurrentInputDirection = 0; // 0: None, 1: Forward, 2: Backward, 3: Left, 4: Right
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WheelWind | Time")
-	float EnterKeyDownAttackTime = 0.2f;
+	float EnterKeyDownAttackTime = 0.4f;
 
 	bool bKeyDown = false;
 	bool bKeyDownAttack = false;
+	bool bKeyNoStamina = false;
+	bool bKeyDownEnd = true;
+	bool bMoveEnd = true;
 	float EnterKeyDownTemp = 0.f;
 
 public:
@@ -256,6 +265,10 @@ protected:
 	void OnInterruptedInterAction(UAnimMontage* Montage, bool bInterrupted);
 	void OnEndInterAction();
 	void CalculateInteractingTime();
+
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnKeyDownAttackEnd OnKeyDownAttackEnd;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -321,7 +334,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	float CurrentNoiseLevel = 0.f;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerMoveChanged, bool, DoInputMoving, bool, EnableSprinting);
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerMoveChanged OnPlayerMoveChanged;
 

@@ -10,75 +10,70 @@
 
 UGA_Player_KeyDownAttack::UGA_Player_KeyDownAttack()
 {
-	//UGA_Player_Attack::UGA_Player_Attack();
-
     ActivationOwnedTags.AddTag(PlayerTags::State_Player_KeyDownAttack);
 }
 
 void UGA_Player_KeyDownAttack::CommitExecute(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo)
 {
-    UAbilityTask_PlayMontageAndWait* Task =
-        UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-            this,      
-            NAME_None, 
-            StartAttackMontage, 
-            MontagePlayRate, 
-            NAME_None,    
-            false,        
-            1.0f          
-        );
+    if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
+    {
+        AnimInst->OnPlayMontageNotifyBegin.AddDynamic(this, &UGA_Player_KeyDownAttack::BeginNotify);
+        AnimInst->OnPlayMontageNotifyEnd.AddDynamic(this, &UGA_Player_KeyDownAttack::EndNotify);
 
-    Task->OnCompleted.AddDynamic(this, &UGA_Player_KeyDownAttack::LoopAttack);
-    Task->OnBlendOut.AddDynamic(this, &UGA_Player_KeyDownAttack::LoopAttack);
-    Task->OnInterrupted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
-    Task->OnCancelled.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
-    Task->ReadyForActivation();
+        UAbilityTask_PlayMontageAndWait* Task =
+            UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+                this,
+                NAME_None,
+                AttackMontage,
+                MontagePlayRate,
+                NAME_None,
+                false,
+                1.0f
+            );
+
+        Task->OnCompleted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
+        Task->OnBlendOut.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
+        Task->OnInterrupted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
+        Task->OnCancelled.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
+        Task->ReadyForActivation();
+    }
+
+    OwnerPlayer->OnKeyDownAttackEnd.AddDynamic(this, &UGA_Player_KeyDownAttack::EndAttack);
 }
 
 void UGA_Player_KeyDownAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+    if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
+    {
+        AnimInst->OnPlayMontageNotifyBegin.RemoveDynamic(this, &UGA_Player_KeyDownAttack::BeginNotify);
+        AnimInst->OnPlayMontageNotifyEnd.RemoveDynamic(this, &UGA_Player_KeyDownAttack::EndNotify);
+        OwnerPlayer->OnKeyDownAttackEnd.RemoveDynamic(this, &UGA_Player_KeyDownAttack::EndAttack);
+    }
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_Player_KeyDownAttack::LoopAttack()
+void UGA_Player_KeyDownAttack::BeginNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
-    if (!OwnerPlayer->IsKeyDownAttack())
-    {
-        EndAttack();
-        return;
-    }
+    if(NotifyName== BeginAttackName)
+        OwnerWeapon->GetWeaponCollision()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
 
-    OwnerWeapon->GetWeaponCollision()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
-    UAbilityTask_PlayMontageAndWait* Task =
-        UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-            this,           
-            NAME_None,      
-            AttackMontage,  
-            MontagePlayRate, 
-            NAME_None,      
-            false,          
-            1.0f            
-        );
-
-    Task->OnCompleted.AddDynamic(this, &UGA_Player_KeyDownAttack::LoopAttack);
-    Task->OnBlendOut.AddDynamic(this, &UGA_Player_KeyDownAttack::LoopAttack);
-    Task->OnInterrupted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
-    Task->OnCancelled.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
-    Task->ReadyForActivation();
+void UGA_Player_KeyDownAttack::EndNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
+{
+    if (NotifyName == EndAttackName)
+        OwnerWeapon->GetWeaponCollision()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UGA_Player_KeyDownAttack::EndAttack()
 {
-    OwnerWeapon->GetWeaponCollision()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
     UAbilityTask_PlayMontageAndWait* Task =
         UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
             this,
             NAME_None,
-            EndAttackMontage,
+            AttackMontage,
             MontagePlayRate,
-            NAME_None,
+            EndSectionName,
             false,
             1.0f
         );
