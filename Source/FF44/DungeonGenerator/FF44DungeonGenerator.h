@@ -4,12 +4,58 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Engine/DataTable.h"
 #include "SpawnInfo.h"
 #include "FF44DungeonGenerator.generated.h"
 
 class AFF44RoomBase;
 class AFF44StarterRoom;
 class AFF44BossArenaRoom;
+
+USTRUCT(BlueprintType)
+struct FFF44DGThemeRow : public FTableRowBase
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere)
+    int32 MinFloor = 1;
+
+    UPROPERTY(EditAnywhere)
+    int32 MaxFloor = 5;
+
+    UPROPERTY(EditAnywhere)
+    TSoftClassPtr<AFF44StarterRoom> StarterRoomClass;
+
+    UPROPERTY(EditAnywhere)
+    TArray<TSoftClassPtr<AFF44RoomBase>> RoomsToBeSpawned;
+
+    UPROPERTY(EditAnywhere)
+    TArray<TSoftClassPtr<AFF44RoomBase>> SmallRoomsToBeSpawned;
+
+    UPROPERTY(EditAnywhere)
+    TSoftClassPtr<AFF44RoomBase> PortalRoomClass;
+
+    UPROPERTY(EditAnywhere)
+    TSoftClassPtr<AFF44RoomBase> BossRoomClass;
+
+    UPROPERTY(EditAnywhere)
+    TSoftClassPtr<AFF44RoomBase> BossArenaRoomClass;
+
+    UPROPERTY(EditAnywhere, Category = "Generation")
+    int32 RoomsToSpawn = 30;
+
+    UPROPERTY(EditAnywhere, Category = "Generation", meta = (ClampMin = "1"))
+    int32 MaxTotalRooms = 100;
+
+    UPROPERTY(EditAnywhere, Category = "Generation")
+    float RoomSpawnInterval = 0.01f;
+
+    UPROPERTY(EditAnywhere, Category = "Seal")
+    TSoftClassPtr<AActor> ExitCapClass;
+
+    UPROPERTY(EditAnywhere, Category = "Seal")
+    TSoftClassPtr<AActor> SmallExitCapClass;
+};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
 
@@ -44,7 +90,6 @@ public:
     UPROPERTY(EditAnywhere, Category = "Rooms|Special")
     TSubclassOf<AFF44RoomBase> BossRoomClass;
 
-	// 보스 전용 아레나 방
     UPROPERTY(EditAnywhere, Category = "Rooms|Special")
     TSubclassOf<AFF44RoomBase> BossArenaRoomClass;
 
@@ -119,8 +164,8 @@ public:
     int32 TotalSpawned = 0;
 
     /* ===========================
-   Public boss entry API
-   =========================== */
+       Public boss entry API
+       =========================== */
 public:
     UFUNCTION(BlueprintCallable, Category = "Dungeon|Boss")
     void EnterBossArena();
@@ -157,7 +202,19 @@ private:
     TArray<TWeakObjectPtr<AFF44RoomBase>> SpawnedRooms;
 
 public:
+    UPROPERTY(EditAnywhere, Category = "Theme")
+    UDataTable* ThemeTable = nullptr;
+
+    UFUNCTION(BlueprintCallable, Category = "Theme")
+    void ApplyThemeForFloor(int32 FloorIndex);
+
+private:
+    const FFF44DGThemeRow* FindThemeRowForFloor(int32 FloorIndex) const;
+
+public:
     void DestroyAllOfClass(UClass* Cls);
     void ClearDungeonContents();
+
+
 
 };
