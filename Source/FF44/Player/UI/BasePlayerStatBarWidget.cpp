@@ -15,8 +15,7 @@ void UBasePlayerStatBarWidget::NativePreConstruct()
     {
         FSlateBrush Brush = StatOutline->GetBrush();
 
-        Brush.DrawAs = ESlateBrushDrawType::Box;
-        Brush.Margin = FMargin(0.25f);          
+        Brush.DrawAs = ESlateBrushDrawType::Box;     
 
         StatOutline->SetBrush(Brush);
     }

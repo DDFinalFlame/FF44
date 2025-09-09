@@ -28,6 +28,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
 	UCanvasPanel* GridCanvasPanel;
 
+	UPROPERTY(EditAnywhere, Category = "UI | Image")
+	TSubclassOf<UUserWidget> GridImageClass;
+
+	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
+	UBorder* GridBackground;
+
 	UPROPERTY()
 	UPanelSlot* PanelSlot;
 
@@ -36,6 +42,7 @@ protected:
 
 	UPROPERTY()
 	UInventoryWidget* InventoryWidget;
+
 
 protected:
 	UPROPERTY()
@@ -82,6 +89,7 @@ public:
 
 protected:
 	void CreateLineSegments();
+	void CreateGridImage();
 	FMousePositionInTile MousePositionInTileResult(FVector2D _MousePosition);
 	void DrawBackgroundBox(FItemRow* _Item, FLinearColor _Color, const FGeometry& _AllottedGeometry, FVector2D TopLeftCorner, FSlateWindowElementList& OutDrawElements, int32 LayerId) const;
 };
