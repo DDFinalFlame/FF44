@@ -12,6 +12,7 @@ class UAbilitySystemComponent;
 class UBasePlayerAttributeSet;
 
 class UBasePlayerHUDWidget;
+class UBaseMonsterHUDWidget;
 class UInventoryWidget;
 
 UCLASS()
@@ -36,21 +37,34 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UBasePlayerHUDWidget> PlayerHUD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UBaseMonsterHUDWidget> BossHUDClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UBaseMonsterHUDWidget> BossHUD;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UInventoryWidget> InventoryWidget;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void InitPlayerUI(UAbilitySystemComponent* _AbilitySystem);
+	void InitBossUI(UAbilitySystemComponent* _AbilitySystem);
 
 	virtual void ToggleHUD();
 	virtual void ToggleInventory();
+
+	UFUNCTION()
+	virtual void OpenInventory();
+
+	UFUNCTION()
+	virtual void CloseInventory();
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 	virtual UInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }

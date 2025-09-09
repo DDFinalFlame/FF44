@@ -49,8 +49,6 @@ public:
 	ABasePlayerController* GetBasePlayerController() { return BasePlayerController; }
 
 protected:
-	virtual void PossessedBy(AController* NewController) override;
-	virtual void OnRep_PlayerState() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
@@ -121,6 +119,7 @@ protected:
 	TSubclassOf<UGameplayEffect> StaminaKeyDownEffect;
 	
 protected:
+	UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
 	virtual void InitializeAbilities();
 	virtual void InitializeEffects();
 	virtual void InitializeGameplayTags();
@@ -275,7 +274,7 @@ public:
 ///									Inventory										///
 ///////////////////////////////////////////////////////////////////////////////////////
 protected:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(EditAnywhere)

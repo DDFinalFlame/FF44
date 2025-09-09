@@ -8,6 +8,7 @@
 // Includes
 #include "Monster/MonsterCharacter.h"
 #include "Player/BasePlayer.h"
+#include "Player/BasePlayerController.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "DrawDebugHelpers.h" 
 #include "Boss/WeakPointActor.h" 
@@ -100,6 +101,18 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
 
         // ImpactNormal 방향 확인용 라인
         DrawDebugLine(World, HR.ImpactPoint, HR.ImpactPoint + HR.ImpactNormal * 50.0f, FColor::Red, false, 1.0f, 0, 1.5f);
+    }
+
+    // 보스 태그 달아줭
+    if (OtherActor->ActorHasTag(FName(TEXT("Boss"))))
+    {
+        if (OtherActor->GetClass()->ImplementsInterface(UAbilitySystemInterface::StaticClass()))
+        {
+            if (auto abilityActor = Cast<IAbilitySystemInterface>(OtherActor))
+                if (auto player = Cast<ABasePlayer>(GetOwner()))
+                    player->GetBasePlayerController()
+                    ->InitBossUI(abilityActor->GetAbilitySystemComponent());
+        }            
     }
 
     if (AWeakPointActor* WP = Cast<AWeakPointActor>(OtherActor))

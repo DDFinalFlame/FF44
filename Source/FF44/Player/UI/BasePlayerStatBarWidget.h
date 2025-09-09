@@ -13,6 +13,9 @@ class FF44_API UBasePlayerStatBarWidget : public UUserWidget
 
 protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadWrite)
+	class UBorder* BackgroundBorder;
+
+	UPROPERTY(meta = (BindWidget), BlueprintReadWrite)
 	class UProgressBar* StatBar;
 
 	UPROPERTY(meta = (BindWidget), BlueprintReadWrite)

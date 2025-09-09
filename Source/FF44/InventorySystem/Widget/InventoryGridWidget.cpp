@@ -6,6 +6,7 @@
 #include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/Image.h"
 
 #include "Player/BasePlayer.h"
 #include "InventorySystem/InventoryComponent.h"
@@ -23,12 +24,12 @@ int32 UInventoryGridWidget::NativePaint(const FPaintArgs& Args,
 	Super::NativePaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 
 	FPaintContext PaintContext(AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
-	FLinearColor CustomColor(0.5f, 0.5f, 0.5f, 0.5f);
+	FLinearColor CustomColor(0.5f, 0.5f, 0.5f, 0.f);
 	FVector2D TopLeftCorner = GridBorder->GetCachedGeometry().GetLocalPositionAtCoordinates(FVector2D(0.f, 0.f));
 
 	for (int32 i = 0; i < LineStructData.XLines.Num(); i++)
 	{
-		UWidgetBlueprintLibrary::DrawLine(PaintContext, 
+		UWidgetBlueprintLibrary::DrawLine(PaintContext,
 			FVector2D(StartX[i], StartY[i]) + TopLeftCorner,
 			FVector2D(EndX[i], EndY[i]) + TopLeftCorner,
 			CustomColor);
@@ -191,16 +192,16 @@ void UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
 	BorderAsCanvasSlot->SetSize(FVector2D(Colums, Rows) * TileSize);
 
 	CreateLineSegments();
+	CreateGridImage();
 }
 
 void UInventoryGridWidget::DrawItemWidget(FItemRow* _Item)
 {
-	auto ItemWidget = CreateWidget<UItemWidget>(GetWorld(), ItemWidgetClass);
+	auto ItemWidget = CreateWidget<UItemWidget>(GetOwningPlayer(), ItemWidgetClass);
 
 	// 인벤토리 꺼지면 삭제
 	InventoryWidget->OnNativeVisibilityChanged.AddUObject(ItemWidget, &UItemWidget::OnInvVisibility);
 
-	ItemWidget->SetOwningPlayer(GetOwningPlayer());
 	ItemWidget->SetInventoryComponent(IC);
 	ItemWidget->DrawItem(_Item, TileSize);
 
@@ -217,12 +218,11 @@ void UInventoryGridWidget::DrawItemWidget(FItemRow* _Item)
 
 void UInventoryGridWidget::DrawItemWidget(FItemRow* _Item, UPanelSlot* _OtherPanel, UCanvasPanel* _OtherGrid)
 {
-	auto ItemWidget = CreateWidget<UItemWidget>(GetWorld(), ItemWidgetClass);
+	auto ItemWidget = CreateWidget<UItemWidget>(GetOwningPlayer(), ItemWidgetClass);
 
 	// 인벤토리 꺼지면 삭제
 	InventoryWidget->OnNativeVisibilityChanged.AddUObject(ItemWidget, &UItemWidget::OnInvVisibility);
 
-	ItemWidget->SetOwningPlayer(GetOwningPlayer());
 	ItemWidget->SetInventoryComponent(_Item->OwnerInventory);
 	ItemWidget->DrawItem(_Item, TileSize);
 
@@ -278,6 +278,31 @@ void UInventoryGridWidget::CreateLineSegments()
 	{
 		StartY.Add(Elements.X);
 		EndY.Add(Elements.Y);
+	}
+}
+
+void UInventoryGridWidget::CreateGridImage()
+{
+	if (!GridCanvasPanel || !GridImageClass) return;
+
+	UCanvasPanelSlot* BGSlot = Cast<UCanvasPanelSlot>(GridBackground->Slot);
+	BGSlot->SetSize(FVector2D((TileSize * Colums) + 40, (TileSize * Rows) + 40));
+
+	for (int32 iCol = 0; iCol < Colums; iCol++)
+	{
+		for (int32 iRow = 0; iRow < Rows; iRow++)
+		{
+			auto GridImageWidget = CreateWidget<UUserWidget>(GetOwningPlayer(), GridImageClass);
+			GridImageWidget->SetOwningPlayer(GetOwningPlayer());
+
+			UCanvasPanelSlot* CanvasSlot = GridCanvasPanel->AddChildToCanvas(GridImageWidget);
+
+			// 배치/정렬/크기 설정 (원하시는 값으로 조정)
+			CanvasSlot->SetAnchors(FAnchors(0.f, 0.f, 0.f, 0.f));       // 좌상단 기준
+			CanvasSlot->SetAlignment(FVector2D(0.f, 0.f));              // 좌상단 정렬
+			CanvasSlot->SetPosition(FVector2D((iCol) * (TileSize), (iRow) * (TileSize)));
+			CanvasSlot->SetSize(FVector2D(TileSize, TileSize));
+		}
 	}
 }
 
