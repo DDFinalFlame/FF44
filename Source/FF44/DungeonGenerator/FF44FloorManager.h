@@ -51,7 +51,10 @@ public:
        Runtime state
        =========================== */
     UPROPERTY(BlueprintReadOnly, Category = "Flow|State")
-    int32 CurrentFloor = 1;
+    int32 CurrentFloor = 0;
+
+    UFUNCTION(BlueprintPure, Category = "FF44|Floor")
+    int32 GetCurrentFloor() const { return CurrentFloor; }
 
     UPROPERTY(BlueprintReadOnly, Category = "Flow|State")
     bool bFloorReady = false;

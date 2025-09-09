@@ -3,6 +3,7 @@
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_HitReact, "Ability.Player.HitReact");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Dodge, "Ability.Player.Dodge");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Attack, "Ability.Player.Attack");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Attack_KeyDown, "Ability.Player.Attack.KeyDown");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Potion, "Ability.Player.Potion");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Equip, "Ability.Player.Equip");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Death, "Ability.Player.Death");

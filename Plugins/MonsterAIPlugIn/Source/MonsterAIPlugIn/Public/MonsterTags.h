@@ -26,6 +26,7 @@ namespace MonsterTags
 
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Hit);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Grabbed);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Lift);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Assemble);
 
 
