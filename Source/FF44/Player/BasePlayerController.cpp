@@ -33,11 +33,12 @@ void ABasePlayerController::SetupInputComponent()
 
 void ABasePlayerController::OnUnPossess()
 {
+	if(PlayerHUD)
 	if (PlayerHUD->IsInViewport()) {
 		PlayerHUD->RemoveFromParent();
 	}
 
-
+	if(InventoryWidget)
 	if (InventoryWidget->IsInViewport()) {
 		InventoryWidget->RemoveFromParent();
 	}

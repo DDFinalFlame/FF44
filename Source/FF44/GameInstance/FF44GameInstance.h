@@ -1,6 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
+
+#include "Item/ItemRow.h"
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
@@ -23,6 +23,21 @@ struct FRunConfig
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bBossFloor = false;
 };
 
+class UAbilitySystemComponent;
+class UInventoryComponent;
+
+USTRUCT(BlueprintType)
+struct FPlayerCompState
+{
+    GENERATED_BODY()
+
+    TArray<FItemRow*> Items;
+    TMap<FItemRow*, FIntPoint> AllItems;
+
+    void CaptureFrom(UAbilitySystemComponent* _ASC, UInventoryComponent* _IC);
+    void ApplyTo(UAbilitySystemComponent* _ASC, UInventoryComponent* _IC) const;
+};
+
 UCLASS()
 class FF44_API UFF44GameInstance : public UGameInstance
 {
@@ -37,6 +52,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Run")
     FRunConfig PendingRun;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PlayerComponent")
+    FPlayerCompState PendingCompState;
 
 public:
     UFUNCTION(BlueprintCallable)

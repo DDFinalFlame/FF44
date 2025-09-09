@@ -23,7 +23,17 @@ int32 UInventoryGridWidget::NativePaint(const FPaintArgs& Args,
 {
 	Super::NativePaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 
+	FPaintContext PaintContext(AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
+	FLinearColor CustomColor(0.5f, 0.5f, 0.5f, 0.f);
 	FVector2D TopLeftCorner = GridBorder->GetCachedGeometry().GetLocalPositionAtCoordinates(FVector2D(0.f, 0.f));
+
+	for (int32 i = 0; i < LineStructData.XLines.Num(); i++)
+	{
+		UWidgetBlueprintLibrary::DrawLine(PaintContext,
+			FVector2D(StartX[i], StartY[i]) + TopLeftCorner,
+			FVector2D(EndX[i], EndY[i]) + TopLeftCorner,
+			CustomColor);
+	}
 
 	if (DrawDropLocation)
 	{

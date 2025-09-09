@@ -20,12 +20,6 @@ protected:
 	UCanvasPanel* Canvas;
 
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
-	UBorder* BackgroundBorder;
-
-	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
-	UBackgroundBlur* Blur;
-
-	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
 	UButton* EscapeButton;
 
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
@@ -34,7 +28,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, meta = (BindWidget), Category = "UI")
 	UInventoryGridWidget* OtherGrid;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OtherActor")
 	AActor* OtherActor;
 
 public:
@@ -47,4 +41,7 @@ protected:
 
 	UFUNCTION() 
 	void VisibilityChanged(ESlateVisibility NewVis);
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void DrawOtherGrid();
 };

@@ -39,6 +39,11 @@ protected:
 public:
 	bool TryAddItem(FItemRow* _ItemToAdd);
 	bool IsRoomAvailable(FItemRow* _ItemToAdd, int32 _Index);
+
+	void SetItems(TArray<FItemRow*> _Items) { Items = _Items; }
+	TArray<FItemRow*> GetItems() { return Items; }
+
+	void SetAllItems(TMap<FItemRow*, FIntPoint> _AllItems);
 	TMap<FItemRow*, FIntPoint> GetAllItems() { return AllItems; }
 
 	void AddItemAt(FItemRow* _ItemToAdd, int32 _Index);

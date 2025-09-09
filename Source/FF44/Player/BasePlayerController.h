@@ -37,19 +37,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UBasePlayerHUDWidget> PlayerHUDClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UBasePlayerHUDWidget> PlayerHUD;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UBaseMonsterHUDWidget> BossHUDClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UBaseMonsterHUDWidget> BossHUD;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UInventoryWidget> InventoryWidget;
 
 public:
