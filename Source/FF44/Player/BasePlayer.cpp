@@ -2,45 +2,46 @@
 
 // Components
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/ArrowComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Perception/AISense_Hearing.h"
+#include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
+#include "MotionWarpingComponent.h"
 
 // Debugging
 #include "Kismet/KismetSystemLibrary.h"
+#include "DrawDebugHelpers.h"
 
 // Class
-#include "Weapon/BaseWeapon.h"
+#include "Data/PlayerTags.h"
 #include "BasePlayerAttributeSet.h"
-#include "UI/BasePlayerHUDWidget.h"
+#include "BasePlayerController.h"
+#include "BasePlayerState.h"
+#include "Camera/BasePlayerCameraManager.h"
+#include "Weapon/BaseWeapon.h"
+#include "InventorySystem/InventoryComponent.h"
+#include "InventorySystem/Widget/InventoryWidget.h"
+#include "Interactable/FF44Interactable.h"
+#include "Interactable/FF44TrapBase.h"
+#include "UI/PlayerInGameHUDWidget.h"
 
 float ABasePlayer::GetAttackPower_Implementation() const
 {
-	// 1) 가장 신뢰되는 경로: ASC에 등록된 AttributeSet에서 읽기
-	const UBasePlayerAttributeSet* FromASC = nullptr;
-	if (AbilitySystem)
+	if (BaseAttribute)
 	{
-		FromASC = AbilitySystem->GetSet<UBasePlayerAttributeSet>();
-		if (FromASC)
-		{
-			const float AP = FromASC->GetAttackPower();
-			return FMath::IsFinite(AP) ? AP : 0.f;
-		}
-	}
-
-	// 2) 폴백: 멤버로 보관 중인 AttributeSet에서 읽기
-	if (auto Attribute = AbilitySystem->GetSet<UBasePlayerAttributeSet>())
-	{
-		const float AP = Attribute->GetAttackPower();
+		const float AP = BaseAttribute->GetAttackPower();
 		return FMath::IsFinite(AP) ? AP : 0.f;
 	}
 
-	// 3) 최종 폴백
 	return 0.f;
 }
 
@@ -60,67 +61,94 @@ ABasePlayer::ABasePlayer()
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = 100.f;
+	GetCharacterMovement()->MaxAcceleration = 1000.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
-	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	//CameraBoom->SetupAttachment(RootComponent);
-	//CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 80.f, 80.f)));
-	//CameraBoom->TargetArmLength = 200.f;
-	//CameraBoom->bUsePawnControlRotation = true;
-	//CameraBoom->bDoCollisionTest = false; // 카메라 충돌 테스트 비활성화
-	//// 카메라가 늦게 따라오는 설정
-	////CameraBoom->bEnableCameraLag = true;
-	////CameraBoom->bEnableCameraRotationLag = true;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
 
-	//FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	//FollowCamera->SetupAttachment(CameraBoom);
-	//FollowCamera->bUsePawnControlRotation = false;	
+	OnCharacterMovementUpdated.AddDynamic(this, &ABasePlayer::CharacterMovementUpdated);
 
-	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+	// 카메라 봄
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->AddLocalTransform(FTransform(FRotator(0.f, 0.f, 0.f), FVector(0.f, 0.f, 80.f)));
+	CameraBoom->TargetArmLength = 200.f;
+
+	// 실제 카메라
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	FollowCamera->SetupAttachment(CameraBoom);
+
+	// Camera Offset 설정용 Arrow
+	CameraUnequipLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraUnequipLook"));
+	CameraUnequipLook->SetupAttachment(RootComponent);
+	CameraEquipLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraEquipLook"));
+	CameraEquipLook->SetupAttachment(RootComponent);
+	CameraZoomInLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraZoomInLook"));
+	CameraZoomInLook->SetupAttachment(RootComponent);
+	CameraRightMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraRightMoveLook"));
+	CameraRightMoveLook->SetupAttachment(RootComponent);
+	CameraLeftMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraLeftMoveLook"));
+	CameraLeftMoveLook->SetupAttachment(RootComponent);
+
+	// Camera Logic 처리는 여기서
+	BaseCameraManager = CreateDefaultSubobject<UBasePlayerCameraManager>(TEXT("CameraManager"));
+
+	// Motion Warping
+	MotionWarping = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
+
+	// Inventory
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+
+	// Tag
+	Tags.Add(FName("Player"));
 }
 
 void ABasePlayer::PossessedBy(AController* NewController)
 {
+	Super::PossessedBy(NewController);
 
+	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
+		if (auto ASC = PS->GetAbilitySystemComponent())
+		{
+			AbilitySystem = ASC;
+			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
+		}
+}
+
+// 리스닝 전용
+void ABasePlayer::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (const ABasePlayerState* PS = GetPlayerState<ABasePlayerState>())
+		if (auto ASC = PS->GetAbilitySystemComponent())
+		{
+			AbilitySystem = ASC;
+			AbilitySystem->InitAbilityActorInfo(const_cast<ABasePlayerState*>(PS), this);
+		}
 }
 
 void ABasePlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Definition Load
-	if (!PlayerDefinition.IsValid())
-		PlayerDefinition.LoadSynchronous();
+	MetaDataSetup();
 
-	UPlayerDefinition* def = PlayerDefinition.Get();
+	InitializeAbilities();
+	InitializeEffects();
+	InitializeGameplayTags();
 
-	if(!def)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
-		return;
-	}
-	
-	// Player Controller Set
-	AController* PlayerController = GetController();
-	if(PlayerController)
-	{
-		FRotator ControlRotation = PlayerController->GetControlRotation();
-		ControlRotation.Pitch = -10.f;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
-		return;
-	}
+	SetPreview();
 
 	// Weapon를 월드에 생성 후 바로 장착
 	Weapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass);
 	if (Weapon)
 	{
 		Weapon->SetOwner(this);
-		EquipWeapon();
+		UnEquipWeapon();
 	}
 	else 
 	{
@@ -128,44 +156,196 @@ void ABasePlayer::BeginPlay()
 		return;
 	}
 
-	// 초기 Ability Tag 설정
-	AbilitySystem->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Weapon.Equip")));
+	// Player Controller Set
+	BasePlayerController = Cast<ABasePlayerController>(GetController());
+	if (BasePlayerController)
+	{		
+		BasePlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+		BasePlayerController->PlayerCameraManager->ViewPitchMax = 30.f;
 
-	// Ability 등록
-	if (AbilitySystem)
-	{
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
-		AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
-
-		for(int32 i=0;i< ComboAttackAbility.Num(); ++i)
-			AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
-
-		if (AttributeSetClass)
+		// UI Set
+		if (AbilitySystem)
 		{
-			auto AttributeSet = NewObject<UAttributeSet>(this, AttributeSetClass);
-			AttributeSet->InitFromMetaDataTable(PlayerMetaDataTable);
-
-			AbilitySystem->AddAttributeSetSubobject(AttributeSet);
+			BasePlayerController->InitPlayerUI(AbilitySystem);
+			//BasePlayerController->ToggleHUD();	// 추후에 Intro에서만 
 		}
-	}	
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Faild to cast Controller to APlayerController"));
+		return;
+	}
 
-	InitPlayerUI();
+	// Delegate Bind
+	OnPlayerMoveChanged.AddDynamic(this, &ABasePlayer::UpdateMoveType);
+
+	//// Components가 제대로 생성되었는지 확인
+	//TArray<UActorComponent*> All;
+	//GetComponents(All);
+
+	//UE_LOG(LogTemp, Warning, TEXT("== %s Components (%d) =="), *GetName(), All.Num());
+	//for (UActorComponent* C : All)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT(" - %s (%s) Reg=%d"),
+	//		*C->GetName(), *C->GetClass()->GetName(), C->IsRegistered());
+	//}
+
+	//// 혹시 포인터만 비었는지 교차검증
+	//if (!BaseCameraManager)
+	//{
+	//	BaseCameraManager = FindComponentByClass<UBasePlayerCameraManager>();
+	//	UE_LOG(LogTemp, Warning, TEXT("FindComponentByClass => %s"), *GetNameSafe(BaseCameraManager));
+	//}
 }
 
 void ABasePlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	CurrentInputDirection = 0;
+	if (bKeyDown)
+		if (EnterKeyDownTemp <= EnterKeyDownAttackTime)
+			EnterKeyDownTemp += DeltaTime;
+		else
+			bKeyDownAttack = true;
+	else
+	{
+		EnterKeyDownTemp = 0.f;
+		bKeyDownAttack = false;
+	}
+
+	CurrentInputDirection = 0;	
+
+	if (!AbilitySystem) return;
+
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Run))
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetRunSpeed();
+	}
+	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Move_Walk))
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseAttribute->GetWalkSpeed();
+	}
+
+	// Interactable
+	UpdateClosestInteractable();
+
+	if (auto* WarpTarget = MotionWarping->FindWarpTarget(TEXT("ANS_SpecialHit")))
+	{
+		const FVector Loc = WarpTarget->GetLocation();
+		auto Rot = WarpTarget->GetRotation();
+
+		// 구체와 화살표로 시각화
+		DrawDebugSphere(GetWorld(), Loc, 15.f, 12, FColor::Red, false, 2.f);
+		DrawDebugDirectionalArrow(GetWorld(),
+			Loc, Loc + Rot.Vector() * 100.f,
+			10.f, FColor::Blue, false, 2.f, 0, 2.f);
+	}
 }
 
 void ABasePlayer::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 										UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 										bool bFromSweep, const FHitResult& SweepResult)
 {
+
+}
+
+void ABasePlayer::InitializeAbilities()
+{
+	if (!AbilitySystem) return;
+
+	// 나중에 첫 시작에서만 불러오도록 바꾸기
+	// Level 옮길 시에 중복되어 들어갈 수 있음.		
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(EquipWeaponAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UnEquipWeaponAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(HitAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(SpecialHitAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DodgeAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(DeathAbility));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(PotionAbility));
+
+	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
+		AbilitySystem->GiveAbility(FGameplayAbilitySpec(ComboAttackAbility[i], 1, i));
+
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(KeyDownAttackAbility));
+}
+
+void ABasePlayer::InitializeEffects()
+{
+	if (!AbilitySystem) return;
+
+	EffectContext = AbilitySystem->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	if (StaminaRegenEffect)
+	{
+		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaRegenEffect, 1, EffectContext);
+		if (Spec.IsValid())
+		{
+			Spec.Data->SetSetByCallerMagnitude(
+				PlayerTags::Stat_Player_Stamina_RegenRate,
+				BaseAttribute->GetRegenRateStamina());
+
+			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+
+	if(StaminaRunEffect)
+	{
+		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaRunEffect, 1, EffectContext);
+		if (Spec.IsValid())
+		{
+			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+
+	if (StaminaKeyDownEffect)
+	{
+		FGameplayEffectSpecHandle Spec = AbilitySystem->MakeOutgoingSpec(StaminaKeyDownEffect, 1, EffectContext);
+		if (Spec.IsValid())
+		{
+			AbilitySystem->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+	}
+}
+
+void ABasePlayer::InitializeGameplayTags()
+{
+	if (!AbilitySystem) return;
+
+	// 초기 Ability Tag 설정
+	AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Weapon_UnEquip);	
+}
+
+void ABasePlayer::ZeroControllerPitch()
+{
+	if (Controller)
+	{
+		FRotator ControlRotation = Controller->GetControlRotation();
+		Controller->SetControlRotation(FRotator(0.f, ControlRotation.Yaw, 0.f));
+	}
+}
+
+void ABasePlayer::MetaDataSetup()
+{
+	// Definition Load
+	if (!PlayerDefinition.IsValid())
+		PlayerDefinition.LoadSynchronous();
+
+	UPlayerDefinition* def = PlayerDefinition.Get();
+
+	if (!def)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerDefinition not set."));
+		return;
+	}
+
+	if (AbilitySystem && AttributeSetClass)
+	{
+		BaseAttribute = NewObject<UBasePlayerAttributeSet>(this, AttributeSetClass);
+		BaseAttribute->InitFromMetaDataTable(def->PlayerMetaDataTable);
+
+		AbilitySystem->AddAttributeSetSubobject(BaseAttribute);
+	}
 
 }
 
@@ -177,6 +357,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		if(MoveAction)
 		{
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABasePlayer::Move);
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ABasePlayer::StopMove);
 		}
 		if(LookAction)
 		{
@@ -184,7 +365,7 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		}
 		if(SprintAction)
 		{
-			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABasePlayer::Run);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Ongoing, this, &ABasePlayer::Running);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABasePlayer::StopRun);
 		}
 		if(DodgeAction)
@@ -195,11 +376,11 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// Interact Actions
 		if(InteractAction)
 		{
-			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ABasePlayer::Interact);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ABasePlayer::Interact);
 		}
 		if(LockOnAction)
 		{
-			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Triggered, this, &ABasePlayer::LockOn);
+			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ABasePlayer::LockOn);
 		}
 		if(ToggleCombatAction)
 		{
@@ -209,7 +390,10 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		// Combat Actions
 		if(AttackAction)
 		{
-			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ABasePlayer::Attack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ABasePlayer::Attack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Ongoing, this, &ABasePlayer::KeyDownAttack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Canceled, this, &ABasePlayer::EndAttack);
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &ABasePlayer::EndAttack);
 		}
 		if(SpecialAction)
 		{
@@ -218,6 +402,16 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		if(SkillAction)
 		{
 			EnhancedInputComponent->BindAction(SkillAction, ETriggerEvent::Triggered, this, &ABasePlayer::Skill);
+		}
+
+		// QuickSlot
+		if (InventoryAction)
+		{
+			EnhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Started, this, &ABasePlayer::ToggleInventory);
+		}
+		if (ItemSlot_1Action)
+		{
+			EnhancedInputComponent->BindAction(ItemSlot_1Action, ETriggerEvent::Triggered, this, &ABasePlayer::ItemSlot_1);
 		}
 	}
 	else
@@ -228,26 +422,32 @@ void ABasePlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ABasePlayer::Move(const FInputActionValue& Value)
 {
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller)
 	{
-		if(MovementVector.X > 0.f)
+		if (BaseCameraManager->GetCurrentCameraMode() != ECameraMode::UnEquip)
 		{
-			CurrentInputDirection = 4; // Right
+			if (MovementVector.X > 0.f)
+			{
+				CurrentInputDirection = 4; // Right
+			}
+			else if (MovementVector.X < 0.f)
+			{
+				CurrentInputDirection = 3; // Left
+			}
+			else if (MovementVector.Y > 0.f)
+			{
+				CurrentInputDirection = 1; // Forward
+			}
+			else if (MovementVector.Y < 0.f)
+			{
+				CurrentInputDirection = 2; // Backward
+			}
 		}
-		else if(MovementVector.X < 0.f)
-		{
-			CurrentInputDirection = 3; // Left
-		}
-		else if(MovementVector.Y > 0.f)
-		{
+		else
 			CurrentInputDirection = 1; // Forward
-		}
-		else if(MovementVector.Y < 0.f)
-		{
-			CurrentInputDirection = 2; // Backward
-		}
 
 		const FRotator Rotation = GetController()->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -255,34 +455,68 @@ void ABasePlayer::Move(const FInputActionValue& Value)
 		const FVector FowardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		AddMovementInput(FowardDirection, MovementVector.Y);
+ 		AddMovementInput(FowardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+
+		if ((GetMovementComponent()->Velocity.Length() > 0.01f) && !IsMontagePlaying())
+			SetDoInputMoving(true);
+		else
+			SetDoInputMoving(false);
+
+		// Interact Montage 실행 취소
+		if (IsInteracting)
+		{
+			GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+			GetWorldTimerManager().ClearTimer(InteractTimerHandel);
+		}
 	}
+}
+
+void ABasePlayer::StopMove()
+{
+	SetDoInputMoving(false);
 }
 
 void ABasePlayer::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
+	
 	if (Controller)
 	{
 		FRotator ControlRotation = Controller->GetControlRotation();
 
-		float NewPitch = FMath::Clamp(ControlRotation.Pitch - LookAxisVector.Y, -40.f, 30.f);
-		float NewYaw = ControlRotation.Yaw + LookAxisVector.X;
+		float NewPitch = ControlRotation.Pitch;
+		float NewYaw = ControlRotation.Yaw;
+
+		if (BaseCameraManager)
+			if (!BaseCameraManager->IsCameraChanging())
+				NewPitch -= LookAxisVector.Y;
+		NewYaw += LookAxisVector.X;
 
 		Controller->SetControlRotation(FRotator(NewPitch, NewYaw, 0.f));
 	}
 }
 
-void ABasePlayer::Run(const FInputActionValue& Value)
+void ABasePlayer::Running(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	if (!bMoveEnd) return;
+	if (!BaseAttribute) return;
+
+	if (BaseAttribute->GetCurrentStamina() <= 0.f)
+	{
+		SetEnableSprinting(false);
+		bMoveEnd = false;
+		return;
+	}
+
+	if (GetVelocity().Length() > 0.f)
+		SetEnableSprinting(true);
 }
 
 void ABasePlayer::StopRun(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = 100.f;
+	SetEnableSprinting(false);
+	bMoveEnd = true;
 }
 
 void ABasePlayer::Dodge(const FInputActionValue& Value)
@@ -292,31 +526,110 @@ void ABasePlayer::Dodge(const FInputActionValue& Value)
 
 void ABasePlayer::Interact(const FInputActionValue& Value)
 {
-	// Change State
+	// 무기를 들고 있지 않을 때만 상호작용이 가능하다.
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip) ||
+		AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dead)) return;
 
-	// PlayMontage
+	if (auto Cur = Cast<AFF44InteractableActor>(FocusedInteractable.Get()))
+	{
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+		{
+			FOnMontageEnded MontageEndedDelegate;
+			MontageEndedDelegate.BindUObject(this, &ABasePlayer::OnInterruptedInterAction);
+
+			AnimInst->Montage_Play(InteractMontage);
+			AnimInst->Montage_SetEndDelegate(MontageEndedDelegate, InteractMontage);
+
+			if (Cur->GetPlayerActionTime() <= 0.f) return;
+
+			// 시간 경과를 체크해준다.
+			GetWorldTimerManager().SetTimer(
+				InteractTimerHandel,
+				this,
+				&ABasePlayer::OnEndInterAction,
+				Cur->GetPlayerActionTime(),
+				false);
+
+			IsInteracting = true;
+
+			// UI를 띄워준다.
+
+			Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->SetProgressBar(Cur->GetPlayerActionTime());
+		}
+	}
 }
 
 void ABasePlayer::LockOn(const FInputActionValue& Value)
 {
-	// Change State
-
-	// Camera Lock-On Logic
+	if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Equip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::ZoomIn);
+	}
+	else if(BaseCameraManager->GetCurrentCameraMode() == ECameraMode::ZoomIn)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
+	}
 }
 
 void ABasePlayer::ToggleCombat(const FInputActionValue& Value)
 {
-	// Change State
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip))
+		return;
 
-	// PlayMontage
-	
-	// Attach Socket
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
+		AbilitySystem->TryActivateAbilityByClass(UnEquipWeaponAbility);
+	else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_UnEquip))
+		AbilitySystem->TryActivateAbilityByClass(EquipWeaponAbility);
+
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip))
+		return;
+
+	if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::UnEquip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::Equip);
+	}
+	else if (BaseCameraManager->GetCurrentCameraMode() == ECameraMode::Equip)
+	{
+		BaseCameraManager->SetCameraMode(ECameraMode::UnEquip);
+	}
 }
 
 void ABasePlayer::Attack(const FInputActionValue& Value)
 {
 	for (int32 i = 0; i < ComboAttackAbility.Num(); ++i)
 		AbilitySystem->TryActivateAbilityByClass(ComboAttackAbility[i]);
+}
+
+void ABasePlayer::KeyDownAttack(const FInputActionValue& Value)
+{
+	if (!bKeyDownEnd) return;
+
+	if (!AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_Equip))
+		return;
+
+	if (bKeyDownAttack)
+		AbilitySystem->TryActivateAbilityByClass(KeyDownAttackAbility);
+
+	if (BaseAttribute->GetCurrentStamina() <= 0.f && !bKeyNoStamina)
+	{
+		bKeyDown = false;
+		bKeyNoStamina = true;
+		OnKeyDownAttackEnd.Broadcast();
+		bKeyDownEnd = false;
+		return;
+	}
+	else if (BaseAttribute->GetCurrentStamina() > 0.f)
+	{
+		bKeyNoStamina = false;
+		bKeyDown = true;
+	}
+}
+
+void ABasePlayer::EndAttack(const FInputActionValue& Value)
+{
+	OnKeyDownAttackEnd.Broadcast();
+	bKeyDown = false;
+	bKeyDownEnd = true;
 }
 
 void ABasePlayer::SpecialAct(const FInputActionValue& Value)
@@ -333,13 +646,190 @@ void ABasePlayer::Skill(const FInputActionValue& Value)
 	// PlayMontage
 }
 
-void ABasePlayer::InitPlayerUI()
+void ABasePlayer::ToggleInventory(const FInputActionValue& Value)
 {
-	if (!PlayerHUDClass) return;
-	auto HUD = CreateWidget<UBasePlayerHUDWidget>(GetWorld(), PlayerHUDClass);
-	HUD->InitASC(AbilitySystem, AbilitySystem->GetSet<UBasePlayerAttributeSet>());
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dead)) return;
+	if (!BasePlayerController) return;
 
-	HUD->AddToViewport();
+	BasePlayerController->GetInventoryWidget()->SetInteractActor(nullptr);
+	BasePlayerController->ToggleInventory();
+}
+
+void ABasePlayer::ItemSlot_1(const FInputActionValue& Value)
+{
+	if (!AbilitySystem) return;
+
+	if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Weapon_ChangeEquip)) return;
+
+	// 우선 Potion으로
+	AbilitySystem->TryActivateAbilityByClass(PotionAbility);
+}
+
+void ABasePlayer::OnInterruptedInterAction(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (bInterrupted)
+	{
+		// 방해 받았을 시,
+		GetMesh()->GetAnimInstance()->Montage_Stop(0.2f);
+		GetWorldTimerManager().ClearTimer(InteractTimerHandel);
+		Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->EndProgressBar();
+		IsInteracting = false;
+	}
+	else
+	{
+		// 정상 종료
+		Cast<UPlayerInGameHUDWidget>(BasePlayerController->GetHUDWIdget())->EndProgressBar();
+		IsInteracting = false;
+	}
+}
+
+void ABasePlayer::OnEndInterAction()
+{
+	if (auto Cur = Cast<AFF44InteractableActor>(FocusedInteractable.Get()))
+	{
+		this->PlayAnimMontage(InteractMontage, 1.f, TEXT("LoopEnd"));
+
+		if (IFF44Interactable::Execute_CanInteract(Cur, this))
+		{
+			IFF44Interactable::Execute_Interact(Cur, this);
+		}
+	}
+}
+
+void ABasePlayer::CalculateInteractingTime()
+{
+}
+
+void ABasePlayer::SetPreview()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (PreviewCharacterClass)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			SpawnParams.Owner = this;
+
+			// 위치와 회전은 원하는 값 지정
+			FVector Location = FVector(10000000.f, 0.f, 0.f);
+			FRotator Rotation = FRotator(0.f, 90.f, 0.f);
+
+			ACharacter* PreviewPawn = World->SpawnActor<ACharacter>(
+				PreviewCharacterClass, Location, Rotation, SpawnParams);
+
+			if (PreviewPawn)
+			{
+				// 필요하면 여기서 메시 복사, 애님 클래스 세팅 등 처리
+			}
+		}
+	}
+}
+
+void ABasePlayer::CharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity)
+{
+	auto OldSpeed = OldVelocity.Length();
+	auto CurrentSpeed = GetVelocity().Length();
+
+	if (CurrentSpeed <= 0.f)
+	{
+		CurrentNoiseLevel = 0.f;
+		return;
+	}
+
+	if (FMath::IsNearlyEqual(OldSpeed, CurrentSpeed)) return;
+
+	if(AbilitySystem->HasMatchingGameplayTag(UnEquipWeaponTag))
+	{
+		CurrentNoiseLevel = CurrentSpeed / (BaseAttribute->GetRunSpeed() + 200.f);
+	}
+	else if (AbilitySystem->HasMatchingGameplayTag(EquipWeaponTag))
+	{
+		CurrentNoiseLevel = CurrentSpeed / (BaseAttribute->GetRunSpeed());
+	}
+
+	if (IsMontagePlaying())
+	{
+		CurrentNoiseLevel = 0.f;
+
+		if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Attack))
+			CurrentNoiseLevel = 1.0f;
+		else if (AbilitySystem->HasMatchingGameplayTag(PlayerTags::State_Player_Dodge))
+			CurrentNoiseLevel = 0.8f;
+	}
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),   // NoiseLocation
+		CurrentNoiseLevel,    // Loudness(0~1 권장)
+		this,                 // Instigator(보통 자기 자신)
+		1000.f,               // MaxRange(0이면 무제한, 센서 범위로 제한)
+		FName("Footstep")     // Tag
+	);
+}
+
+void ABasePlayer::UpdateMoveType(bool _OldMoving, bool _OldSprinting)
+{
+	if (_OldMoving == DoInputMoving && _OldSprinting == EnableSprinting) return;
+
+	if (DoInputMoving)
+	{
+		if (EnableSprinting)
+		{
+			AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Move_Run);
+			AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Walk);
+		}
+		else
+		{
+			AbilitySystem->AddLooseGameplayTag(PlayerTags::State_Player_Move_Walk);
+			AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Run);
+		}
+	}
+	else
+	{
+		AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Walk);
+		AbilitySystem->RemoveLooseGameplayTag(PlayerTags::State_Player_Move_Run);
+	}
+}
+
+bool ABasePlayer::IsMontagePlaying() const
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
+		return true;
+
+	return false;
+}
+
+void ABasePlayer::SetDoInputMoving(bool _NewValue)
+{
+	auto OldValue = DoInputMoving;
+	DoInputMoving = _NewValue; 
+	OnPlayerMoveChanged.Broadcast(OldValue, EnableSprinting);
+}
+
+void ABasePlayer::SetEnableSprinting(bool _NewValue)
+{
+	auto OldValue = EnableSprinting;
+	EnableSprinting = _NewValue;
+	OnPlayerMoveChanged.Broadcast(DoInputMoving, OldValue);
+}
+
+void ABasePlayer::PlayerDead()
+{
+	IsDead = true;
+
+	GetCharacterMovement()->DisableMovement();
+	bUseControllerRotationYaw = false;
+}
+
+void ABasePlayer::PlayerAlive()
+{
+	IsDead = false;
+
+	GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
+	bUseControllerRotationYaw = true;
 }
 
 void ABasePlayer::AttachWeapon(FName _Socket)
@@ -382,3 +872,65 @@ void ABasePlayer::UnEquipWeapon()
 
 	AttachWeapon(UnEquipSocket);
 }
+
+void ABasePlayer::NotifyInteractableInRange(AActor* Interactable, bool bEnter)
+{
+	if (!Interactable) return;
+
+	if (bEnter)
+	{
+		NearbyInteractables.AddUnique(Interactable);
+	}
+	else
+	{
+		NearbyInteractables.RemoveSingleSwap(Interactable);
+		if (FocusedInteractable.Get() == Interactable)
+		{
+			IFF44Interactable::Execute_OnUnfocus(Interactable, this);
+			FocusedInteractable = nullptr;
+		}
+	}
+}
+
+void ABasePlayer::UpdateClosestInteractable()
+{
+	AActor* NewFocus = nullptr;
+
+	const FVector MyLoc = GetActorLocation();
+	float BestScore = TNumericLimits<float>::Max();
+
+	NearbyInteractables.RemoveAll([](const TWeakObjectPtr<AActor>& P) { return !P.IsValid(); });
+
+	for (const TWeakObjectPtr<AActor>& Weak : NearbyInteractables)
+	{
+		AActor* A = Weak.Get();
+		if (!A) continue;
+
+		if (!A->GetClass()->ImplementsInterface(UFF44Interactable::StaticClass()))
+			continue;
+
+		if (!IFF44Interactable::Execute_CanInteract(A, this))
+			continue;
+
+		const float D = FVector::Dist2D(MyLoc, A->GetActorLocation());
+		if (D < BestScore)
+		{
+			BestScore = D;
+			NewFocus = A;
+		}
+	}
+
+	if (FocusedInteractable.Get() != NewFocus)
+	{
+		if (AActor* Prev = FocusedInteractable.Get())
+		{
+			IFF44Interactable::Execute_OnUnfocus(Prev, this);
+		}
+		FocusedInteractable = NewFocus;
+		if (AActor* Cur = FocusedInteractable.Get())
+		{
+			IFF44Interactable::Execute_OnFocus(Cur, this);
+		}
+	}
+}
+

@@ -15,6 +15,7 @@ public class FF44 : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
+			"NavigationSystem",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
@@ -25,13 +26,12 @@ public class FF44 : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
             "MotionWarping",
-            "GameplayCameras",
         });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {
+        PrivateDependencyModuleNames.AddRange(new string[] {
             "MonsterAIPlugIn",
         });
-			
+
         string MonsterAIPath = Path.Combine(ModuleDirectory, "../../Plugins/MonsterAIPlugIn/Source/MonsterAIPlugIn/Public");
 
         PublicIncludePaths.AddRange(new string[] {
