@@ -10,6 +10,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/ArrowComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Perception/AISense_Hearing.h"
@@ -93,6 +94,10 @@ ABasePlayer::ABasePlayer()
 	CameraRightMoveLook->SetupAttachment(RootComponent);
 	CameraLeftMoveLook = CreateDefaultSubobject<UArrowComponent>(TEXT("CameraLeftMoveLook"));
 	CameraLeftMoveLook->SetupAttachment(RootComponent);
+
+	// Light
+	SpotLightComp = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLight"));
+	SpotLightComp->SetupAttachment(RootComponent);
 
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 
