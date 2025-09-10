@@ -43,4 +43,11 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Debug")
     float DebugStayTime = 0.f; // 매 틱 갱신할 거라 0이면 충분
+
+protected:
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* SpawnSound = nullptr;   // 생성될 때 재생
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* HitSound = nullptr;     // 보스에 맞을 때 재생
 };
