@@ -22,6 +22,9 @@ protected:
 	FName EndAttackName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+	class USoundBase* StartVoice;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
 	class USoundBase* LoopSwingSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")

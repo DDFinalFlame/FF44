@@ -82,6 +82,11 @@ void UGA_Player_HitReact::CommitExecute(const FGameplayAbilitySpecHandle Handle,
 			1.0f            // Root Motion Scale
 		);
 
+	const FVector  Loc = OwnerPlayer->GetActorLocation();
+	const FRotator Rot = OwnerPlayer->GetActorRotation();
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PSystem, FTransform(Rot, Loc));
+
 	Task->OnCompleted.AddDynamic(this, &UGA_Player_HitReact::K2_EndAbility);
 	Task->OnBlendedIn.AddDynamic(this, &UGA_Player_HitReact::OnBlendInHitReact);
 	Task->OnBlendOut.AddDynamic(this, &UGA_Player_HitReact::K2_EndAbility);
