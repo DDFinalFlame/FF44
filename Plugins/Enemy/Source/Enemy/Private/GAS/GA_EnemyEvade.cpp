@@ -4,6 +4,7 @@
 #include "GAS/GA_EnemyEvade.h"
 
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Interfaces/EnemyEvade.h"
 
@@ -41,6 +42,21 @@ void UGA_EnemyEvade::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     TaskB->ReadyForActivation();
 
     Enemy->ToggleDissolve(true);
+
+    // GE 적용
+    if (EvadeEffectClass)
+    {
+        if (UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get())
+        {
+            FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+            FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(EvadeEffectClass, 1.0f, ContextHandle);
+
+            if (SpecHandle.IsValid())
+            {
+                ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+            }
+        }
+    }
 }
 
 void UGA_EnemyEvade::OnDamagedOnEvade(FGameplayEventData Payload)
@@ -53,11 +69,23 @@ void UGA_EnemyEvade::OnDamagedOnEvade(FGameplayEventData Payload)
         Enemy->ToggleDissolve(false);
     }
 
+    /*GE 종료**/
+    if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Payload.Target.Get()))
+    {
+	    ASC->RemoveActiveGameplayEffectBySourceEffect(EvadeEffectClass, ASC, 1);
+    }
+
     // 어빌리티 종료
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UGA_EnemyEvade::OnEvadeEnd(FGameplayEventData Payload)
 {
+    /*GE 종료**/
+    if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Payload.Target.Get()))
+    {
+        ASC->RemoveActiveGameplayEffectBySourceEffect(EvadeEffectClass, ASC, 1);
+    }
+
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

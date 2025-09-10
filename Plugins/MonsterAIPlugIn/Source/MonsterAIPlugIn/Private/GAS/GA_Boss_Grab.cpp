@@ -11,12 +11,14 @@
 #include "GameFramework/Character.h"
 #include "MotionWarpingComponent.h"
 #include "TimerManager.h"
+#include "MonsterTags.h"
 
 UGA_Boss_Grab::UGA_Boss_Grab()
 {
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-    NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly; // 서버에서 구동
-    // 트리거(Gameplay Event: Event.Boss.GrabTrigger)는 에디터에서 설정
+    NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly; 
+  
+    ActivationBlockedTags.AddTag(MonsterTags::State_Boss_Grab_CoolTime);
 }
 
 void UGA_Boss_Grab::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -118,12 +120,28 @@ void UGA_Boss_Grab::EndAbility(const FGameplayAbilitySpecHandle Handle,
     // 접근 타이머/바인딩 정리 있었다면 호출
     CleanupApproachBindings();
 
+
+
     // 1) 태그 해제
     if (UAbilitySystemComponent* ASC = CurrentActorInfo ? CurrentActorInfo->AbilitySystemComponent.Get() : nullptr)
     {
         if (GrabBusyTag.IsValid() && ASC->HasMatchingGameplayTag(GrabBusyTag))
         {
             ASC->RemoveLooseGameplayTag(GrabBusyTag);
+        }
+
+        // ── 쿨다운 부여
+        if (GE_GrabCooldown)
+        {
+            FGameplayEffectContextHandle Ctx = ASC->MakeEffectContext();
+            Ctx.AddInstigator(ActorInfo->AvatarActor.Get(), nullptr);
+            FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(GE_GrabCooldown, 1.f, Ctx);
+            if (Spec.IsValid())
+            {
+                Spec.Data->DynamicGrantedTags.AddTag(MonsterTags::State_Boss_Grab_CoolTime);
+                ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+            }
+                
         }
     }
 

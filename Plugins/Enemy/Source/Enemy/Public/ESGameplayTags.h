@@ -25,4 +25,9 @@ namespace SLGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_EvadeEnd);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Enemy_Event_EndAbility);
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Sevarog_DuringEvade);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Sevarog_StartEvade);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Sevarog_EndEvade);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Sevarog_Buff);
+
 }

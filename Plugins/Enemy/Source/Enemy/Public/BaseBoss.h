@@ -63,6 +63,19 @@ protected:
 	float MoveSpeedMultiplier = 3.f; // 스플라인 이동 속도
 
 
+protected:
+	// Phase - state 관련
+	UPROPERTY(EditAnywhere)
+	FName PhaseKey;
+
+	UPROPERTY(EditAnywhere)
+	FName bOpeningPatternDoneKey;
+
+	bool bPhase1Triggered = false;
+	bool bPhase2Triggered = false;
+	bool bPhase3Triggered = false;
+
+
 public:
 	ABaseBoss();
 
@@ -91,11 +104,15 @@ public:
 
 public:
 	// 경로 컨트롤 추가된 Activate/Deactivate
-	virtual void ActivateWeaponCollision() override;
-	virtual void DeactivateWeaponCollision() override;
+	virtual void ActivateWeaponCollision(EWeaponType WeaponType) override;
+	virtual void DeactivateWeaponCollision(EWeaponType WeaponType) override;
 
 public:
 	// Evade Interface
 	virtual void ToggleCollision(bool bStartEvade) override;
 	virtual void ToggleDissolve(bool bStartEvade) override;
+
+public:
+	// Phase - State
+	void SetPhase(float currentHP, float maxHp);
 };

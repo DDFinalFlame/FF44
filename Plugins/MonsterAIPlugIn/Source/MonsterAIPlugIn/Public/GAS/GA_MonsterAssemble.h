@@ -51,13 +51,20 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Assemble")
     TArray<FName> AssembleOrder = {
-        // 예시: 말단→루트→상체→팔→머리
-        TEXT("Bip001-L-Foot"), TEXT("Bip001-L-Calf"), TEXT("Bip001-L-Thigh"),
-        TEXT("Bip001-R-Foot"), TEXT("Bip001-R-Calf"), TEXT("Bip001-R-Thigh"),
-        TEXT("Bip001-Pelvis"), TEXT("Bip001-Spine"), TEXT("Bip001-Spine2"),
-        TEXT("Bip001-L-UpperArm"), TEXT("Bip001-L-Forearm"), TEXT("Bip001-L-Hand"),
-        TEXT("Bip001-R-UpperArm"), TEXT("Bip001-R-Forearm"), TEXT("Bip001-R-Hand"),
-        TEXT("Bip001-Neck"), TEXT("Bip001-Head")
+        // 하체 (말단 → 몸통)
+        TEXT("Bip001-L-Foot"),   TEXT("Bip001-L-Calf"),     TEXT("Bip001-L-Thigh"),
+        TEXT("Bip001-R-Foot"),   TEXT("Bip001-R-Calf"),     TEXT("Bip001-R-Thigh"),
+
+        // 몸통 코어
+        TEXT("Bip001-Pelvis"),
+        TEXT("Bip001-Spine"),    TEXT("Bip001-Spine1"),     TEXT("Bip001-Spine2"),
+
+        // 어깨/팔 (좌 → 우)
+        TEXT("Bip001-L-Clavicle"), TEXT("Bip001-L-UpperArm"), TEXT("Bip001-L-Forearm"), TEXT("Bip001-L-Hand"),
+        TEXT("Bip001-R-Clavicle"), TEXT("Bip001-R-UpperArm"), TEXT("Bip001-R-Forearm"), TEXT("Bip001-R-Hand"),
+
+        // 목/머리
+        TEXT("Bip001-Neck"), TEXT("Bip001-Neck1"), TEXT("Bip001-Head")
     };
 
 protected:
@@ -92,7 +99,7 @@ protected:
 
     // === GetUp(일어나기) 페이즈 튜닝 ===
     UPROPERTY(EditDefaultsOnly, Category = "Assemble")
-    float GetUpTime = 1.6f;    // 바닥에서 완전히 일어서기까지 걸리는 시간
+    float GetUpTime = 0.3f;    // 바닥에서 완전히 일어서기까지 걸리는 시간
 
     // === GetUp 상태 ===
     FVector GetUpStartLoc, GetUpTargetLoc;
@@ -106,12 +113,26 @@ protected:
     void FinishGetUp(ACharacter* Chr);
 
     // 나이아가라
-    // UGA_MonsterAssemble.h
     UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
     UNiagaraSystem* NS_AssemblePop = nullptr;
 
     UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
     USoundBase* SFX_AssemblePop = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
+    UNiagaraSystem* NS_AssembleLoop = nullptr;   // 조립 동안 재생될 루프 FX
+
+    UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
+    float AssembleFXGroundOffset = 2.f;          // 바닥에서 살짝 띄움
+
+    UPROPERTY(Transient)
+    class UNiagaraComponent* AssembleFXComp = nullptr; // 런타임 핸들
+
+    void StartAssembleFX(class ACharacter* Chr);
+    void StopAssembleFX();
+
+    UPROPERTY(EditDefaultsOnly, Category = "Assemble|FX")
+    float AssembleFXZOffset = 10.f;
 
     // === 헬퍼 ===
     FVector GetFeetOrPelvisLoc(ACharacter* Chr) const;
