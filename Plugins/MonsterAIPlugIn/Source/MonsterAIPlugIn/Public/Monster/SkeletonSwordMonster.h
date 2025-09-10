@@ -18,7 +18,13 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 
+    // 죽는 사운드 설정
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* DeathSound = nullptr;
+
+    bool bDeathSoundPlayed = false;
     // 이 몬스터가 무기를 붙일 소켓명(칼)
     UPROPERTY(EditDefaultsOnly, Category = "Weapon")
     FName WeaponAttachSocketName = FName(TEXT("SwordSocket"));

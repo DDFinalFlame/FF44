@@ -8,6 +8,8 @@
 #include "MonsterTags.h"
 #include "Data/staticName.h"
 #include "Boss/BossMeleeWeapon.h"
+#include "Kismet/GameplayStatics.h"
+#include "MonsterAttributeSet.h"
 
 
 
@@ -32,7 +34,63 @@ void ABossCharacter::BeginPlay()
 }
 
 
+void ABossCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
 
+    if (!HasAuthority()) return;
+
+    if (AbilitySystemComponent)
+    {
+        if (const UMonsterAttributeSet* Attr = Cast<UMonsterAttributeSet>(AttributeSet))
+        {
+            if (!bDeathSoundPlayed && Attr->GetHealth() <= 0.f)
+            {
+                bDeathSoundPlayed = true;
+
+                if (DeathSound)
+                {
+                    UGameplayStatics::PlaySoundAtLocation(
+                        this,
+                        DeathSound,
+                        GetActorLocation()
+                    );
+                }
+
+                if (!bDeathExtrasSpawned)
+                {
+                    bDeathExtrasSpawned = true;
+                    SpawnDeathSideActors();
+                }
+            }
+        }
+    }
+}
+
+void ABossCharacter::SpawnDeathSideActors()
+{
+    if (!DeathSpawnClass1 && (!DeathSpawnClass2)) return;
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    const FVector Loc = GetActorLocation();
+    const FRotator Rot = GetActorRotation();
+
+    const FVector F = GetActorForwardVector(); // 앞
+    const FVector R = GetActorRightVector();   // 오른쪽
+
+    const FVector Base = Loc - F * DeathSpawnBackOffset + FVector(0, 0, DeathSpawnZOffset);
+    const FVector LeftPos = Base - R * DeathSpawnSideOffset; // 왼쪽 뒤
+    const FVector RightPos = Base + R * DeathSpawnSideOffset; // 오른쪽 뒤
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    Params.Instigator = this;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    World->SpawnActor<AActor>(DeathSpawnClass1, LeftPos, Rot, Params);
+    World->SpawnActor<AActor>(DeathSpawnClass2, RightPos, Rot, Params);
+}
 
 void ABossCharacter::ActivatePhaseWatcherOnce()
 {

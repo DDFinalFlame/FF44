@@ -10,6 +10,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "Sound/SoundBase.h"
 #include "GA_BossPhase3.generated.h"
 
 class UAnimMontage;
@@ -145,7 +146,7 @@ protected:
 	// 보스 사망 시: 남아있는 미니언 체력을 0으로 깎기
 	UFUNCTION() void ForceKillPhaseMinions();
 
-    // 보스가 죽으면 소환몹 데미지
+	// 보스가 죽으면 소환몹 데미지
 	UPROPERTY(EditDefaultsOnly, Category = "Boss|P3")
 	TSubclassOf<UGameplayEffect> GE_ForceKillMinion;
 	// 보스 사망플래그
@@ -153,6 +154,21 @@ protected:
 
 	// 보스 죽었을때,
 	void EnterDeathCleanupFromP3(bool bTriggerDeathGA = true);
+
+protected:
+	// Sound 관련 Phase1과 동일한 설정값
+	UPROPERTY(EditAnywhere, Category = "Phase3|Rock")
+	USoundBase* RockImpactSound = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Phase3|Rock", meta = (ClampMin = "0.0"))
+	float RockImpactSfxDelay = 0.25f; // 소환 후 몇 초 뒤에 재생할지
+
+	// 타이머에서 호출할 함수(람다 X)
+	UFUNCTION()
+	void PlayImpactSfxAt(FVector ImpactLoc);
+
+	// 필요 시 타이머 핸들 모아둘 수 있음(취소 용도)
+	TArray<FTimerHandle> RockSfxTimerHandles;
 private:
 	FAIRequestID CurrentMoveId;
 	FDelegateHandle MoveFinishedHandle;
