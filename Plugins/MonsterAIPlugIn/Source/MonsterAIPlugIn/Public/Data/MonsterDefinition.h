@@ -73,6 +73,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Monster|Tags")
     FGameplayTagContainer MonsterTags;
 
+    // 드랍으로 스폰할 액터(100% 스폰)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drops")
+    TSubclassOf<AActor> DropActorClass;
 public:
     // 키로 특정 공격 찾기
     UFUNCTION(BlueprintCallable, Category = "Combat|Attack")

@@ -18,6 +18,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS | Effect")
 	TSubclassOf<UGameplayEffect> BuffEffectCDO;
 
+	// FX
+	/* 기본 이동 SFX **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = " FX | Sound")
+	USoundBase* SoundAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = " FX | Sound")
+	FName SoundSocketName;
+
+	UAudioComponent* AudioComponent = nullptr;
+
 public:
 	ASummonedEnemy();
 

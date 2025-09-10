@@ -21,7 +21,14 @@ ABaseBoss::ABaseBoss()
 
 void ABaseBoss::Tick(float DeltaSeconds)
 {
+	if (CurrentBehavior == EAIBehavior::Die) { return; }
+
 	Super::Tick(DeltaSeconds);
+
+	AEnemyBaseWeapon** FoundValue = WeaponMap.Find(EWeaponType::FXHand);
+	if (!*FoundValue) { return; }
+ 	AEnemyBaseWeapon* Weapon = *FoundValue;
+	if (!Weapon) { return; }
 
 	// Hand
 	if (Weapon->IsAttackSuccessful())
@@ -156,31 +163,35 @@ void ABaseBoss::OnSummonQueryFinished(TSharedPtr<FEnvQueryResult> Result)
 	}
 }
 
-void ABaseBoss::ActivateWeaponCollision()
+void ABaseBoss::ActivateWeaponCollision(EWeaponType WeaponType)
 {
 	// 스플라인 위치 설정
 	// 위치를 어떻게 받아올거니
-	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	if (WeaponType == EWeaponType::FXHand)
 	{
-		if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
+		if (AAIController* AIController = Cast<AAIController>(GetController()))
 		{
-			if (AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(FName("F_Target"))))
+			if (UBlackboardComponent* BB = AIController->GetBlackboardComponent())
 			{
-				FVector TargetLocation = TargetActor->GetActorLocation();
-				SplineComponent->SetWorldLocation(TargetLocation);
-			}
+				if (AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(FName("F_Target"))))
+				{
+					FVector TargetLocation = TargetActor->GetActorLocation();
+					SplineComponent->SetWorldLocation(TargetLocation);
+				}
 
+			}
 		}
+
 	}
 
-	Super::ActivateWeaponCollision();
+	Super::ActivateWeaponCollision(WeaponType);
 
 	bMovingHand = true;
 }
 
-void ABaseBoss::DeactivateWeaponCollision()
+void ABaseBoss::DeactivateWeaponCollision(EWeaponType WeaponType)
 {
-	Super::DeactivateWeaponCollision();
+	Super::DeactivateWeaponCollision(WeaponType);
 
 	bMovingHand = false;
 	DistanceAlongSpline = 0.0f;
@@ -196,5 +207,59 @@ void ABaseBoss::ToggleCollision(bool bStartEvade)
 void ABaseBoss::ToggleDissolve(bool bStartEvade)
 {
 	// Evade 시작 ? Hidden true
-	SetActorHiddenInGame(bStartEvade);
+	//SetActorHiddenInGame(bStartEvade);
+	// Mesh 만 끄자
+	// Evade 시작 ? Visible false
+	GetMesh()->SetVisibility(!bStartEvade);
+}
+
+void ABaseBoss::SetPhase(float currentHP, float maxHp)
+{
+	// Valid 체크
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (!AIController) { return; }
+	UBlackboardComponent* BB = AIController->GetBlackboardComponent();
+	if (!BB) { return; }
+
+	int32 CurrentPhase = BB->GetValueAsInt(PhaseKey);
+
+	int32 NewPhase;
+	// 페이즈 계산
+	if (currentHP <= maxHp * 0.3f)      // 30% 이하 : Phase 3
+	{
+		NewPhase = 3;
+	}
+	else if (currentHP <= maxHp * 0.6f) // 60% 이하 : Phase 2
+	{
+		NewPhase = 2;
+	}
+	else
+	{
+		NewPhase = 1;
+	}
+
+	if (NewPhase != CurrentPhase)
+	{
+		CurrentPhase = NewPhase;
+
+		// 이미 개막 패턴 실행 여부 확인
+		bool bAlreadyTriggered = false;
+		if (NewPhase == 1) bAlreadyTriggered = bPhase1Triggered;
+		if (NewPhase == 2) bAlreadyTriggered = bPhase2Triggered;
+		if (NewPhase == 3) bAlreadyTriggered = bPhase3Triggered;
+
+		if (!bAlreadyTriggered)
+		{
+			BB->SetValueAsInt(PhaseKey, CurrentPhase);
+			BB->SetValueAsBool(bOpeningPatternDoneKey, false);
+
+			UE_LOG(LogTemp, Log, TEXT("Boss entered Phase %d"), CurrentPhase);
+
+			// 해당 Phase를 "이미 실행함" 으로 표시
+			if (NewPhase == 1) bPhase1Triggered = true;
+			if (NewPhase == 2) bPhase2Triggered = true;
+			if (NewPhase == 3) bPhase3Triggered = true;
+		}
+
+	}
 }

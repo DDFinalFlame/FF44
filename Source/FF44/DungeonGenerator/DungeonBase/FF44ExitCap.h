@@ -21,7 +21,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(EditAnywhere, Category = "Components")
 	UStaticMeshComponent* ExitCap;
 
 };

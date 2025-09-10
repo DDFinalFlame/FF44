@@ -1,6 +1,14 @@
 #include "BaseEnemy.h"
 
 #include "AIController.h"
+
+#include "Components/MeshComponent.h"
+#include "GameFramework/Actor.h"
+#include "Components/MeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+
+
 #include "EnemyRotationComponent.h"
 #include "HitReactionDataAsset.h"
 #include "MonsterAttributeSet.h"
@@ -41,15 +49,15 @@ void ABaseEnemy::BeginPlay()
 
 	//TO-DO : 위치 ? 
 	// Weapon 생성
-	if (WeaponClass)
+	for (auto& WeaponClass : WeaponClasses)
 	{
 		// GetWorld()로 액터 생성
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
 
-		Weapon = GetWorld()->SpawnActor<AEnemyBaseWeapon>(
-			WeaponClass,
+		AEnemyBaseWeapon* Weapon = GetWorld()->SpawnActor<AEnemyBaseWeapon>(
+			WeaponClass.Value,
 			GetActorLocation(),
 			GetActorRotation(),
 			SpawnParams
@@ -59,14 +67,15 @@ void ABaseEnemy::BeginPlay()
 		{
 			Weapon->SetOwner(this);
 			Weapon->EquipWeapon();
+			if (WeaponClass.Key != EWeaponType::FXHand)
+			{
+				Weapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+			}
 		}
 
-		//Weapon->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		WeaponMap.Add(WeaponClass.Key, Weapon);
 
-		//FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-		//Weapon->AttachToComponent(GetMesh(), AttachmentRules, FName("Hand_L_Socket"));
 	}
-
 }
 
 UAbilitySystemComponent* ABaseEnemy::GetAbilitySystemComponent() const
@@ -94,22 +103,39 @@ void ABaseEnemy::GiveDefaultAbilities()
 	{
 		if (AbilityClass)
 		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(INDEX_NONE), this));
+			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(INDEX_NONE), this));
+			Handles.Add(Handle);
 		}
 	}
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
-bool ABaseEnemy::RequestAbilityByTag(FGameplayTag AbilityTag)
+FGameplayAbilitySpecHandle ABaseEnemy::RequestAbilityByTag(FGameplayTag AbilityTag)
 {
 	if (!AbilitySystemComponent)
 	{
-		return false;
+		return FGameplayAbilitySpecHandle();
 	}
 
-	FGameplayTagContainer TagContainer(AbilityTag);
-	return AbilitySystemComponent->TryActivateAbilitiesByTag(TagContainer);
+	for (const FGameplayAbilitySpecHandle& Handle : Handles)
+	{
+		FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(Handle);
+		if (!Spec || !Spec->Ability) continue;
+
+		// Ability 클래스(CDO)에 달린 Tags 확인
+		const UGameplayAbility* AbilityCDO = Spec->Ability;
+		if (AbilityCDO->AbilityTags.HasTagExact(AbilityTag))
+		{
+			// 실행
+			if (AbilitySystemComponent->TryActivateAbility(Handle))
+			{
+				return Handle; // 성공적으로 실행한 Handle 반환
+			}
+		}
+	}
+
+	return FGameplayAbilitySpecHandle();
 }
 
 void ABaseEnemy::InitializeAttributeSet()
@@ -154,19 +180,34 @@ void ABaseEnemy::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UG
 
 }
 
-void ABaseEnemy::ActivateWeaponCollision()
+void ABaseEnemy::ActivateWeaponCollision(EWeaponType WeaponType)
 {
-	Weapon->ActivateCollision();
+	if (auto FoundValue = WeaponMap.Find(WeaponType))
+	{
+		(*FoundValue)->ActivateCollision();
+	}
 }
 
-void ABaseEnemy::DeactivateWeaponCollision()
+void ABaseEnemy::DeactivateWeaponCollision(EWeaponType WeaponType)
 {
-	Weapon->DeactivateCollision();
+	if (auto FoundValue = WeaponMap.Find(WeaponType))
+	{
+		(*FoundValue)->DeactivateCollision();
+	}
+
 }
 
 bool ABaseEnemy::IsAttackSuccessful()
 {
-	return Weapon->IsAttackSuccessful();
+	for (auto& Weapon : WeaponMap)
+	{
+		if (Weapon.Value->IsAttackSuccessful())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void ABaseEnemy::SetEnemyState(EAIBehavior NewBehavior)
@@ -213,6 +254,7 @@ void ABaseEnemy::OnDeath()
 		AIController->GetBrainComponent()->StopLogic(TEXT("Death"));
 		AIController->StopMovement();
 		AIController->UnPossess();
+		AIController->Destroy();
 	}
 
 	GetCharacterMovement()->DisableMovement();
@@ -226,6 +268,13 @@ void ABaseEnemy::OnDeath()
 
 	/* Rotation 중지 **/
 	RotationComponent->ToggleShouldRotate(false);
+
+	/* Weapon 없애기 **/
+	for (auto& Weapon : WeaponMap)
+	{
+		Weapon.Value->Destroy();
+	}
+	WeaponMap.Empty();
 }
 
 // 사용하지 않고 있음. Iron Asset의 Ragdoll 문제
@@ -250,20 +299,9 @@ void ABaseEnemy::EndDeath()
 
 void ABaseEnemy::StartDissolve()
 {
-	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (!MeshComp) return;
-
-	int32 MaterialCount = MeshComp->GetNumMaterials();
 	TArray<UMaterialInstanceDynamic*> DynMats;
 
-	for (int32 i = 0; i < MaterialCount; ++i)
-	{
-		UMaterialInstanceDynamic* DynMat = MeshComp->CreateAndSetMaterialInstanceDynamic(i);
-		if (DynMat)
-		{
-			DynMats.Add(DynMat);
-		}
-	}
+	GetAllMetarials(DynMats);
 
 	float Duration = 3.0f;
 	float StepTime = 0.05f;
@@ -293,6 +331,23 @@ void ABaseEnemy::StartDissolve()
 		StepTime,
 		true
 	);
+}
+
+void ABaseEnemy::GetAllMetarials(TArray<UMaterialInstanceDynamic*>& OutArray)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp) return;
+
+	int32 MaterialCount = MeshComp->GetNumMaterials();
+
+	for (int32 i = 0; i < MaterialCount; ++i)
+	{
+		UMaterialInstanceDynamic* DynMat = MeshComp->CreateAndSetMaterialInstanceDynamic(i);
+		if (DynMat)
+		{
+			OutArray.Add(DynMat);
+		}
+	}
 }
 
 UAnimMontage* ABaseEnemy::GetHitMontage(EHitDirection Direction) const
@@ -337,7 +392,7 @@ UAnimMontage* ABaseEnemy::GetAttackMontage(FGameplayTagContainer TargetTags) con
 	return nullptr;
 }
 
-bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior) 
+bool ABaseEnemy::CheckCurrentBehavior(EAIBehavior NewBehavior)
 {
 	if (CurrentBehavior == NewBehavior)
 	{
