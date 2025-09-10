@@ -9,6 +9,7 @@
 #include "GameFramework/Character.h"
 #include "Player/BasePlayer.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Sound/SoundBase.h"
 
 AFF44SpikeTrap::AFF44SpikeTrap()
 {
@@ -139,6 +140,15 @@ void AFF44SpikeTrap::RaiseSpikes()
         return;
     }
 
+    if (RaiseSFX)
+    {
+        UGameplayStatics::PlaySoundAtLocation(
+            this,
+            RaiseSFX,
+            SpikeMesh ? SpikeMesh->GetComponentLocation() : GetActorLocation()
+        );
+    }
+
     FLatentActionInfo LatentInfo;
     LatentInfo.CallbackTarget = this;
     LatentInfo.ExecutionFunction = FName("OnRaised");
@@ -197,6 +207,9 @@ void AFF44SpikeTrap::EndCooldown()
 
 void AFF44SpikeTrap::OnRaised()
 {
+    BP_OnSpikesRaised();
+    OnSpikesRaised.Broadcast();
+
     GetWorldTimerManager().SetTimer(HoldHandle, this, &AFF44SpikeTrap::RetractSpikes, HoldTime, false);
 }
 

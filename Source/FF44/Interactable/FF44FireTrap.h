@@ -9,6 +9,8 @@
 class UParticleSystemComponent;
 class UBoxComponent;
 class UDamageType;
+class USoundBase;
+class UAudioComponent;
 
 UCLASS()
 class FF44_API AFF44FireTrap : public AFF44TrapBase
@@ -28,6 +30,14 @@ protected:
 
     virtual void OnDamageEnd(UPrimitiveComponent* Overlapped, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIdx) override;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Trap|Fire|Audio", meta = (AllowPrivateAccess = "true"))
+    USoundBase* ActiveLoopSFX = nullptr;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Fire|Audio", meta = (AllowPrivateAccess = "true"))
+    UAudioComponent* LoopAudio = nullptr;
+
+    UFUNCTION() void HandleLoopAudioFinished();
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trap|Fire")

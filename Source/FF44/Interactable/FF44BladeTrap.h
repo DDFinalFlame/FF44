@@ -7,6 +7,7 @@
 #include "FF44BladeTrap.generated.h"
 
 class UBoxComponent;
+class USoundBase;
 
 UCLASS()
 class FF44_API AFF44BladeTrap : public AFF44TrapBase
@@ -42,9 +43,15 @@ public:
     UPROPERTY(VisibleAnywhere, Category = "BladeTrap")
     UBoxComponent* DamageArea;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BladeTrap|Audio", meta = (AllowPrivateAccess = "true"))
+    USoundBase* MidPassSFX = nullptr;
+
 private:
     float RunningTime = 0.f;
 
     FRotator BaseRotation;
     FVector  HingeAxisWorld;
+
+    float PrevAngleDeg = 0.f;
+    bool  bFirstTick = true;
 };

@@ -8,18 +8,46 @@
 #include "Interactable/FF44Portal.h"
 #include "Kismet/GameplayStatics.h"
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
+#include "Player/BasePlayer.h"
+#include "GameInstance/FF44GameInstance.h"
 
 AFF44FloorManager::AFF44FloorManager()
 {
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 
+    MusicComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("MusicComponent"));
+    MusicComponent->bAutoActivate = false;
+    MusicComponent->bAllowSpatialization = false;
+    MusicComponent->bIsUISound = true;
+    MusicComponent->SetupAttachment(RootComponent);
 }
 
 void AFF44FloorManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+    if (UWorld* W = GetWorld())
+    {
+        PortalSpawnedHandle = W->AddOnActorSpawnedHandler(
+            FOnActorSpawned::FDelegate::CreateUObject(this, &AFF44FloorManager::OnActorSpawned));
+    }
+
 	StartRun(BaseSeed, 1);
+}
+
+void AFF44FloorManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (UWorld* W = GetWorld())
+    {
+        if (PortalSpawnedHandle.IsValid())
+        {
+            W->RemoveOnActorSpawnedHandler(PortalSpawnedHandle);
+            PortalSpawnedHandle.Reset();
+        }
+    }
+    Super::EndPlay(EndPlayReason);
 }
 
 void AFF44FloorManager::StartRun(int32 InBaseSeed, int32 StartFloor)
@@ -35,9 +63,97 @@ void AFF44FloorManager::NextFloor()
     StartFloorInternal();
 }
 
+void AFF44FloorManager::PlayCurrentFloorMusic()
+{
+    if (!MusicComponent || !Dungeon) return;
+
+    USoundBase* NewMusic = Dungeon->GetLoadedThemeMusic();
+    if (!NewMusic) { StopMusic(true); return; }
+
+    MusicComponent->SetSound(NewMusic);
+    if (MusicFadeInTime > 0.f)
+    {
+        MusicComponent->FadeIn(MusicFadeInTime, 1.f);
+    }
+    else
+    {
+        MusicComponent->Play(0.f);
+    }
+}
+
+void AFF44FloorManager::StopMusic(bool bImmediate)
+{
+    if (!MusicComponent) return;
+
+    if (MusicComponent->IsPlaying())
+    {
+        if (!bImmediate && MusicFadeOutTime > 0.f)
+        {
+            MusicComponent->FadeOut(MusicFadeOutTime, 0.f);
+        }
+        else
+        {
+            MusicComponent->Stop();
+        }
+    }
+}
+
+FName AFF44FloorManager::ResolvePortalTag(AFF44Portal* Portal, FName Passed) const
+{
+    if (!Passed.IsNone())
+        return Passed;
+
+    static const FName N(TEXT("PortalNext"));
+    static const FName B(TEXT("PortalBoss"));
+    static const FName L(TEXT("PortalLobby"));
+
+    // 1) Actor Tags
+    if (Portal)
+    {
+        for (const FName& T : Portal->Tags)
+        {
+            if (T == N || T == B || T == L) return T;
+        }
+
+        // 2) 주요 컴포넌트의 ComponentTags도 확인(콜리전/트리거 등에 종종 태그를 다는 경우)
+        TArray<UActorComponent*> Comps = Portal->GetComponents().Array();
+        for (UActorComponent* C : Comps)
+        {
+            for (const FName& T : C->ComponentTags)
+            {
+                if (T == N || T == B || T == L) return T;
+            }
+        }
+    }
+
+    return NAME_None;
+}
+
+void AFF44FloorManager::BindSinglePortal(AFF44Portal* P)
+{
+    if (!P) return;
+
+    if (!P->OnPortalInteracted.IsAlreadyBound(this, &AFF44FloorManager::HandlePortalInteracted))
+    {
+        P->OnPortalInteracted.AddDynamic(this, &AFF44FloorManager::HandlePortalInteracted);
+    }
+}
+
+void AFF44FloorManager::OnActorSpawned(AActor* A)
+{
+    if (AFF44Portal* P = Cast<AFF44Portal>(A))
+    {
+        BindSinglePortal(P);
+        BoundPortals.Add(P);
+    }
+}
+
 void AFF44FloorManager::StartFloorInternal()
 {
     OnFloorStarted.Broadcast(CurrentFloor);
+
+    bInBossArena = false;
+    StopMusic(false);
 
     if (!DungeonGeneratorClass) return;
 
@@ -140,6 +256,14 @@ void AFF44FloorManager::HandleDungeonComplete()
     }
 
     TryFinishFloorReady();
+
+    if (bInBossArena && bMuteMusicInBossArena)
+    {
+        StopMusic(true);
+        return;
+    }
+
+    PlayCurrentFloorMusic();
 }
 
 void AFF44FloorManager::HandleMonsterSpawnComplete()
@@ -189,36 +313,57 @@ void AFF44FloorManager::UnbindFromPortals()
 
 void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName PortalTag)
 {
-    if (PortalTag.IsNone() || PortalTag == TEXT("PortalNext"))
+    const FName Tag = ResolvePortalTag(Portal, PortalTag);
+
+    if (Tag == TEXT("PortalLobby"))
+    {
+        if (MonsterSpawner)      MonsterSpawner->CleanupSpawned();
+        if (InteractableSpawner) InteractableSpawner->CleanupSpawned();
+
+        CapturePlayerStateForInstance();
+        UGameplayStatics::OpenLevelBySoftObjectPtr(this, LobbyLevel);
+        return;
+    }
+
+    if (Tag == TEXT("PortalBoss"))
+    {
+        if (!Dungeon || !IsBossFloor()) { return; }
+
+        if (MonsterSpawner)      MonsterSpawner->CleanupSpawned();
+        if (InteractableSpawner) InteractableSpawner->CleanupSpawned();
+
+        if (bMuteMusicInBossArena)
+        {
+            bInBossArena = true;
+        }
+
+        static const FName FnName = TEXT("EnterBossArena");
+        if (Dungeon->GetClass()->FindFunctionByName(FnName))
+        {
+            Dungeon->CallFunctionByNameWithArguments(*FnName.ToString(), *GLog, nullptr, true);
+        }
+        return;
+    }
+
+    if (Tag == TEXT("PortalNext"))
     {
         OnFloorEnded.Broadcast(CurrentFloor);
         CurrentFloor = FMath::Max(1, CurrentFloor + 1);
         NextFloor();
         return;
     }
+}
 
-    if (PortalTag == TEXT("PortalBoss"))
-    {
-        if (Dungeon)
-        {
-            if (!IsBossFloor()) { return; }
+void AFF44FloorManager::CapturePlayerStateForInstance()
+{
+    if (!HasAuthority()) return;
 
-            MonsterSpawner->CleanupSpawned();
-            InteractableSpawner->CleanupSpawned();
+    UFF44GameInstance* Instance = Cast<UFF44GameInstance>(GetGameInstance());
+    ABasePlayer* Player = Cast<ABasePlayer>(UGameplayStatics::GetPlayerCharacter(this, 0));
+    if (!Instance || !Player) return;
 
-            FName FnName = TEXT("EnterBossArena");
-            if (Dungeon->GetClass()->FindFunctionByName(FnName))
-            {
-                Dungeon->CallFunctionByNameWithArguments(*FnName.ToString(), *GLog, nullptr, true);
-            }
-        }
-        return;
-    }
-
-    if (PortalTag == TEXT("PortalLobby"))
-    {
-
-
-    }
-    
+    Instance->PendingCompState.CaptureFrom(
+        Player->GetAbilitySystemComponent(),
+        Player->GetInventoryComponent()
+    );
 }
