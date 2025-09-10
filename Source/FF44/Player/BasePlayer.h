@@ -43,6 +43,7 @@ public:
 	ABasePlayer();
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerController")
 	class ABasePlayerController* BasePlayerController;
 
 public:

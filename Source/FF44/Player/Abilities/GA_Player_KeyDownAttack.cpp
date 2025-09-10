@@ -55,6 +55,12 @@ void UGA_Player_KeyDownAttack::EndAbility(const FGameplayAbilitySpecHandle Handl
         OwnerPlayer->OnKeyDownAttackEnd.RemoveDynamic(this, &UGA_Player_KeyDownAttack::EndAttack);
     }
 
+    if (Audio) {
+        Audio->Stop();
+        Audio->DestroyComponent();
+        Audio = nullptr;
+    }
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 

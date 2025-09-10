@@ -123,3 +123,13 @@ void ABasePlayerController::CloseInventory()
 	SetShowMouseCursor(false);
 	SetInputMode(FInputModeGameOnly());
 }
+
+void ABasePlayerController::OpenDieWidget()
+{
+	DieWidget = CreateWidget<UUserWidget>(GetWorld(), DieWidgetClass);
+	DieWidget->SetOwningPlayer(this);
+	DieWidget->AddToViewport();
+
+	SetInputMode(FInputModeUIOnly());
+	SetShowMouseCursor(true);
+}
