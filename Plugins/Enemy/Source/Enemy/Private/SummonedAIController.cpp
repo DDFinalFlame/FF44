@@ -40,7 +40,11 @@ void ASummonedAIController::OnUnPossess()
 	}
 
 	// Owner에 알리기
-	Cast<IBossAttack>(SummonOwner)->DeleteSpawnedEnemy(ControlledEnemy);
+	if (IBossAttack* Boss = Cast<IBossAttack>(SummonOwner))
+	{
+		Boss->DeleteSpawnedEnemy(ControlledEnemy);
+	}
+	
 
 	ControlledEnemy = nullptr;
 	Target = nullptr;
@@ -55,6 +59,8 @@ void ASummonedAIController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	//if (!ControlledEnemy) { return; }
+	IBossAttack* Boss = Cast<IBossAttack>(SummonOwner);
+	if (!Boss) { return;  }
 
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())
 	{

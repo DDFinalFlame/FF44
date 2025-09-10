@@ -75,7 +75,11 @@ protected:
 	bool bPhase2Triggered = false;
 	bool bPhase3Triggered = false;
 
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LobbyPortal")
+	TSubclassOf<AActor> PortalCDO;
 
+	FVector StartLocation = FVector();
 public:
 	ABaseBoss();
 
@@ -115,4 +119,11 @@ public:
 public:
 	// Phase - State
 	void SetPhase(float currentHP, float maxHp);
+
+public:
+	/* Death 애니메이션 처리 중 **/
+	virtual void OnDeath() override;
+
+	/* 월드에서 사라지기 **/
+	virtual void StartDissolve() override;
 };
