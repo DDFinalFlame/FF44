@@ -19,7 +19,26 @@ void AFF44FloorManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+    if (UWorld* W = GetWorld())
+    {
+        PortalSpawnedHandle = W->AddOnActorSpawnedHandler(
+            FOnActorSpawned::FDelegate::CreateUObject(this, &AFF44FloorManager::OnActorSpawned));
+    }
+
 	StartRun(BaseSeed, 1);
+}
+
+void AFF44FloorManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (UWorld* W = GetWorld())
+    {
+        if (PortalSpawnedHandle.IsValid())
+        {
+            W->RemoveOnActorSpawnedHandler(PortalSpawnedHandle);
+            PortalSpawnedHandle.Reset();
+        }
+    }
+    Super::EndPlay(EndPlayReason);
 }
 
 void AFF44FloorManager::StartRun(int32 InBaseSeed, int32 StartFloor)
@@ -33,6 +52,56 @@ void AFF44FloorManager::NextFloor()
 {
     CleanupFloor();
     StartFloorInternal();
+}
+
+FName AFF44FloorManager::ResolvePortalTag(AFF44Portal* Portal, FName Passed) const
+{
+    if (!Passed.IsNone())
+        return Passed;
+
+    static const FName N(TEXT("PortalNext"));
+    static const FName B(TEXT("PortalBoss"));
+    static const FName L(TEXT("PortalLobby"));
+
+    // 1) Actor Tags
+    if (Portal)
+    {
+        for (const FName& T : Portal->Tags)
+        {
+            if (T == N || T == B || T == L) return T;
+        }
+
+        // 2) 주요 컴포넌트의 ComponentTags도 확인(콜리전/트리거 등에 종종 태그를 다는 경우)
+        TArray<UActorComponent*> Comps = Portal->GetComponents().Array();
+        for (UActorComponent* C : Comps)
+        {
+            for (const FName& T : C->ComponentTags)
+            {
+                if (T == N || T == B || T == L) return T;
+            }
+        }
+    }
+
+    return NAME_None;
+}
+
+void AFF44FloorManager::BindSinglePortal(AFF44Portal* P)
+{
+    if (!P) return;
+
+    if (!P->OnPortalInteracted.IsAlreadyBound(this, &AFF44FloorManager::HandlePortalInteracted))
+    {
+        P->OnPortalInteracted.AddDynamic(this, &AFF44FloorManager::HandlePortalInteracted);
+    }
+}
+
+void AFF44FloorManager::OnActorSpawned(AActor* A)
+{
+    if (AFF44Portal* P = Cast<AFF44Portal>(A))
+    {
+        BindSinglePortal(P);
+        BoundPortals.Add(P);
+    }
 }
 
 void AFF44FloorManager::StartFloorInternal()
@@ -189,36 +258,37 @@ void AFF44FloorManager::UnbindFromPortals()
 
 void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName PortalTag)
 {
-    if (PortalTag.IsNone() || PortalTag == TEXT("PortalNext"))
+    const FName Tag = ResolvePortalTag(Portal, PortalTag);
+
+    if (Tag == TEXT("PortalLobby"))
+    {
+        if (MonsterSpawner)      MonsterSpawner->CleanupSpawned();
+        if (InteractableSpawner) InteractableSpawner->CleanupSpawned();
+
+        UGameplayStatics::OpenLevelBySoftObjectPtr(this, LobbyLevel);
+        return;
+    }
+
+    if (Tag == TEXT("PortalBoss"))
+    {
+        if (!Dungeon || !IsBossFloor()) { return; }
+
+        if (MonsterSpawner)      MonsterSpawner->CleanupSpawned();
+        if (InteractableSpawner) InteractableSpawner->CleanupSpawned();
+
+        static const FName FnName = TEXT("EnterBossArena");
+        if (Dungeon->GetClass()->FindFunctionByName(FnName))
+        {
+            Dungeon->CallFunctionByNameWithArguments(*FnName.ToString(), *GLog, nullptr, true);
+        }
+        return;
+    }
+
+    if (Tag == TEXT("PortalNext"))
     {
         OnFloorEnded.Broadcast(CurrentFloor);
         CurrentFloor = FMath::Max(1, CurrentFloor + 1);
         NextFloor();
         return;
     }
-
-    if (PortalTag == TEXT("PortalBoss"))
-    {
-        if (Dungeon)
-        {
-            if (!IsBossFloor()) { return; }
-
-            MonsterSpawner->CleanupSpawned();
-            InteractableSpawner->CleanupSpawned();
-
-            FName FnName = TEXT("EnterBossArena");
-            if (Dungeon->GetClass()->FindFunctionByName(FnName))
-            {
-                Dungeon->CallFunctionByNameWithArguments(*FnName.ToString(), *GLog, nullptr, true);
-            }
-        }
-        return;
-    }
-
-    if (PortalTag == TEXT("PortalLobby"))
-    {
-
-
-    }
-    
 }

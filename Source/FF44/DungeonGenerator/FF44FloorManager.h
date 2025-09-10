@@ -24,6 +24,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
     /* ===========================
@@ -86,7 +87,17 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Flow")
     void NextFloor();
 
+    UPROPERTY(EditAnywhere, Category = "Maps")
+    TSoftObjectPtr<UWorld> LobbyLevel;
+
 private:
+    FName ResolvePortalTag(class AFF44Portal* Portal, FName Passed) const;
+
+    FDelegateHandle PortalSpawnedHandle;
+
+    void BindSinglePortal(AFF44Portal* P);
+    void OnActorSpawned(AActor* A);
+
     /* ===========================
        Internals
        =========================== */
