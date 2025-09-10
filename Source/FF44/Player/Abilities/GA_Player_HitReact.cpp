@@ -117,6 +117,10 @@ void UGA_Player_HitReact::OnBlendInHitReact()
 
 		OwnerPlayer->GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*spec);
 
+		const FVector  Loc = OwnerPlayer->GetActorLocation();
+		const FRotator Rot = OwnerPlayer->GetActorRotation();
+
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PSystem, FTransform(Rot, Loc));
 	}
 }
 

@@ -98,6 +98,13 @@ void UGA_Player_SpecialHitReact::OnWraithBoss()
 				1.f           
 			);
 
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		ASC->AddGameplayCue(PlayerTags::State_Player_HitReacting_Special);
+
+		if (UWorld* World = OwnerPlayer->GetWorld()) {
+			UGameplayStatics::PlaySound2D(World, GrapVoice);
+		}
+
 		Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
 		Task->OnBlendOut.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
 		Task->OnInterrupted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
@@ -120,6 +127,9 @@ void UGA_Player_SpecialHitReact::OnRampage()
 			false,         
 			1.0f           
 		);
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	ASC->AddGameplayCue(PlayerTags::State_Player_HitReacting_Special);
 
 	Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
 	Task->OnBlendOut.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
@@ -145,6 +155,10 @@ void UGA_Player_SpecialHitReact::OnPlayerGrapMontage()
 				false,  
 				2.0f    
 			);
+
+		if (UWorld* World = OwnerPlayer->GetWorld()) {
+			UGameplayStatics::PlaySound2D(World, GrapVoice);
+		}
 
 		Task->OnCompleted.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
 		Task->OnBlendOut.AddDynamic(this, &UGA_Player_SpecialHitReact::K2_EndAbility);
@@ -173,6 +187,30 @@ void UGA_Player_SpecialHitReact::OnBeginNotify(FName NotifyName, const FBranchin
 			OwnerPlayer->AttachToComponent(boss->GetMesh(), rule, BossSocketName);
 		}
 	}
+
+	if (NotifyName == FallDownNotify)
+	{
+		// Ability를 가지고 있는지?
+		if (UAbilitySystemComponent* ASC = EventData.Instigator->FindComponentByClass<UAbilitySystemComponent>())
+		{
+			// ASC 사용 가능
+			if (DamageEffectClass) {
+				FGameplayEffectSpecHandle specHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 0.f, EventData.ContextHandle);
+				FGameplayEffectSpec* spec = specHandle.Data.Get();
+
+				OwnerPlayer->GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*spec);
+			}
+		}
+
+		if (UWorld* World = OwnerPlayer->GetWorld()) {
+			UGameplayStatics::PlaySound2D(World, FallDownSound);
+			UGameplayStatics::PlaySound2D(World, VoiceSound);
+		}
+
+		const FVector  Loc = OwnerPlayer->GetActorLocation();
+		const FRotator Rot = OwnerPlayer->GetActorRotation();
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PSystem, FTransform(Rot, Loc));
+	}
 }
 
 void UGA_Player_SpecialHitReact::OnEndNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
@@ -190,5 +228,11 @@ void UGA_Player_SpecialHitReact::OnEndNotify(FName NotifyName, const FBranchingP
 
 		// 부모 회전 영향 차단
 		Child->SetUsingAbsoluteRotation(false);
+	}
+
+	if (NotifyName == FallDownNotify)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		ASC->RemoveGameplayCue(PlayerTags::State_Player_HitReacting_Special);
 	}
 }
