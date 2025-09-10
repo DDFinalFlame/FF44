@@ -112,9 +112,9 @@ void AFF44DungeonGenerator::SpawnNextRoom()
 
     // 2) 방 스폰
     // (가중치 사용 시 아래 두 줄 교체)
-    // TSubclassOf<AFF44RoomBase> Chosen = PickWeightedRoom(Pool);
-    // LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Chosen);
-    LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Pool[FMath::RandRange(0, Pool.Num() - 1)]);
+    TSubclassOf<AFF44RoomBase> Chosen = PickWeightedRoom(Pool);
+    LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Chosen);
+    //LatestSpawnedRoom = GetWorld()->SpawnActor<AFF44RoomBase>(Pool[FMath::RandRange(0, Pool.Num() - 1)]);
     if (!LatestSpawnedRoom)
     {
         GetWorld()->GetTimerManager().SetTimer(SpawnNextHandle, this, &AFF44DungeonGenerator::SpawnNextRoom, RoomSpawnInterval, false);
