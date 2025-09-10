@@ -43,6 +43,7 @@ public:
 	ABasePlayer();
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerController")
 	class ABasePlayerController* BasePlayerController;
 
 public:
@@ -319,11 +320,11 @@ public:
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-///										State											///
+///										Light											///
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Light")
-	class USpotLightComponent* SpotLightComp;
+	class UPointLightComponent* PointLightComp;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////

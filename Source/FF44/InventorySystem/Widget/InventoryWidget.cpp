@@ -40,6 +40,11 @@ void UInventoryWidget::VisibilityChanged(ESlateVisibility NewVis)
 	}
 }
 
+void UInventoryWidget::DrawItemWigets()
+{
+	PlayerGrid->DrawItemWidgets();
+}
+
 void UInventoryWidget::DrawOtherGrid()
 {
 	OtherGrid->DrawInventoryGrid(OtherActor);

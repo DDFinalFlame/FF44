@@ -31,6 +31,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Rampage")
 	FName EndThrowNotify;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Rampage")
+	FName FallDownNotify;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Sound")
+	USoundBase* GrapVoice;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Sound")
+	USoundBase* FallDownSound;
+
 protected:
 	virtual void CommitExecute(const FGameplayAbilitySpecHandle Handle,
 							   const FGameplayAbilityActorInfo* ActorInfo,

@@ -43,5 +43,8 @@ protected:
 	void VisibilityChanged(ESlateVisibility NewVis);
 
 	UFUNCTION(BlueprintCallable, Category = "UI")
+	void DrawItemWigets();
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
 	void DrawOtherGrid();
 };

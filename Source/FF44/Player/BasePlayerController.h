@@ -52,6 +52,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UInventoryWidget> InventoryWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> DieWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UUserWidget> DieWidget;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void InitPlayerUI(UAbilitySystemComponent* _AbilitySystem);
@@ -65,6 +71,9 @@ public:
 
 	UFUNCTION()
 	virtual void CloseInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "Die")
+	virtual void OpenDieWidget();
 
 	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 	virtual UInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
