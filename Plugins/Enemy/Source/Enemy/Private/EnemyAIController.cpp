@@ -94,14 +94,14 @@ void AEnemyAIController::UpdateTarget() const
 
 void AEnemyAIController::SetTarget(AActor* NewTarget) const
 {
-	if (NewTarget)
+	if (NewTarget && NewTarget->Implements<UAbilitySystemInterface>())
 	{
-		if (UAbilitySystemComponent* ASC = NewTarget->GetComponentByClass<UAbilitySystemComponent>())
+		if (UAbilitySystemComponent* TargetASC = Cast<IAbilitySystemInterface>(NewTarget)->GetAbilitySystemComponent())
 		{
-			FGameplayTag DeathTag = FGameplayTag::RequestGameplayTag(FName("Player.Death"));
-			if (ASC->HasMatchingGameplayTag(DeathTag))
+			FGameplayTag DeathTag = FGameplayTag::RequestGameplayTag(FName("State.Player.Dead"));
+			if (TargetASC->HasMatchingGameplayTag(DeathTag))
 			{
-				UE_LOG(LogTemp, Log, TEXT("PlayerDeath"));
+				//UE_LOG(LogTemp, Log, TEXT("PlayerDeath"));
 				ControlledEnemy->OnDeath();
 				return;
 
