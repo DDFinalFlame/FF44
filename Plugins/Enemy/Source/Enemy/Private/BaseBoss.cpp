@@ -263,3 +263,51 @@ void ABaseBoss::SetPhase(float currentHP, float maxHp)
 
 	}
 }
+
+void ABaseBoss::OnDeath()
+{
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+		{
+			StartLocation = BB->GetValueAsVector(FName("StartLocation"));
+		}
+	}
+
+	Super::OnDeath();
+
+}
+
+void ABaseBoss::StartDissolve()
+{
+	float Duration = 3.0f;
+	float StepTime = 0.05f;
+	float Step = StepTime / Duration;
+	float CurrentAmount = 0.f;
+
+	GetWorldTimerManager().SetTimer(
+		DissolveTimerHandle,
+		[this, Step, CurrentAmount]() mutable
+		{
+			CurrentAmount += Step;
+
+			if (CurrentAmount >= 1.0f)
+			{
+				GetWorldTimerManager().ClearTimer(DissolveTimerHandle);
+				if (DropItem)
+				{
+					FVector Location = GetActorLocation();
+					Location.Z -= DropLocationZOffset;
+					GetWorld()->SpawnActor<AActor>(DropItem, Location, FRotator::ZeroRotator);
+				}
+				if (PortalCDO)
+				{
+					GetWorld()->SpawnActor<AActor>(PortalCDO, StartLocation, FRotator::ZeroRotator);
+				}
+				Destroy();
+			}
+		},
+		StepTime,
+		true
+	);
+}

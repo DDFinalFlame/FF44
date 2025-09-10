@@ -40,7 +40,11 @@ void ASummonedAIController::OnUnPossess()
 	}
 
 	// Owner에 알리기
-	Cast<IBossAttack>(SummonOwner)->DeleteSpawnedEnemy(ControlledEnemy);
+	if (IBossAttack* Boss = Cast<IBossAttack>(SummonOwner))
+	{
+		Boss->DeleteSpawnedEnemy(ControlledEnemy);
+	}
+
 
 	ControlledEnemy = nullptr;
 	Target = nullptr;
@@ -55,7 +59,16 @@ void ASummonedAIController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	//if (!ControlledEnemy) { return; }
+	IBossAttack* Boss = Cast<IBossAttack>(SummonOwner);
+	if (!Boss)
+	{
+		if (UBlackboardComponent* BB = GetBlackboardComponent())
+		{
+			// State 바꿔주고
+			BB->SetValueAsEnum(FName("Behavior"), static_cast<uint8>(EAIBehavior::Idle));
 
+		}
+	}
 	if (UEnemyRotationComponent* RotationComponent = ControlledEnemy->GetComponentByClass<UEnemyRotationComponent>())
 	{
 		EAIBehavior CurrentBehavior = GetCurrentBehavior();
