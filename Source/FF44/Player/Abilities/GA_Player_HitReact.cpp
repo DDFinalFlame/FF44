@@ -32,7 +32,8 @@ void UGA_Player_HitReact::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 	if (ABasePlayer* player = Cast<ABasePlayer>(ActorInfo->AvatarActor.Get()))
 	{
 		OwnerPlayer = player;
-		EventData = *TriggerEventData;
+		if (TriggerEventData)
+			EventData = *TriggerEventData;
 	}
 	else
 	{
@@ -82,6 +83,11 @@ void UGA_Player_HitReact::CommitExecute(const FGameplayAbilitySpecHandle Handle,
 			1.0f            // Root Motion Scale
 		);
 
+	const FVector  Loc = OwnerPlayer->GetActorLocation();
+	const FRotator Rot = OwnerPlayer->GetActorRotation();
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PSystem, FTransform(Rot, Loc));
+
 	Task->OnCompleted.AddDynamic(this, &UGA_Player_HitReact::K2_EndAbility);
 	Task->OnBlendedIn.AddDynamic(this, &UGA_Player_HitReact::OnBlendInHitReact);
 	Task->OnBlendOut.AddDynamic(this, &UGA_Player_HitReact::K2_EndAbility);
@@ -104,6 +110,8 @@ void UGA_Player_HitReact::EndAbility(const FGameplayAbilitySpecHandle Handle,
 void UGA_Player_HitReact::OnBlendInHitReact()
 {
 	// Ability를 가지고 있는지?
+	if (!EventData.Instigator) return;
+
 	if (UAbilitySystemComponent* ASC = EventData.Instigator->FindComponentByClass<UAbilitySystemComponent>())
 	{
 		// ASC 사용 가능
@@ -111,8 +119,12 @@ void UGA_Player_HitReact::OnBlendInHitReact()
 		FGameplayEffectSpec* spec = specHandle.Data.Get();
 
 		OwnerPlayer->GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*spec);
-
 	}
+
+	const FVector  Loc = OwnerPlayer->GetActorLocation();
+	const FRotator Rot = OwnerPlayer->GetActorRotation();
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PSystem, FTransform(Rot, Loc));
 }
 
 void UGA_Player_HitReact::OnBeginNotify(FName NotifyName, const FBranchingPointNotifyPayload& Payload)

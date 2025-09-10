@@ -325,6 +325,12 @@ void ABaseEnemy::StartDissolve()
 			if (CurrentAmount >= 1.0f)
 			{
 				GetWorldTimerManager().ClearTimer(DissolveTimerHandle);
+				if (DropItem)
+				{
+					FVector Location = GetActorLocation();
+					Location.Z -= DropLocationZOffset;
+					GetWorld()->SpawnActor<AActor>(DropItem, Location, FRotator::ZeroRotator);
+				}
 				Destroy();
 			}
 		},

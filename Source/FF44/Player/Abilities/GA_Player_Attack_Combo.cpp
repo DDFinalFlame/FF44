@@ -10,6 +10,7 @@
 #include "Sound/SoundBase.h"
 
 #include "Player/BasePlayer.h"
+#include "Player/Data/PlayerTags.h"
 #include "Weapon/BaseWeapon.h"
 
 void UGA_Player_Attack_Combo::CommitExecute(const FGameplayAbilitySpecHandle Handle, 
@@ -18,7 +19,7 @@ void UGA_Player_Attack_Combo::CommitExecute(const FGameplayAbilitySpecHandle Han
 {
     UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 
-    ASC->AddGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Attack")));
+    ASC->AddGameplayCue(PlayerTags::State_Player_Attack);
 
     if (UAnimInstance* AnimInst = OwnerPlayer->GetMesh()->GetAnimInstance())
     {
@@ -56,7 +57,7 @@ void UGA_Player_Attack_Combo::EndAbility(const FGameplayAbilitySpecHandle Handle
         AnimInst->OnPlayMontageNotifyEnd.RemoveDynamic(this, &UGA_Player_Attack_Combo::OnDisableAttack);
 
         UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-        ASC->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Attack")));        
+        ASC->RemoveGameplayCue(PlayerTags::State_Player_Attack);
     }
 
     GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(ComboEnabledTag);

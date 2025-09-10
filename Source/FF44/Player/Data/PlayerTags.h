@@ -18,6 +18,7 @@ namespace PlayerTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Weapon_Equip);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Weapon_UnEquip);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_HitReacting);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_HitReacting_Special);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Dodge);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Dead);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Attack);
