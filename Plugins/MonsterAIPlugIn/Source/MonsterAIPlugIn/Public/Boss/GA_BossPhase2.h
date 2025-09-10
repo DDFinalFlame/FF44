@@ -88,7 +88,8 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Phase2|ShockWave")
     TSubclassOf<UGameplayEffect> GE_ShockWave;
 
-
+    UPROPERTY(EditDefaultsOnly, Category = "Phase3")
+    TSubclassOf<UGameplayAbility> GA_BossPhase3Class;
     // 내부 상태
     bool bPhaseStarted = false;
     FActiveGameplayEffectHandle InvulnHandle;

@@ -6,6 +6,7 @@ namespace PlayerTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_HitReact);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Dodge);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Attack);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Attack_KeyDown);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Potion);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Equip);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Death);

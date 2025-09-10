@@ -41,11 +41,17 @@ void AFF44FloorManager::StartFloorInternal()
 
     if (!DungeonGeneratorClass) return;
 
-    Dungeon = GetWorld()->SpawnActor<AFF44DungeonGenerator>(DungeonGeneratorClass);
+    const FTransform SpawnTM = FTransform::Identity;
+    Dungeon = GetWorld()->SpawnActorDeferred<AFF44DungeonGenerator>(DungeonGeneratorClass, SpawnTM, this, nullptr,
+        ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+        //SpawnActor<AFF44DungeonGenerator>(DungeonGeneratorClass);
     if (!Dungeon) return;
 
     Dungeon->bIsBossFloor = IsBossFloor();
+    Dungeon->ApplyThemeForFloor(CurrentFloor);
     // 필요한 경우: Dungeon->GenerationSeed = SeedForFloor();
+
+    UGameplayStatics::FinishSpawningActor(Dungeon, SpawnTM);
 
     Dungeon->OnDungeonComplete.AddDynamic(this, &AFF44FloorManager::HandleDungeonComplete);
 }

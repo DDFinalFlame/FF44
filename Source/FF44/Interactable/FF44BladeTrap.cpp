@@ -36,6 +36,12 @@ void AFF44BladeTrap::BeginPlay()
         DamageArea->OnComponentEndOverlap.AddDynamic(this, &AFF44BladeTrap::OnDamageEnd);
     }
 
+    if (ensure(Pivot))
+    {
+        BaseRotation = Pivot->GetComponentRotation();
+        HingeAxisWorld = Pivot->GetRightVector().GetSafeNormal();
+    }
+
 	SetActive(true);
 }
 
@@ -46,7 +52,11 @@ void AFF44BladeTrap::Tick(float DeltaSeconds)
     RunningTime += DeltaSeconds * SwingSpeed;
     float Angle = FMath::Sin(RunningTime) * SwingAmplitude;
 
-    Pivot->SetRelativeRotation(FRotator(Angle, 0.f, 0.f));
+    //Pivot->SetRelativeRotation(FRotator(Angle, 0.f, 0.f));
+
+    const FQuat SwingQ(HingeAxisWorld, FMath::DegreesToRadians(Angle));
+    const FQuat FinalQ = SwingQ * BaseRotation.Quaternion();
+    Pivot->SetWorldRotation(FinalQ);
 }
 
 void AFF44BladeTrap::OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)

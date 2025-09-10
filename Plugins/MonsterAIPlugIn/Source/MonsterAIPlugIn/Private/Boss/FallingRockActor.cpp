@@ -197,7 +197,7 @@ void AFallingRockActor::OnChaosCollision(const FChaosPhysicsCollisionInfo& Info)
 
     // FX
     if (ImpactFX) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ImpactFX, P);
-    if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, P);
+
 
     SetHitBoxActive(false);
 
@@ -354,8 +354,8 @@ void AFallingRockActor::HandleLanded(const FVector& At)
     if (bHasLanded) return;
     bHasLanded = true;
 
-    SetHitBoxActive(false);
-
+    if (ImpactSound) 
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, At);
     // 착지 FX (전용서버 제외, 바닥 노멀 정렬)
     if (LandFX && GetNetMode() != NM_DedicatedServer)
     {
