@@ -107,17 +107,17 @@ void AShockwaveActor::Tick(float DeltaSeconds)
         }
     }
 
-    DrawDebugSphere(
-        GetWorld(),
-        GetActorLocation(),           // 중심: 액터 위치
-        CurrentRadius,                // 반경
-        32,                           // 세그먼트 수 (많을수록 매끄럽게)
-        FColor(200, 0, 200, 128),     // 색상 (보라)
-        false,                        // 영구 표시 여부 (false = 일정 시간 후 사라짐)
-        -1.0f,                        // Duration (음수 = 1프레임)
-        0,                            // Depth Priority
-        1.5f                          // 선 두께
-    );
+    //DrawDebugSphere(
+    //    GetWorld(),
+    //    GetActorLocation(),           // 중심: 액터 위치
+    //    CurrentRadius,                // 반경
+    //    32,                           // 세그먼트 수 (많을수록 매끄럽게)
+    //    FColor(200, 0, 200, 128),     // 색상 (보라)
+    //    false,                        // 영구 표시 여부 (false = 일정 시간 후 사라짐)
+    //    -1.0f,                        // Duration (음수 = 1프레임)
+    //    0,                            // Depth Priority
+    //    1.5f                          // 선 두께
+    //);
 
     if (NiagaraComp)
     {
