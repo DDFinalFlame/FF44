@@ -14,6 +14,7 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Weapon_ChangeEquip, "State.Playe
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Weapon_Equip, "State.Player.Weapon.Equip");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Weapon_UnEquip, "State.Player.Weapon.UnEquip");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_HitReacting, "State.Player.HitReacting");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_HitReacting_Special, "State.Player.HitReacting.Special");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Dodge, "State.Player.Dodge");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Dead, "State.Player.Dead");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Attack, "State.Player.Attack");

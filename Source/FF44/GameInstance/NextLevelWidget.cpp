@@ -10,4 +10,6 @@ void UNextLevelWidget::DataToss()
 				if (auto inst = GetWorld()->GetGameInstance())
 					if (auto instance = Cast<UFF44GameInstance>(inst))
 						instance->PendingCompState.CaptureFrom(player->GetAbilitySystemComponent(), player->GetInventoryComponent());
+
+	// Instance에서 Character를 BeginPlay 할 때마다 들게끔 하는방법?
 }

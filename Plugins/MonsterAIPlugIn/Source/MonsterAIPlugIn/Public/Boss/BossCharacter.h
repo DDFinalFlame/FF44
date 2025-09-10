@@ -83,6 +83,10 @@ protected:
     USoundBase* DeathSound = nullptr;   // 죽을 때 재생할 사운드
 
     bool bDeathSoundPlayed = false;     // 중복 방지
+
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+    class UCameraComponent* Grab;
 	
     // 죽을 때 스폰할 액터
     UPROPERTY(EditAnywhere, Category = "Death|Spawn")
