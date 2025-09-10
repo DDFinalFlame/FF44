@@ -47,6 +47,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS | Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FGameplayAbilitySpecHandle> Handles;
+
+
 	/* AttributeSet 초기값 Data Table **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS | Attribute")
 	UDataTable* EnemyDataTable;
@@ -80,10 +84,10 @@ protected:
 protected:
 	/* Weapon **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Weapon CDO");
-	TSubclassOf<AEnemyBaseWeapon> WeaponClass;
+	TMap<EWeaponType, TSubclassOf<AEnemyBaseWeapon>> WeaponClasses;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat | Weapon");
-	AEnemyBaseWeapon* Weapon;
+	TMap<EWeaponType, AEnemyBaseWeapon*> WeaponMap;
 
 	/* Montage **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Montage")
@@ -106,15 +110,15 @@ public:
 // GAS Section
 public:
 	void GiveDefaultAbilities();
-	bool RequestAbilityByTag(FGameplayTag AbilityTag);
+	FGameplayAbilitySpecHandle RequestAbilityByTag(FGameplayTag AbilityTag);
 	void InitializeAttributeSet();
 	/* Set Attribute ( MonsterAIPlugin 참조 ) **/
 	void ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<class UGameplayEffect> InitGE);
 
 // Weapon Control
 public:
-	virtual void ActivateWeaponCollision() override;
-	virtual void DeactivateWeaponCollision() override;
+	virtual void ActivateWeaponCollision(EWeaponType WeaponType) override;
+	virtual void DeactivateWeaponCollision(EWeaponType WeaponType) override;
 	virtual bool IsAttackSuccessful() override;
 
 // AI - State
@@ -132,6 +136,10 @@ public:
 	void EndDeath();
 	/* 월드에서 사라지기 **/
 	void StartDissolve();
+
+protected:
+	// mesh가 단일 구조가 아닌 경우 이거 override해서 Dissolve 적용
+	virtual void GetAllMetarials(TArray<UMaterialInstanceDynamic*>& OutArray);
 
 // Montage
 public:

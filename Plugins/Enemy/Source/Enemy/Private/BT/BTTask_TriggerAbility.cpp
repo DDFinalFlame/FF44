@@ -18,7 +18,9 @@ EBTNodeResult::Type UBTTask_TriggerAbility::ExecuteTask(UBehaviorTreeComponent& 
 	if (!ASC) return EBTNodeResult::Failed;
 
 	// Enemy 클래스 통해 Ability 발동 요청
-	if (!Enemy->RequestAbilityByTag(AbilityTag))
+	FGameplayAbilitySpecHandle Handle = Enemy->RequestAbilityByTag(AbilityTag);
+
+	if (Handle == FGameplayAbilitySpecHandle())
 	{
 		return EBTNodeResult::Failed;
 	}

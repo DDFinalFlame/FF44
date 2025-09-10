@@ -7,6 +7,7 @@ ARangedEnemy::ARangedEnemy()
 {
 	// Bow Mesh 붙이기
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>("Weapon Mesh");
+
 }
 
 void ARangedEnemy::BeginPlay()
@@ -42,4 +43,47 @@ FVector ARangedEnemy::GetMuzzleDirection()
 	}
 
 	return FVector(0.0f);
+}
+
+void ARangedEnemy::GetAllMetarials(TArray<UMaterialInstanceDynamic*>& OutArray)
+{
+	// 위치를 ....
+	DropBow();
+
+	// Main Mesh
+	Super::GetAllMetarials(OutArray);
+
+	int32 num = GetMesh()->GetNumChildrenComponents();
+	for (int32 numMesh = 0; numMesh < num; ++numMesh)
+	{
+		if (UMeshComponent* ChildMesh = Cast<UMeshComponent>(GetMesh()->GetChildComponent(numMesh)))
+		{
+			int32 MaterialCount = ChildMesh->GetNumMaterials();
+
+			for (int32 numMat = 0; numMat < MaterialCount; ++numMat)
+			{
+				UMaterialInstanceDynamic* DynMat = ChildMesh->CreateAndSetMaterialInstanceDynamic(numMat);
+				if (DynMat)
+				{
+					OutArray.Add(DynMat);
+				}
+			}
+		}
+		
+	}
+}
+
+void ARangedEnemy::DropBow()
+{
+	if (WeaponMesh)
+	{
+		WeaponMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+
+
+		WeaponMesh->SetSimulatePhysics(true);     // 물리 시뮬레이션 활성화
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); // 충돌 활성화
+		WeaponMesh->SetCollisionObjectType(ECC_PhysicsBody); // 충돌 타입 지정
+
+		WeaponMesh->AddImpulse(Power, NAME_None, true);
+	}
 }

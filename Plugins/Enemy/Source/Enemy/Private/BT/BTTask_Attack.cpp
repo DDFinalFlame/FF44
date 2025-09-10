@@ -16,18 +16,21 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	CachedASC = Enemy->FindComponentByClass<UAbilitySystemComponent>();
 	if (!CachedASC) return EBTNodeResult::Failed;
 
-	// Ability 종료 델리게이트 등록
-	AbilityEndedDelegateHandle = CachedASC->OnAbilityEnded.AddUObject(this, &UBTTask_Attack::OnAbilityEnded);
-	CachedOwnerComp = &OwnerComp;
-
-	// Enemy 클래스 통해 Ability 발동 요청
-	if (!Enemy->RequestAbilityByTag(AbilityTag))
+	CachedSpecHandle = Enemy->RequestAbilityByTag(AbilityTag);
+	if (CachedSpecHandle != FGameplayAbilitySpecHandle())
 	{
-		CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+		// Ability 종료 델리게이트 등록
+		AbilityEndedDelegateHandle = CachedASC->OnAbilityEnded.AddUObject(this, &UBTTask_Attack::OnAbilityEnded);
+		CachedOwnerComp = &OwnerComp;
+
+		return EBTNodeResult::InProgress;
+
+	}
+	else
+	{
 		return EBTNodeResult::Failed;
 	}
 
-	return EBTNodeResult::InProgress;
 }
 
 void UBTTask_Attack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
@@ -40,6 +43,9 @@ void UBTTask_Attack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* No
 
 	CachedASC = nullptr;
 	CachedOwnerComp = nullptr;
+	CachedSpecHandle = FGameplayAbilitySpecHandle();
+
+	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 
 	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 }
@@ -54,12 +60,23 @@ void UBTTask_Attack::OnAbilityEnded(const FAbilityEndedData& EndData)
 	ABaseEnemy* Enemy = Cast<ABaseEnemy>(AICon->GetPawn());
 	if (!Enemy) return;
 
+	// TO-DO : End 확인 필요 ? 
+	if (EndData.AbilitySpecHandle == CachedSpecHandle)
+	{
+		CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+	}
+
 	if (EndData.AbilityThatEnded)
 	{
-		if (EndData.AbilityThatEnded->GetAssetTags().HasTag(AbilityTag))
-		{
-			CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
-			FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
-		}
+		// 옛날 방식
+		//if (EndData.AbilityThatEnded->GetAssetTags().HasTag(AbilityTag))
+		//{
+		//	CachedASC->OnAbilityEnded.Remove(AbilityEndedDelegateHandle);
+		//	FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+		//}
+
+		
+
 	}
 }
