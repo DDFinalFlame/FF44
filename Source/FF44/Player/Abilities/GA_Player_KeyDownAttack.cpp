@@ -1,8 +1,10 @@
 #include "GA_Player_KeyDownAttack.h"
 
 #include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameplayTagContainer.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Player/BasePlayer.h"
 #include "Weapon/BaseWeapon.h"
@@ -30,6 +32,9 @@ void UGA_Player_KeyDownAttack::CommitExecute(const FGameplayAbilitySpecHandle Ha
                 false,
                 1.0f
             );
+
+        UWorld* World = OwnerPlayer->GetWorld();
+        Audio = UGameplayStatics::SpawnSound2D(World, LoopSwingSound);
 
         Task->OnCompleted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
         Task->OnBlendOut.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
@@ -77,6 +82,15 @@ void UGA_Player_KeyDownAttack::EndAttack()
             false,
             1.0f
         );
+
+    if (Audio) {
+        Audio->Stop();
+        Audio->DestroyComponent();
+        Audio = nullptr;
+    }
+
+    UWorld* World = OwnerPlayer->GetWorld();
+    UGameplayStatics::PlaySound2D(World, EndSwingSound);
 
     Task->OnCompleted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
     Task->OnBlendOut.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
