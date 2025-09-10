@@ -10,7 +10,7 @@
 #include "Boss/BossMeleeWeapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "MonsterAttributeSet.h"
-
+#include "Camera/CameraComponent.h"
 
 
 
@@ -18,6 +18,8 @@ ABossCharacter::ABossCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
 
+    Grab = CreateDefaultSubobject<UCameraComponent>(TEXT("GrabCamera"));
+    Grab->SetupAttachment(GetMesh());
 }
 
 void ABossCharacter::BeginPlay()
