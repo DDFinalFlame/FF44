@@ -143,7 +143,7 @@ public:
 	/* Death 애니메이션 종료 **/
 	void EndDeath();
 	/* 월드에서 사라지기 **/
-	void StartDissolve();
+	virtual void StartDissolve();
 
 protected:
 	// mesh가 단일 구조가 아닌 경우 이거 override해서 Dissolve 적용
