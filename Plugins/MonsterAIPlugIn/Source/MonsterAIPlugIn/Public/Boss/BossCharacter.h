@@ -88,4 +88,23 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
     class UCameraComponent* Grab;
 	
+    // 죽을 때 스폰할 액터
+    UPROPERTY(EditAnywhere, Category = "Death|Spawn")
+    TSubclassOf<AActor> DeathSpawnClass1;
+
+    UPROPERTY(EditAnywhere, Category = "Death|Spawn")
+    TSubclassOf<AActor> DeathSpawnClass2;
+
+    // 위치 오프셋 (보스 기준)
+    UPROPERTY(EditAnywhere, Category = "Death|Spawn")
+    float DeathSpawnBackOffset = 150.f;   // 뒤로
+    UPROPERTY(EditAnywhere, Category = "Death|Spawn")
+    float DeathSpawnSideOffset = 120.f;   // 좌/우
+    UPROPERTY(EditAnywhere, Category = "Death|Spawn")
+    float DeathSpawnZOffset = 0.f;        // 높이 보정
+
+    bool bDeathExtrasSpawned = false;
+
+    UFUNCTION()
+    void SpawnDeathSideActors();
 };
