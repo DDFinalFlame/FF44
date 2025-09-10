@@ -9,6 +9,8 @@ class UBoxComponent;
 class UBillboardComponent;
 class UGameplayAbility;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCinematicTriggered, AActor*, OtherActor);
+
 UCLASS()
 class MONSTERAIPLUGIN_API ABossCinematicTrigger : public AActor
 {
@@ -16,6 +18,15 @@ class MONSTERAIPLUGIN_API ABossCinematicTrigger : public AActor
 
 public:
     ABossCinematicTrigger();
+
+    UPROPERTY(BlueprintAssignable, Category = "Cinematic")
+    FOnCinematicTriggered OnCinematicTriggered;
+
+    UFUNCTION(BlueprintCallable, Category = "Cinematic")
+    void PlayCinematicNow();  
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Cinematic")
+    void BP_OnCinematicTriggered(AActor* OtherActor); 
 
 protected:
     UPROPERTY(VisibleAnywhere, Category = "Trigger")
@@ -92,6 +103,7 @@ protected:
     void OnBeginOverlap(UPrimitiveComponent* _OverlappedComp, AActor* _OtherActor,
         UPrimitiveComponent* _OtherComp, int32 _OtherBodyIndex,
         bool _bFromSweep, const FHitResult& _SweepResult);
+
 
     void TriggerOnce(AActor* _OtherActor);
     void PlayBossIntroMontage();
