@@ -15,7 +15,7 @@
 #include "Monster/MonsterCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "AbilitySystemGlobals.h"
-static bool ProjectToGround_NoTilt(
+static bool ProjectToGround_NoTilt1(
     UWorld* World,
     const FVector& XY,                   // X,Y만 의미 있음
     FVector& OutGroundLoc,               // 최종 스폰 위치(Z 확정)
@@ -436,7 +436,7 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 
         // Z만 바닥 투영
         FVector GroundLoc;
-        if (!ProjectToGround_NoTilt(World, CandidateXY, GroundLoc, 2000.f, 6000.f, 2.f, GroundChannel, &QP))
+        if (!ProjectToGround_NoTilt1(World, CandidateXY, GroundLoc, 2000.f, 6000.f, 2.f, GroundChannel, &QP))
             continue;
 
         // 바닥은 제외하고 "다른 액터"와 겹치지 않는지 검사
@@ -461,7 +461,7 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
     if (!bFound)
     {
         const FVector FallbackXY = Center + FVector(200.f, 0.f, 0.f);
-        if (!ProjectToGround_NoTilt(World, FallbackXY, SpawnLoc, 2000.f, 6000.f, 2.f, GroundChannel, &QP))
+        if (!ProjectToGround_NoTilt1(World, FallbackXY, SpawnLoc, 2000.f, 6000.f, 2.f, GroundChannel, &QP))
         {
             // 최후의 안전망: Z만 보스보다 조금 낮춰서 박기
             SpawnLoc = FVector(FallbackXY.X, FallbackXY.Y, Center.Z - 50.f);
