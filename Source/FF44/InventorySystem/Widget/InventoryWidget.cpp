@@ -31,11 +31,13 @@ void UInventoryWidget::VisibilityChanged(ESlateVisibility NewVis)
 		else
 		{
 			OtherGrid->DrawInventoryGrid(nullptr);
+			OtherGrid->DestroyInventoryGrid();
 			OtherGrid->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 	else
 	{
+		OtherGrid->DestroyInventoryGrid();
 		OtherGrid->DrawInventoryGrid(nullptr);
 	}
 }
@@ -47,7 +49,9 @@ void UInventoryWidget::DrawItemWigets()
 
 void UInventoryWidget::DrawOtherGrid()
 {
-	OtherGrid->DrawInventoryGrid(OtherActor);
-	OtherGrid->DrawItemWidgets();
-	OtherGrid->SetVisibility(ESlateVisibility::Visible);
+	if (OtherGrid->DrawInventoryGrid(OtherActor))
+	{
+		OtherGrid->DrawItemWidgets();
+		OtherGrid->SetVisibility(ESlateVisibility::Visible);
+	}
 }
