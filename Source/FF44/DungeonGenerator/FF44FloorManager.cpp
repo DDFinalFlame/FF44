@@ -8,11 +8,18 @@
 #include "Interactable/FF44Portal.h"
 #include "Kismet/GameplayStatics.h"
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 
 AFF44FloorManager::AFF44FloorManager()
 {
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 
+    MusicComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("MusicComponent"));
+    MusicComponent->bAutoActivate = false;
+    MusicComponent->bAllowSpatialization = false;
+    MusicComponent->bIsUISound = true;
+    MusicComponent->SetupAttachment(RootComponent);
 }
 
 void AFF44FloorManager::BeginPlay()
@@ -52,6 +59,41 @@ void AFF44FloorManager::NextFloor()
 {
     CleanupFloor();
     StartFloorInternal();
+}
+
+void AFF44FloorManager::PlayCurrentFloorMusic()
+{
+    if (!MusicComponent || !Dungeon) return;
+
+    USoundBase* NewMusic = Dungeon->GetLoadedThemeMusic();
+    if (!NewMusic) { StopMusic(true); return; }
+
+    MusicComponent->SetSound(NewMusic);
+    if (MusicFadeInTime > 0.f)
+    {
+        MusicComponent->FadeIn(MusicFadeInTime, 1.f);
+    }
+    else
+    {
+        MusicComponent->Play(0.f);
+    }
+}
+
+void AFF44FloorManager::StopMusic(bool bImmediate)
+{
+    if (!MusicComponent) return;
+
+    if (MusicComponent->IsPlaying())
+    {
+        if (!bImmediate && MusicFadeOutTime > 0.f)
+        {
+            MusicComponent->FadeOut(MusicFadeOutTime, 0.f);
+        }
+        else
+        {
+            MusicComponent->Stop();
+        }
+    }
 }
 
 FName AFF44FloorManager::ResolvePortalTag(AFF44Portal* Portal, FName Passed) const
@@ -107,6 +149,9 @@ void AFF44FloorManager::OnActorSpawned(AActor* A)
 void AFF44FloorManager::StartFloorInternal()
 {
     OnFloorStarted.Broadcast(CurrentFloor);
+
+    bInBossArena = false;
+    StopMusic(false);
 
     if (!DungeonGeneratorClass) return;
 
@@ -209,6 +254,14 @@ void AFF44FloorManager::HandleDungeonComplete()
     }
 
     TryFinishFloorReady();
+
+    if (bInBossArena && bMuteMusicInBossArena)
+    {
+        StopMusic(true);
+        return;
+    }
+
+    PlayCurrentFloorMusic();
 }
 
 void AFF44FloorManager::HandleMonsterSpawnComplete()
@@ -275,6 +328,11 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
 
         if (MonsterSpawner)      MonsterSpawner->CleanupSpawned();
         if (InteractableSpawner) InteractableSpawner->CleanupSpawned();
+
+        if (bMuteMusicInBossArena)
+        {
+            bInBossArena = true;
+        }
 
         static const FName FnName = TEXT("EnterBossArena");
         if (Dungeon->GetClass()->FindFunctionByName(FnName))

@@ -11,6 +11,8 @@ class AFF44DungeonGenerator;
 class AFF44MonsterSpawner;
 class AFF44InteractableSpawner;
 class AFF44Portal;
+class UAudioComponent;
+class USoundBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloorEvent, int32, FloorIndex);
 
@@ -89,6 +91,33 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Maps")
     TSoftObjectPtr<UWorld> LobbyLevel;
+
+    /* ===========================
+       Public API
+       =========================== */
+
+public:
+    UFUNCTION(BlueprintCallable, Category = "Audio")
+    void PlayCurrentFloorMusic();
+
+    UFUNCTION(BlueprintCallable, Category = "Audio")
+    void StopMusic(bool bImmediate = false);
+
+protected:
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    float MusicFadeInTime = 0.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    float MusicFadeOutTime = 0.3f;
+
+    UPROPERTY(VisibleAnywhere, Category = "Audio")
+    UAudioComponent* MusicComponent = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    bool bMuteMusicInBossArena = true;
+
+    UPROPERTY(Transient)
+    bool bInBossArena = false;
 
 private:
     FName ResolvePortalTag(class AFF44Portal* Portal, FName Passed) const;

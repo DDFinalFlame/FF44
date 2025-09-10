@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
+#include "Sound/SoundBase.h"
 #include "NavigationSystem.h"
 
 AFF44DungeonGenerator::AFF44DungeonGenerator()
@@ -456,6 +457,8 @@ void AFF44DungeonGenerator::ApplyThemeForFloor(int32 FloorIndex)
     else { ExitCapClass = nullptr; }
     if (auto C = LoadActor(Row->SmallExitCapClass)) { SmallExitCapClass = C; }
     else { SmallExitCapClass = nullptr; }
+
+    LoadedThemeMusic = Row->ThemeMusic.IsNull() ? nullptr : Row->ThemeMusic.LoadSynchronous();
 }
 
 
