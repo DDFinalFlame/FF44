@@ -10,6 +10,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "BossLightningProjectile.h"
+#include "MonsterAttributeSet.h"
+#include "AbilitySystemComponent.h"
 
 //디버깅용
 #include "Engine/TargetPoint.h"
@@ -27,6 +29,24 @@ AWeakPointActor::AWeakPointActor()
 
     // 간단히 Hit 이벤트로 부서지게 연결(원하시면 Overlap, HP 시스템 등으로 확장)
     Mesh->OnComponentHit.AddDynamic(this, &AWeakPointActor::OnMeshHit);
+}
+
+
+void AWeakPointActor::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // 전용 서버에서는 재생 안 함
+    if (GetNetMode() == NM_DedicatedServer) return;
+
+    if (SpawnSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(
+            this,
+            SpawnSound,
+            GetActorLocation()
+        );
+    }
 }
 
 void AWeakPointActor::InitializeWeakPoint(AActor* _BossActor, float _DamageToBoss)
@@ -79,6 +99,18 @@ void AWeakPointActor::NotifyHitByPlayerWeapon(const FHitResult& Hit, AActor* Att
 void AWeakPointActor::SpawnProjectileTowardBoss()
 {
     if (!ProjectileClass || !OwnerBoss.IsValid()) return;
+    // 보스 체력 확인.
+    if (UAbilitySystemComponent* BossASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerBoss.Get()))
+    {
+        if (const UMonsterAttributeSet* Attr = Cast<UMonsterAttributeSet>(BossASC->GetAttributeSet(UMonsterAttributeSet::StaticClass())))
+        {
+            if (Attr->GetHealth() <= 0.f)
+            {
+                // 보스가 이미 죽었으면 발사 안 함
+                return;
+            }
+        }
+    }
 
     UWorld* World = GetWorld();
     if (!World) return;

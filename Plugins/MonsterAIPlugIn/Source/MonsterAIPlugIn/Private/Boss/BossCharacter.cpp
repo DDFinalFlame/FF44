@@ -8,6 +8,8 @@
 #include "MonsterTags.h"
 #include "Data/staticName.h"
 #include "Boss/BossMeleeWeapon.h"
+#include "Kismet/GameplayStatics.h"
+#include "MonsterAttributeSet.h"
 
 
 
@@ -32,7 +34,32 @@ void ABossCharacter::BeginPlay()
 }
 
 
+void ABossCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
 
+    if (!HasAuthority()) return;
+
+    if (AbilitySystemComponent)
+    {
+        if (const UMonsterAttributeSet* Attr = Cast<UMonsterAttributeSet>(AttributeSet))
+        {
+            if (!bDeathSoundPlayed && Attr->GetHealth() <= 0.f)
+            {
+                bDeathSoundPlayed = true;
+
+                if (DeathSound)
+                {
+                    UGameplayStatics::PlaySoundAtLocation(
+                        this,
+                        DeathSound,
+                        GetActorLocation()
+                    );
+                }
+            }
+        }
+    }
+}
 
 void ABossCharacter::ActivatePhaseWatcherOnce()
 {

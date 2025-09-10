@@ -54,6 +54,26 @@ void ASkeletonHeadMonster::Tick(float _dt)
 
     if (!HasAuthority()) return;
 
+    if (AbilitySystemComponent)
+    {
+        if (const UMonsterAttributeSet* Attr = Cast<UMonsterAttributeSet>(AttributeSet))
+        {
+            if (!bDeathSoundPlayed && Attr->GetHealth() <= 0.f)
+            {
+                bDeathSoundPlayed = true; // 중복 방지 플래그
+
+                if (DeathSound)   // USoundBase* DeathSound = nullptr; (헤더에 UPROPERTY로 선언)
+                {
+                    UGameplayStatics::PlaySoundAtLocation(
+                        this,
+                        DeathSound,
+                        GetActorLocation()
+                    );
+                }
+            }
+        }
+    }
+
     if (GetMonsterState() == EMonsterState::Ragdoll && !bAssembleRequested)
     {
         if (AssembleTriggerDistance > 0.f && AbilitySystemComponent)

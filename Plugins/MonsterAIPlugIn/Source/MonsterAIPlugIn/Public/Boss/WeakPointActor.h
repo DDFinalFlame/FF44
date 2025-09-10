@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Sound/SoundBase.h"
 #include "WeakPointActor.generated.h"
 
 
@@ -23,6 +24,12 @@ public:
     void InitializeWeakPoint(AActor* _BossActor, float _DamageToBoss);
 
 protected:
+    virtual void BeginPlay() override;  // ← 추가
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* SpawnSound = nullptr;   // 스폰 시 재생할 사운드
+
+
     UPROPERTY(VisibleAnywhere)
     UStaticMeshComponent* Mesh;
 
