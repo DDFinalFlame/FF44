@@ -26,16 +26,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackTag")
 	FGameplayTag AbilityTag;
 
+	//// Sound ( 더 정확한 타이밍 제어를 위해 AM에서 ) 
+	//UPROPERTY(EditAnywhere, Category = "Audio")
+	//USoundBase* AttackSound;
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
-	UFUNCTION()
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	//UFUNCTION()
+	//void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	//UFUNCTION()
+	//void OnMontageBlendedIn(UAnimMontage* Montage);
+	//UFUNCTION()
+	//void OnMontageBlendedOut(UAnimMontage* Montage, bool bSth);
 
 	UFUNCTION()
-	void OnMontageBlendedIn(UAnimMontage* Montage);
+	void OnMontageCompleted();
+
 	UFUNCTION()
-	void OnMontageBlendedOut(UAnimMontage* Montage, bool bSth);
-	
+	void OnMontageCancelled();
+
+	UFUNCTION()
+	void OnMontageBlendOut();
 };

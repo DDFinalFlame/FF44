@@ -8,6 +8,9 @@ enum class EAIBehavior : uint8
 	Patrol,
 	MeleeAttack,
 	RangeAttack,
+	Evade,
+	Summon,
+	Grab,
 	Approach,
 	Investigate,
 	Hit,
@@ -37,6 +40,7 @@ enum class EWeaponType : uint8
 	LeftHand,
 	RightHand,
 	Bow,
+	FXHand
 };
 
 

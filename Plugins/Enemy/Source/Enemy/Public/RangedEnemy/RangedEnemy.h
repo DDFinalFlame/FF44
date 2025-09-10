@@ -22,6 +22,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Weapon | Socket")
 	FName SocketName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Weapon | ImpulsePower")
+	FVector Power = FVector(1.0f, 1.0f, 0.0f);
+
 public:
 	ARangedEnemy();
 public:
@@ -30,4 +33,10 @@ public:
 public:
 	virtual FVector GetMuzzleLocation() override;
 	virtual FVector GetMuzzleDirection() override;
+
+protected:
+	virtual void GetAllMetarials(TArray<UMaterialInstanceDynamic*>& OutArray) override;
+
+protected:
+	void DropBow();
 };

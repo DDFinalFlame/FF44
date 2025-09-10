@@ -29,7 +29,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_MoveSpeed, "Data.MoveSpeed");
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Data_Defense, "Data.Defense");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Impact_Hit, "GameplayCue.Impact.Hit");
-
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::GC_Monster_Hit, "GameplayCue.Monster.Hit");
 //보스 관련 tag
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Ability_Boss_Summon, "Ability.Boss.Summon");        // 보스 소환 패턴 GA
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Ability_Boss_Channel, "Ability.Boss.Channel");      // 보스 캐스팅 루프 GA
@@ -38,6 +38,7 @@ UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Ability_Boss_Swing1, "Ability.Boss.Swing1");
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Boss_Invuln, "State.Boss.Invuln");   // 무적 상태
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Boss_Channeling, "State.Boss.Channeling"); // 제자리 캐스팅 중
+UE_DEFINE_GAMEPLAY_TAG(MonsterTags::State_Boss_Grab_CoolTime, "State.Boss.GrabCoolDown"); // 제자리 캐스팅 중
 
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Boss_PhaseStart, "Event.Boss.PhaseStart");   // 페이즈 시작 트리거
 UE_DEFINE_GAMEPLAY_TAG(MonsterTags::Event_Minion_Died, "Event.Minion.Died");           // 소환몹 사망 → 보스 알림

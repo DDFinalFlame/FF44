@@ -13,6 +13,7 @@
 #include "Monster/MonsterCharacter.h"
 #include "NiagaraFunctionLibrary.h"  
 #include "Kismet/GameplayStatics.h"  
+#include "NiagaraComponent.h"
 
 
 static bool HasPhysicsBody(USkeletalMeshComponent* Sk, const FName& Bone)
@@ -73,7 +74,7 @@ void UGA_MonsterAssemble::EndAbility(const FGameplayAbilitySpecHandle Handle,
     {
         Chr->GetWorldTimerManager().ClearTimer(TH_BlendTick);
     }
-
+    StopAssembleFX();
     Super::EndAbility(Handle, Info, ActInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -188,6 +189,7 @@ void UGA_MonsterAssemble::Recover_Start(ACharacter* Chr)
     Mv->bOrientRotationToMovement = false;
 
     // 9) 순차 조립 시작
+    StartAssembleFX(Chr);          
     CurrentChainIndex = 0;
     AssembleStep();
 }
@@ -200,11 +202,7 @@ void UGA_MonsterAssemble::AssembleStep()
     if (CurrentChainIndex >= AssembleOrder.Num())
     {
         // 모든 본 조립 끝: 안전 정렬 후 AI 재가동
-        StandUpFix(Chr);
-        if (AAIController* AIC = GetAI(Chr))
-            if (AIC->BrainComponent) AIC->BrainComponent->StartLogic();
-
-        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        BeginGetUp(Chr);
         return;
     }
     USkeletalMeshComponent* Sk = GetMesh(Chr);
@@ -221,13 +219,6 @@ void UGA_MonsterAssemble::AssembleStep()
             return;
         }
         ++CurrentChainIndex; // 바디 없으면 스킵
-    }
-
-    if (CurrentChainIndex >= AssembleOrder.Num())
-    {
-        // 모든 본 조립 끝: 바로 스냅하지 말고 '일어나기' 페이즈로 전환
-        BeginGetUp(Chr);
-        return;
     }
 }
 
@@ -480,6 +471,7 @@ void UGA_MonsterAssemble::FinishGetUp(ACharacter* Chr)
     UCharacterMovementComponent* Mv = GetMove(Chr);
     if (!Sk || !Cap || !Mv) return;
 
+    StopAssembleFX();
     // 미세 오차 보정(큰 오차만 텔레포트)
     const FVector DesiredLoc = GetUpTargetLoc;
     const float   DesiredYaw = GetUpTargetYaw;
@@ -553,4 +545,39 @@ FVector UGA_MonsterAssemble::GetFeetOrPelvisLoc(ACharacter* Chr) const
         return Sk->GetBoneLocation(PelvisBone);
 
     return Chr->GetActorLocation();
+}
+
+void UGA_MonsterAssemble::StartAssembleFX(ACharacter* Chr)
+{
+    if (!NS_AssembleLoop || AssembleFXComp || !Chr) return;
+
+    USkeletalMeshComponent* Sk = GetMesh(Chr);
+    if (!Sk) return;
+
+    // 골반 본의 월드 위치/회전
+    FVector  FXLoc = Sk->GetBoneLocation(PelvisBone);
+    FXLoc.Z += AssembleFXZOffset;
+    FRotator FXRot = Sk->GetBoneQuaternion(PelvisBone).Rotator();
+
+    AssembleFXComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+        Chr->GetWorld(),
+        NS_AssembleLoop,
+        FXLoc,
+        FXRot,
+        FVector(3.f),              // 스케일
+        /*bAutoDestroy=*/false,
+        /*bAutoActivate=*/true,
+        ENCPoolMethod::None,
+        /*bPreCullCheck=*/true
+    );
+}
+
+void UGA_MonsterAssemble::StopAssembleFX()
+{
+    if (AssembleFXComp)
+    {
+        AssembleFXComp->Deactivate();
+        AssembleFXComp->DestroyComponent();
+        AssembleFXComp = nullptr;
+    }
 }

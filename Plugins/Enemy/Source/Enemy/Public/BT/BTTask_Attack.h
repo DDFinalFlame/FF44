@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_Attack.generated.h"
 
@@ -30,4 +31,5 @@ private:
     UBehaviorTreeComponent* CachedOwnerComp = nullptr;
     UAbilitySystemComponent* CachedASC = nullptr;
     FDelegateHandle AbilityEndedDelegateHandle;
+    FGameplayAbilitySpecHandle CachedSpecHandle;
 };

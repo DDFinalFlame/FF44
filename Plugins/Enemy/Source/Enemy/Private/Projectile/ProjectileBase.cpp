@@ -1,6 +1,8 @@
 #include "Projectile/ProjectileBase.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 AProjectileBase::AProjectileBase()
 {
@@ -81,12 +83,12 @@ void AProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActo
 	if (OtherActor == GetOwner()) { return; }
 
 	FGameplayEventData EventData;
-	
+
 	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
 	EventData.Instigator = GetOwner();
 	EventData.Target = OtherActor;
 
-	/* HitResult를 TargetData로 포장 **/ 
+	/* HitResult를 TargetData로 포장 **/
 	EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
 
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(

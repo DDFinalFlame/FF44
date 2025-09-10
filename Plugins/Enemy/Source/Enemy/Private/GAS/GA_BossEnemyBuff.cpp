@@ -23,7 +23,7 @@ void UGA_BossEnemyBuff::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	if (TriggerEventData->OptionalObject && TriggerEventData->Instigator.Get())
 	{
-		// Effect 적용
+		// 데미지 Effect 적용
 		const UClass* EffectUClass = Cast<UClass>(TriggerEventData->OptionalObject);
 
 		if (EffectUClass && EffectUClass->IsChildOf(UGameplayEffect::StaticClass()))
@@ -44,6 +44,18 @@ void UGA_BossEnemyBuff::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			SpecHandle.Data->SetSetByCallerMagnitude(DamageTag, TriggerEventData->EventMagnitude);
 
 			ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), ASC);
+		}
+
+		// FX Effect 적용
+		if (EvadeEffectClass)
+		{
+			FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(EvadeEffectClass, 1.0f, ContextHandle);
+
+			if (SpecHandle.IsValid())
+			{
+				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			}
 		}
 	}
 }
