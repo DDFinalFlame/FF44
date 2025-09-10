@@ -4,6 +4,7 @@
 UENUM(BlueprintType)
 enum class EAIBehavior : uint8
 {
+	Intro,
 	Idle,
 	Patrol,
 	MeleeAttack,

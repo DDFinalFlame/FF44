@@ -38,9 +38,10 @@ void ASummonedEnemy::BeginPlay()
 
 void ASummonedEnemy::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (AudioComponent)
+	if (IsValid(AudioComponent))
 	{
 		AudioComponent->Stop();
+		AudioComponent->DestroyComponent();
 	}
 	//UE_LOG(LogTemp, Log, TEXT("Begin Overlap with: %s"), *OtherActor->GetName());
 	if (IsValid(OtherActor) && OtherActor->ActorHasTag(FName("Player")))
@@ -106,6 +107,7 @@ void ASummonedEnemy::OnDestroySummonedEnemy()
 	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Monster.Death"));
 	EventData.Target = this;
 
+	AudioComponent = nullptr;
 	AbilitySystemComponent->HandleGameplayEvent(EventData.EventTag, &EventData);
 }
 
