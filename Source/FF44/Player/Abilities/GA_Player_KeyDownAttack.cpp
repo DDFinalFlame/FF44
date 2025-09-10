@@ -34,7 +34,12 @@ void UGA_Player_KeyDownAttack::CommitExecute(const FGameplayAbilitySpecHandle Ha
             );
 
         UWorld* World = OwnerPlayer->GetWorld();
-        Audio = UGameplayStatics::SpawnSound2D(World, LoopSwingSound);
+
+        if (LoopSwingSound)
+            Audio = UGameplayStatics::SpawnSound2D(World, LoopSwingSound);
+
+        if (StartVoice)
+            UGameplayStatics::PlaySound2D(World, StartVoice);
 
         Task->OnCompleted.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);
         Task->OnBlendOut.AddDynamic(this, &UGA_Player_KeyDownAttack::K2_EndAbility);

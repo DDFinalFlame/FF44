@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "React | Montage")
 	float MontagePlayRate = 1.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "React | Particle")
+	UParticleSystem* PSystem;
+
 public:
 	UGA_Player_HitReact();
 	
