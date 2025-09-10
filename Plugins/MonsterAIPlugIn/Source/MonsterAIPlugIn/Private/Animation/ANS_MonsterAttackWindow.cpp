@@ -6,20 +6,10 @@ void UANS_MonsterAttackWindow::NotifyBegin(USkeletalMeshComponent* MeshComp, UAn
 {
     if (!MeshComp) return;
 
-    // 몬스터 캐릭터 찾기
-   
-        //if (AMonsterBaseWeapon* W = MC->GetWeapon())
-        //{
-        //    W->BeginAttackWindow();   // 히트박스 On (서버에서만 동작하도록 무기 쪽에 체크 있음)
-        //}
-        //else
-        //{
-        //    // 무기 없이 캐릭터 히트박스 쓰는 구조라면:
-        //    MC->BeginAttackWindow();  // 선택사항(있을 때만)
-        //}
+
         if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(MeshComp->GetOwner()))
         {
-            MC->BeginAttackWindow();   // ← 무조건 캐릭터 진입점
+            MC->BeginAttackWindow();  
         }
     
 }
@@ -28,19 +18,9 @@ void UANS_MonsterAttackWindow::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnim
 {
     if (!MeshComp) return;
 
-    //if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(MeshComp->GetOwner()))
-    //{
-    //    if (AMonsterBaseWeapon* W = MC->GetWeapon())
-    //    {
-    //        W->EndAttackWindow();     // 히트박스 Off
-    //    }
-    //    else
-    //    {
-    //        MC->EndAttackWindow();    // 선택사항
-    //    }
-    //}
+
     if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(MeshComp->GetOwner()))
     {
-        MC->EndAttackWindow();     // ← 무조건 캐릭터 진입점
+        MC->EndAttackWindow();    
     }
 }

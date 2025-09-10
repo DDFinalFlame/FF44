@@ -41,25 +41,25 @@ void AMonsterBaseWeapon::Init(AMonsterCharacter* InOwner, USkeletalMeshComponent
         InOwner->OnDestroyed.AddDynamic(this, &AMonsterBaseWeapon::OnOwnerDestroyed);
     }
 
-    for (auto* C : Hitboxes)
-    {
-        if (auto* Shape = Cast<UShapeComponent>(C))
-        {
-            Shape->ShapeColor = FColor::Red;
-#if WITH_EDITOR
-            Shape->bDrawOnlyIfSelected = false;   // 에디터에서 선택 안 해도 그림
-#endif
-            Shape->SetHiddenInGame(!bDebugDrawHitbox);
-            Shape->SetVisibility(bDebugDrawHitbox, true);
-        }
-    }
+//    for (auto* C : Hitboxes)
+//    {
+//        if (auto* Shape = Cast<UShapeComponent>(C))
+//        {
+//            Shape->ShapeColor = FColor::Red;
+//#if WITH_EDITOR
+//            Shape->bDrawOnlyIfSelected = false;   // 에디터에서 선택 안 해도 그림
+//#endif
+//            Shape->SetHiddenInGame(!bDebugDrawHitbox);
+//            Shape->SetVisibility(bDebugDrawHitbox, true);
+//        }
+//    }
 }
 
 void AMonsterBaseWeapon::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    if (bDebugDrawHitbox)
+   /* if (bDebugDrawHitbox)
     {
         for (auto* C : Hitboxes)
         {
@@ -75,7 +75,7 @@ void AMonsterBaseWeapon::Tick(float DeltaSeconds)
                 );
             }
         }
-    }
+    }*/
 }
 
 void AMonsterBaseWeapon::OnOwnerDestroyed(AActor* DestroyedActor)
@@ -147,16 +147,17 @@ void AMonsterBaseWeapon::ApplyHit(AActor* Victim, const FHitResult& Hit)
         FString Msg = FString::Printf(TEXT("[Weapon] %s hit %s"),
             *GetName(), *Victim->GetName());
 
-        // 화면 디버그 출력 (빨간 글씨, 2초 유지)
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(
-                -1,                 // Key (-1 = 새로운 메시지)
-                2.f,                // Duration (초)
-                FColor::Red,        // Color
-                Msg
-            );
-        }
+    //    // 화면 디버그 출력 (빨간 글씨, 2초 유지)
+    //    if (GEngine)
+    //    {
+    //        GEngine->AddOnScreenDebugMessage(
+    //            -1,                 // Key (-1 = 새로운 메시지)
+    //            2.f,                // Duration (초)
+    //            FColor::Red,        // Color
+    //            Msg
+    //        );
+    //    }
+    //}
     }
     // 1) 이벤트로 HitReact 유도
     {

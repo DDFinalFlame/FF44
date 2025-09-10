@@ -165,23 +165,23 @@ void AFallingRockActor::Tick(float DeltaSeconds)
         return;
     }
 
-    if (bDebugHitBox && HitBox)
-    {
-        const FTransform& T = HitBox->GetComponentTransform();
-        const FVector Extent = HitBox->GetScaledBoxExtent();
+    //if (bDebugHitBox && HitBox)
+    //{
+    //    const FTransform& T = HitBox->GetComponentTransform();
+    //    const FVector Extent = HitBox->GetScaledBoxExtent();
 
-        // 히트박스(초록)
-        DrawDebugBox(GetWorld(), T.GetLocation(), Extent, T.GetRotation(),
-            FColor::Green, /*bPersistent=*/false, /*LifeTime=*/0.f, /*DepthPri=*/0, /*Thickness=*/2.f);
+    //    //// 히트박스(초록)
+    //    //DrawDebugBox(GetWorld(), T.GetLocation(), Extent, T.GetRotation(),
+    //    //    FColor::Green, /*bPersistent=*/false, /*LifeTime=*/0.f, /*DepthPri=*/0, /*Thickness=*/2.f);
 
-        // (선택) GC Bounds도 같이 확인(하늘에 남아있는지 디버깅)
-        if (GeoComp)
-        {
-            const auto& C = GeoComp->Bounds;
-            DrawDebugBox(GetWorld(), C.Origin, C.BoxExtent, GeoComp->GetComponentQuat(),
-                FColor::Cyan, false, 0.f, 0, 1.f);
-        }
-    }
+    //    // (선택) GC Bounds도 같이 확인(하늘에 남아있는지 디버깅)
+    //    if (GeoComp)
+    //    {
+    //        const auto& C = GeoComp->Bounds;
+    //        DrawDebugBox(GetWorld(), C.Origin, C.BoxExtent, GeoComp->GetComponentQuat(),
+    //            FColor::Cyan, false, 0.f, 0, 1.f);
+    //    }
+    //}
 }
 
 void AFallingRockActor::SetDamageInstigator(AActor* InInstigator)
@@ -463,14 +463,14 @@ bool AFallingRockActor::HitBoxTouchesGround(FVector& OutHitPoint) const
         Params
     );
 
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-    if (bDebugHitBox)
-    {
-        DrawDebugSphere(World, Start, Radius, 12, FColor::Yellow, false, 0.f);
-        DrawDebugLine(World, Start, End, FColor::Yellow, false, 0.f, 0, 1.f);
-        if (bHit) DrawDebugPoint(World, Hit.ImpactPoint, 8.f, FColor::Red, false, 0.f);
-    }
-#endif
+//#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+//    if (bDebugHitBox)
+//    {
+//        DrawDebugSphere(World, Start, Radius, 12, FColor::Yellow, false, 0.f);
+//        DrawDebugLine(World, Start, End, FColor::Yellow, false, 0.f, 0, 1.f);
+//        if (bHit) DrawDebugPoint(World, Hit.ImpactPoint, 8.f, FColor::Red, false, 0.f);
+//    }
+//#endif
 
     if (bHit)
     {
@@ -491,12 +491,12 @@ bool AFallingRockActor::HitBoxTouchesGround(FVector& OutHitPoint) const
             Params
         );
 
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-        if (bDebugHitBox)
-        {
-            DrawDebugSphere(World, Probe, ProbeR, 12, bOverlap ? FColor::Red : FColor::White, false, 0.f);
-        }
-#endif
+//#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+//        if (bDebugHitBox)
+//        {
+//            DrawDebugSphere(World, Probe, ProbeR, 12, bOverlap ? FColor::Red : FColor::White, false, 0.f);
+//        }
+//#endif
 
         if (bOverlap)
         {
@@ -541,13 +541,13 @@ bool AFallingRockActor::PredictImpactPoint(FVector& OutPoint, FHitResult& OutHit
         Params
     );
 
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-    if (bDebugHitBox)
-    {
-        DrawDebugLine(World, Start, End, FColor::Yellow, false, 2.f, 0, 1.f);
-        DrawDebugSphere(World, Start, Radius, 12, FColor::Yellow, false, 2.f);
-    }
-#endif
+//#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+//    if (bDebugHitBox)
+//    {
+//        DrawDebugLine(World, Start, End, FColor::Yellow, false, 2.f, 0, 1.f);
+//        DrawDebugSphere(World, Start, Radius, 12, FColor::Yellow, false, 2.f);
+//    }
+//#endif
 
     if (!bHit) return false;
 

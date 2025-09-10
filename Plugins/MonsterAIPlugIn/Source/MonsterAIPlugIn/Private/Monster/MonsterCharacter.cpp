@@ -164,30 +164,30 @@ void AMonsterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//시야 전용 디버깅
-#if WITH_EDITOR
-
-	if (!bDebugLOS) return;
-
-	AAIController* AICon = Cast<AAIController>(GetController());
-	if (!AICon) return;
-
-	UBlackboardComponent* BB = AICon->GetBlackboardComponent();
-	if (!BB) return;
-
-	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
-	if (!Player) return;
-
-	const bool bVisible = BB->GetValueAsBool(TEXT("HasLineOfSight"));
-	const FVector Eye = GetPawnViewLocation();
-	const FVector TargetLoc = Player->GetActorLocation();
-
-	DrawDebugLine(GetWorld(), Eye, TargetLoc, bVisible ? FColor::Green : FColor::Red, false, 0.f, 0, 2.f);
-	DrawDebugString(GetWorld(), Eye + FVector(0, 0, 50),
-		bVisible ? TEXT("LOS+FOV: TRUE") : TEXT("LOS+FOV: FALSE"),
-		nullptr, bVisible ? FColor::Green : FColor::Red, 0.f, true);
-
-#endif
+//	//시야 전용 디버깅
+//#if WITH_EDITOR
+//
+//	if (!bDebugLOS) return;
+//
+//	AAIController* AICon = Cast<AAIController>(GetController());
+//	if (!AICon) return;
+//
+//	UBlackboardComponent* BB = AICon->GetBlackboardComponent();
+//	if (!BB) return;
+//
+//	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+//	if (!Player) return;
+//
+//	const bool bVisible = BB->GetValueAsBool(TEXT("HasLineOfSight"));
+//	const FVector Eye = GetPawnViewLocation();
+//	const FVector TargetLoc = Player->GetActorLocation();
+//
+//	DrawDebugLine(GetWorld(), Eye, TargetLoc, bVisible ? FColor::Green : FColor::Red, false, 0.f, 0, 2.f);
+//	DrawDebugString(GetWorld(), Eye + FVector(0, 0, 50),
+//		bVisible ? TEXT("LOS+FOV: TRUE") : TEXT("LOS+FOV: FALSE"),
+//		nullptr, bVisible ? FColor::Green : FColor::Red, 0.f, true);
+//
+//#endif
 }
 
 UAbilitySystemComponent* AMonsterCharacter::GetAbilitySystemComponent() const
@@ -269,7 +269,7 @@ void AMonsterCharacter::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<c
 
 	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 
-	if (GEngine && AttributeSet)
+	/*if (GEngine && AttributeSet)
 	{
 		FString Msg = FString::Printf(TEXT("HP=%.1f / Max=%.1f  ATK=%.1f Defense=%.1f Move=%.1f "),
 			AttributeSet->GetHealth(),
@@ -278,7 +278,7 @@ void AMonsterCharacter::ApplyInitStats(const FMonsterStatRow& Row, TSubclassOf<c
 			AttributeSet->GetDefense(),
 			AttributeSet->GetMoveSpeed());
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, Msg);
-	}
+	}*/
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
