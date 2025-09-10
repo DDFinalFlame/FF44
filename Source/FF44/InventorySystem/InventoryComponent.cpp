@@ -151,3 +151,17 @@ FItemRow* UInventoryComponent::GetItemAtIndex(int32 _Index)
 
 	return nullptr;
 }
+
+bool UInventoryComponent::ConsumeItem(FName _ItemName)
+{
+	for (auto item : AllItems)
+	{
+		if (item.Key->ItemName == _ItemName)
+		{
+			RemoveItem(item.Key);
+			return true;
+		}
+	}
+
+	return false;
+}
