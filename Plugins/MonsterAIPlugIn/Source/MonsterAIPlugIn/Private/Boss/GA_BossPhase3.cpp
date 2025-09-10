@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Boss/GA_BossPhase3.h"
@@ -17,8 +17,8 @@
 #include "AbilitySystemGlobals.h"
 static bool ProjectToGround_NoTilt1(
     UWorld* World,
-    const FVector& XY,                   // X,Y¸¸ ÀÇ¹Ì ÀÖÀ½
-    FVector& OutGroundLoc,               // ÃÖÁ¾ ½ºÆù À§Ä¡(Z È®Á¤)
+    const FVector& XY,                   // X,Yë§Œ ì˜ë¯¸ ìˆìŒ
+    FVector& OutGroundLoc,               // ìµœì¢… ìŠ¤í° ìœ„ì¹˜(Z í™•ì •)
     float TraceUp = 1500.f,
     float TraceDown = 4000.f,
     float GroundOffset = 2.f,
@@ -46,7 +46,7 @@ UGA_BossPhase3::UGA_BossPhase3()
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
     NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
-    // ÇÊ¿ä½Ã ½ÃÀÛ/Â÷´Ü ÅÂ±× ¼¼ÆÃ °¡´É
+    // í•„ìš”ì‹œ ì‹œì‘/ì°¨ë‹¨ íƒœê·¸ ì„¸íŒ… ê°€ëŠ¥
     // ActivationBlockedTags.AddTag(MonsterTags::State_Dying);
     // ActivationBlockedTags.AddTag(MonsterTags::State_Dead);
 }
@@ -81,17 +81,17 @@ void UGA_BossPhase3::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         return;
     }
 
-    // 1) ³«¼® ·çÇÁ
+    // 1) ë‚™ì„ ë£¨í”„
     W->GetTimerManager().SetTimer(RockTimer, this, &UGA_BossPhase3::Tick_Rock, RockInterval, /*bLoop*/true, /*FirstDelay*/0.f);
 
-    // 2) °ø°İ ·çÇÁ (°¡º¯ °£°İ)
+    // 2) ê³µê²© ë£¨í”„ (ê°€ë³€ ê°„ê²©)
     const float FirstAtkDelay = FMath::FRandRange(AttackIntervalMin, AttackIntervalMax);
     W->GetTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, FirstAtkDelay, /*bLoop*/false);
 
-    // 3) ¹Ì´Ï¾ğ ·çÇÁ
+    // 3) ë¯¸ë‹ˆì–¸ ë£¨í”„
     W->GetTimerManager().SetTimer(MinionTimer, this, &UGA_BossPhase3::Tick_Minion, MinionInterval, /*bLoop*/true, /*FirstDelay*/2.f);
 
-    // ¾àÁ¡ ÆÄ±« ÀÌº¥Æ® ¼ö½Å (Phase2¿Í µ¿ÀÏ ÅÂ±× »ç¿ë)
+    // ì•½ì  íŒŒê´´ ì´ë²¤íŠ¸ ìˆ˜ì‹  (Phase2ì™€ ë™ì¼ íƒœê·¸ ì‚¬ìš©)
     if (UAbilityTask_WaitGameplayEvent* Wait =
         UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, MonsterTags::Event_Boss_P2_WeakPointDestroyed, nullptr, false, true))
     {
@@ -156,16 +156,54 @@ static FVector RandomInAnnulus2D(const FVector& Center, float Rmin, float Rmax)
     return Center + FVector(r * FMath::Cos(th), r * FMath::Sin(th), 0.f);
 }
 
-/* ============================ Loops ============================ */
 
 void UGA_BossPhase3::Tick_Rock()
 {
     ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo());
     if (!Boss || !FallingRockClass) return;
 
+    UWorld* World = Boss->GetWorld();
+    if (!World) return;
+
     const FVector XY = RandomInAnnulus2D(Boss->GetActorLocation(), RockRadiusMin, RockRadiusMax);
-    const FVector SpawnLoc = XY + FVector(0, 0, 1200.f);            // À§¿¡¼­ ³«ÇÏ
-    Boss->GetWorld()->SpawnActor<AActor>(FallingRockClass, FTransform(SpawnLoc));
+    const FVector SpawnLoc = XY + FVector(0, 0, 1200.f); // ìœ„ì—ì„œ ë‚™í•˜
+
+    // ë°”ìœ„ ìŠ¤í° (ê°„ë‹¨ ë²„ì „: ë°”ë¡œ ìŠ¤í°)
+    AActor* Rock = World->SpawnActor<AActor>(FallingRockClass, FTransform(SpawnLoc));
+    if (!Rock) return;
+
+    // â”€â”€ ì‚¬ìš´ë“œ ìœ„ì¹˜ ì¶”ì •: ì•„ë˜ë¡œ ë¼ì¸íŠ¸ë ˆì´ìŠ¤í•´ì„œ ì§€ë©´ ImpactLoc êµ¬í•¨ â”€â”€
+    FVector ImpactLoc = XY; // í´ë°±
+    {
+        const FVector Start = SpawnLoc;
+        const FVector End = Start + FVector(0, 0, -10000.f);
+
+        FHitResult Hit;
+        FCollisionQueryParams QP(SCENE_QUERY_STAT(Phase3_RockSFXGround), false, Boss);
+        QP.AddIgnoredActor(Boss);
+        bool bHit = World->LineTraceSingleByObjectType(
+            Hit, Start, End,
+            FCollisionObjectQueryParams(FCollisionObjectQueryParams::AllStaticObjects),
+            QP
+        );
+
+        if (bHit) ImpactLoc = Hit.ImpactPoint;
+        else      ImpactLoc = FVector(XY.X, XY.Y, Boss->GetActorLocation().Z); // í´ë°±
+    }
+
+    // â”€â”€ ì†Œí™˜ ì‹œì  ê¸°ì¤€ ê³ ì • ë”œë ˆì´ë¡œ ì‚¬ìš´ë“œ ì¬ìƒ ì˜ˆì•½(ëŒë‹¤ X) â”€â”€
+    if (RockImpactSound && RockImpactSfxDelay > 0.f)
+    {
+        FTimerHandle Th;
+        FTimerDelegate Dlg;
+        // UFUNCTION ë°”ì¸ë”© â€“ ìœ„ì¹˜ë§Œ ë„˜ê²¨ì¤ë‹ˆë‹¤.
+        Dlg.BindUFunction(this, FName("PlayImpactSfxAt"), ImpactLoc);
+
+        Boss->GetWorldTimerManager().SetTimer(
+            Th, Dlg, RockImpactSfxDelay, /*bLoop=*/false
+        );
+        RockSfxTimerHandles.Add(Th);
+    }
 }
 
 void UGA_BossPhase3::Tick_Attack()
@@ -175,7 +213,7 @@ void UGA_BossPhase3::Tick_Attack()
 
     if (bAttackPlaying)
     {
-        // ÀÌ¹Ì Àç»ı ÁßÀÌ¸é ´ÙÀ½ ¿¹¾à¸¸
+        // ì´ë¯¸ ì¬ìƒ ì¤‘ì´ë©´ ë‹¤ìŒ ì˜ˆì•½ë§Œ
         const float Delay = FMath::FRandRange(AttackIntervalMin, AttackIntervalMax);
         Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, /*bLoop*/false);
         return;
@@ -199,7 +237,7 @@ void UGA_BossPhase3::Tick_Minion()
         const FTransform SpawnTM(FRotator::ZeroRotator, SpawnLoc);
 
 
-        // Deferred SpawnÀ¸·Î BeginPlay Àü¿¡ ¾ÈÀüÇÏ°Ô ÁÖÀÔ
+        // Deferred Spawnìœ¼ë¡œ BeginPlay ì „ì— ì•ˆì „í•˜ê²Œ ì£¼ì…
         ACharacter* Spawned = World->SpawnActorDeferred<ACharacter>(
             MinionClass, SpawnTM, /*Owner=*/Boss, /*Instigator=*/Boss,
             ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
@@ -208,7 +246,7 @@ void UGA_BossPhase3::Tick_Minion()
 
         if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Spawned))
         {
-            MC->SetOwnerBoss(Boss); //  º¸½º ÁÖÀÔ!
+            MC->SetOwnerBoss(Boss); //  ë³´ìŠ¤ ì£¼ì…!
         }
 
         UGameplayStatics::FinishSpawningActor(Spawned, SpawnTM);
@@ -234,7 +272,7 @@ void UGA_BossPhase3::OnSmashMontageFinished()
 
 void UGA_BossPhase3::OnWeakPointDestroyedEvent(FGameplayEventData Payload)
 {
-    // Phase2¿Í µ¿ÀÏÇÏ°Ô ¾àÁ¡ ÆÄ±« ¡æ º¸½º HP °¨¼Ò Ã³¸®
+    // Phase2ì™€ ë™ì¼í•˜ê²Œ ì•½ì  íŒŒê´´ â†’ ë³´ìŠ¤ HP ê°ì†Œ ì²˜ë¦¬
     if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
     {
         float Damage = WeakPointDamageToBoss;
@@ -301,10 +339,10 @@ void UGA_BossPhase3::OnHPChanged(const FOnAttributeChangeData& Data)
 
 void UGA_BossPhase3::EnterDeathCleanupFromP3(bool bTriggerDeathGA /*=true*/)
 {
-    bDisableWeakpointSpawns = true;   // ÀÌÈÄ ¾àÁ¡ ½ºÆù °¡µå
-    ForceKillPhaseMinions();          // ³²Àº ¹Ì´Ï¾ğµé Á¤¸®
+    bDisableWeakpointSpawns = true;   // ì´í›„ ì•½ì  ìŠ¤í° ê°€ë“œ
+    ForceKillPhaseMinions();          // ë‚¨ì€ ë¯¸ë‹ˆì–¸ë“¤ ì •ë¦¬
 
-    // Å¸ÀÌ¸Ó/ÀÌµ¿/Æ÷Ä¿½º Á¤Áö
+    // íƒ€ì´ë¨¸/ì´ë™/í¬ì»¤ìŠ¤ ì •ì§€
     if (ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
     {
         FTimerManager& TM = Boss->GetWorldTimerManager();
@@ -326,32 +364,32 @@ void UGA_BossPhase3::EnterDeathCleanupFromP3(bool bTriggerDeathGA /*=true*/)
             AI->ClearFocus(EAIFocusPriority::Gameplay);
         }
 
-        // ÁøÇà ÁßÀÎ ¸ùÅ¸ÁÖ ÁßÁö(Ãæµ¹ ¹æÁö)
+        // ì§„í–‰ ì¤‘ì¸ ëª½íƒ€ì£¼ ì¤‘ì§€(ì¶©ëŒ ë°©ì§€)
         if (UAnimInstance* Anim = Boss->GetMesh() ? Boss->GetMesh()->GetAnimInstance() : nullptr)
         {
             Anim->StopAllMontages(0.1f);
         }
     }
 
-    RemoveInvuln();   // ¹«Àû ÇØÁ¦
-    UnbindHP();       // HP µ¨¸®°ÔÀÌÆ® ÇØÁ¦
+    RemoveInvuln();   // ë¬´ì  í•´ì œ
+    UnbindHP();       // HP ë¸ë¦¬ê²Œì´íŠ¸ í•´ì œ
 
-    // (¼±ÅÃ) HitReact µî ¹æÇØµÇ´Â GA Ãë¼Ò, Death GA¸¸ ³²±â±â
+    // (ì„ íƒ) HitReact ë“± ë°©í•´ë˜ëŠ” GA ì·¨ì†Œ, Death GAë§Œ ë‚¨ê¸°ê¸°
     if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
     {
-        // Death GA ÅÂ±×´Â ÇÁ·ÎÁ§Æ®¿¡ ¸Â°Ô ±³Ã¼
+        // Death GA íƒœê·¸ëŠ” í”„ë¡œì íŠ¸ì— ë§ê²Œ êµì²´
         FGameplayTagContainer Ignore;
         // Ignore.AddTag(MonsterTags::Ability_Death);
 
         ASC->CancelAbilities(/*WithTags=*/nullptr, /*WithoutTags=*/Ignore.Num() ? &Ignore : nullptr);
     }
 
-    // (¼±ÅÃ) Death GA Æ®¸®°Å (ÇÁ·ÎÁ§Æ® ±ÔÄ¢¿¡ ¸Â°Ô ÀÌº¥Æ®/GE/ÅÂ±×·Î È£Ãâ)
+    // (ì„ íƒ) Death GA íŠ¸ë¦¬ê±° (í”„ë¡œì íŠ¸ ê·œì¹™ì— ë§ê²Œ ì´ë²¤íŠ¸/GE/íƒœê·¸ë¡œ í˜¸ì¶œ)
     if (bTriggerDeathGA)
     {
         if (AActor* Boss = GetAvatarActorFromActorInfo())
         {
-            // ¿¹: ÀÌº¥Æ® ¹æ½Ä
+            // ì˜ˆ: ì´ë²¤íŠ¸ ë°©ì‹
             // FGameplayEventData Evt; Evt.EventTag = MonsterTags::Event_Death;
             // Evt.Instigator = Boss;
             // UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Boss, MonsterTags::Event_Death, Evt);
@@ -397,15 +435,15 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 
     const FVector Center = Boss->GetActorLocation();
 
-    // ÆÄ¶ó¹ÌÅÍ
+    // íŒŒë¼ë¯¸í„°
     const float Rmin = 350.f;
     const float Rmax = 900.f;
     const int32 MaxTries = 24;
-    const float PlaceCheckRadius = 80.f;     // ÀÚ¸® ºñ¾ú´ÂÁö °Ë»ç ¹İ°æ
-    const float PlacementLift = 40.f;        // ¹Ù´Ú°úÀÇ °ãÄ§ ÆÇÁ¤ È¸ÇÇ¿ë ¸®ÇÁÆ®
+    const float PlaceCheckRadius = 80.f;     // ìë¦¬ ë¹„ì—ˆëŠ”ì§€ ê²€ì‚¬ ë°˜ê²½
+    const float PlacementLift = 40.f;        // ë°”ë‹¥ê³¼ì˜ ê²¹ì¹¨ íŒì • íšŒí”¼ìš© ë¦¬í”„íŠ¸
     const ECollisionChannel GroundChannel = ECC_Visibility;
 
-    // ¹Ù´Ú/ÀÚ¸® Ã¼Å© ½Ã ¹«½ÃÇÒ ´ë»ó
+    // ë°”ë‹¥/ìë¦¬ ì²´í¬ ì‹œ ë¬´ì‹œí•  ëŒ€ìƒ
     FCollisionQueryParams QP(SCENE_QUERY_STAT(P3_SpawnWeakPoint), false, Boss);
     QP.AddIgnoredActor(Boss);
 
@@ -417,14 +455,14 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
         QP.AddIgnoredActor(DeadMinion);
     }
 
-    // "ÀÚ¸® ºñ¾ú´ÂÁö"´Â ¹Ù´Ú(WorldStatic)Àº Á¦¿ÜÇÏ°í,
-    // Pawn/WorldDynamic/PhysicsBody µî¸¸ ´ë»óÀ¸·Î ¿À¹ö·¦ °Ë»ç
+    // "ìë¦¬ ë¹„ì—ˆëŠ”ì§€"ëŠ” ë°”ë‹¥(WorldStatic)ì€ ì œì™¸í•˜ê³ ,
+    // Pawn/WorldDynamic/PhysicsBody ë“±ë§Œ ëŒ€ìƒìœ¼ë¡œ ì˜¤ë²„ë© ê²€ì‚¬
     FCollisionObjectQueryParams ObjParams;
     ObjParams.AddObjectTypesToQuery(ECC_Pawn);
     ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
     ObjParams.AddObjectTypesToQuery(ECC_PhysicsBody);
 
-    // 1) XY »ùÇÃ¸µ ¡æ ¹Ù´ÚÀ¸·Î Z¸¸ Åõ¿µ ¡æ ´Ù¸¥ ¾×ÅÍ¿Í °ãÄ¡Áö ¾Ê´ÂÁö °Ë»ç
+    // 1) XY ìƒ˜í”Œë§ â†’ ë°”ë‹¥ìœ¼ë¡œ Zë§Œ íˆ¬ì˜ â†’ ë‹¤ë¥¸ ì•¡í„°ì™€ ê²¹ì¹˜ì§€ ì•ŠëŠ”ì§€ ê²€ì‚¬
     FVector SpawnLoc;
     bool bFound = false;
 
@@ -434,15 +472,15 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
         const float th = FMath::FRandRange(0.f, 2.f * PI);
         const FVector CandidateXY = Center + FVector(r * FMath::Cos(th), r * FMath::Sin(th), 0.f);
 
-        // Z¸¸ ¹Ù´Ú Åõ¿µ
+        // Zë§Œ ë°”ë‹¥ íˆ¬ì˜
         FVector GroundLoc;
         if (!ProjectToGround_NoTilt1(World, CandidateXY, GroundLoc, 2000.f, 6000.f, 2.f, GroundChannel, &QP))
             continue;
 
-        // ¹Ù´ÚÀº Á¦¿ÜÇÏ°í "´Ù¸¥ ¾×ÅÍ"¿Í °ãÄ¡Áö ¾Ê´ÂÁö °Ë»ç
+        // ë°”ë‹¥ì€ ì œì™¸í•˜ê³  "ë‹¤ë¥¸ ì•¡í„°"ì™€ ê²¹ì¹˜ì§€ ì•ŠëŠ”ì§€ ê²€ì‚¬
         const FCollisionShape Sphere = FCollisionShape::MakeSphere(PlaceCheckRadius);
         const bool bOverlapsOthers = World->OverlapAnyTestByObjectType(
-            GroundLoc + FVector(0, 0, PlacementLift), // »ìÂ¦ ¶ç¿ö °Ë»ç
+            GroundLoc + FVector(0, 0, PlacementLift), // ì‚´ì§ ë„ì›Œ ê²€ì‚¬
             FQuat::Identity,
             ObjParams,
             Sphere,
@@ -457,23 +495,23 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
         }
     }
 
-    // 2) ½ÇÆĞ ½Ã: º¸½º ¹ßÄ¡ Á¶±İ ¾Õ XY·Î Æú¹éÇÏµÇ, ¹İµå½Ã ¹Ù´Ú Åõ¿µÀ¸·Î Z È®Á¤
+    // 2) ì‹¤íŒ¨ ì‹œ: ë³´ìŠ¤ ë°œì¹˜ ì¡°ê¸ˆ ì• XYë¡œ í´ë°±í•˜ë˜, ë°˜ë“œì‹œ ë°”ë‹¥ íˆ¬ì˜ìœ¼ë¡œ Z í™•ì •
     if (!bFound)
     {
         const FVector FallbackXY = Center + FVector(200.f, 0.f, 0.f);
         if (!ProjectToGround_NoTilt1(World, FallbackXY, SpawnLoc, 2000.f, 6000.f, 2.f, GroundChannel, &QP))
         {
-            // ÃÖÈÄÀÇ ¾ÈÀü¸Á: Z¸¸ º¸½ºº¸´Ù Á¶±İ ³·Ãç¼­ ¹Ú±â
+            // ìµœí›„ì˜ ì•ˆì „ë§: Zë§Œ ë³´ìŠ¤ë³´ë‹¤ ì¡°ê¸ˆ ë‚®ì¶°ì„œ ë°•ê¸°
             SpawnLoc = FVector(FallbackXY.X, FallbackXY.Y, Center.Z - 50.f);
         }
     }
 
-    // 3) Æ¿ÆÃ ±İÁö: ÇÇÄ¡/·Ñ 0, Yaw´Â º¸½º¿Í µ¿ÀÏ(¿øÄ¡ ¾ÊÀ¸¸é 0.f)
+    // 3) í‹¸íŒ… ê¸ˆì§€: í”¼ì¹˜/ë¡¤ 0, YawëŠ” ë³´ìŠ¤ì™€ ë™ì¼(ì›ì¹˜ ì•Šìœ¼ë©´ 0.f)
     const float Yaw = Boss->GetActorRotation().Yaw;
     const FRotator SpawnRot(0.f, Yaw, 0.f);
     const FTransform SpawnTM(SpawnRot, SpawnLoc);
 
-    // 4) Defer + NoCollision ¡æ Finish ¡æ À§Ä¡/È¸Àü ÅÚ·¹Æ÷Æ® È®Á¤ ¡æ Ãæµ¹ ÀçÈ°¼º
+    // 4) Defer + NoCollision â†’ Finish â†’ ìœ„ì¹˜/íšŒì „ í…”ë ˆí¬íŠ¸ í™•ì • â†’ ì¶©ëŒ ì¬í™œì„±
     AActor* Spawned = World->SpawnActorDeferred<AActor>(
         WeakPointClass,
         SpawnTM,
@@ -498,15 +536,15 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 
     UGameplayStatics::FinishSpawningActor(Spawned, SpawnTM);
 
-    // ½ºÆù Á÷ÈÄ À§Ä¡/È¸Àü ÇÑ ¹ø ´õ È®Á¤(¹°¸® ÅÚ·¹Æ÷Æ®)
+    // ìŠ¤í° ì§í›„ ìœ„ì¹˜/íšŒì „ í•œ ë²ˆ ë” í™•ì •(ë¬¼ë¦¬ í…”ë ˆí¬íŠ¸)
     Spawned->SetActorLocation(SpawnLoc, /*bSweep=*/false, nullptr, ETeleportType::TeleportPhysics);
     Spawned->SetActorRotation(SpawnRot, ETeleportType::TeleportPhysics);
 
-    // Ãæµ¹ ÀçÈ°¼º (ÇÁ·ÎÁ§Æ® ±ÔÄ¢¿¡ ¸ÂÃç Á¶Á¤)
+    // ì¶©ëŒ ì¬í™œì„± (í”„ë¡œì íŠ¸ ê·œì¹™ì— ë§ì¶° ì¡°ì •)
     if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(Spawned->GetRootComponent()))
     {
         RootPrim->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-        // ÇÊ¿ä ½Ã ÇÁ·ÎÆÄÀÏ ÁöÁ¤:
+        // í•„ìš” ì‹œ í”„ë¡œíŒŒì¼ ì§€ì •:
         // RootPrim->SetCollisionProfileName(TEXT("WorldDynamic"));
     }
 }
@@ -517,31 +555,31 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 //    UWorld* World = Boss ? Boss->GetWorld() : nullptr;
 //    if (!World || !WeakPointClass) return;
 //
-//    // 1) Á×Àº ¹Ì´Ï¾ğ ¾×ÅÍ ÃßÃâ (Target ¡æ Instigator ¡æ OptionalObject ¼ø)
+//    // 1) ì£½ì€ ë¯¸ë‹ˆì–¸ ì•¡í„° ì¶”ì¶œ (Target â†’ Instigator â†’ OptionalObject ìˆœ)
 //    AActor* DeadMinion = const_cast<AActor*>(
 //        Payload.Target.Get() ? Payload.Target.Get() :
 //        (Payload.Instigator.Get() ? Payload.Instigator.Get() :
 //            Cast<AActor>(Payload.OptionalObject))
 //        );
 //
-//    if (!DeadMinion) DeadMinion = Boss; // ¾ÈÀü¸Á: ¾øÀ¸¸é º¸½º ÁÖº¯
+//    if (!DeadMinion) DeadMinion = Boss; // ì•ˆì „ë§: ì—†ìœ¼ë©´ ë³´ìŠ¤ ì£¼ë³€
 //
-//    // 2) ÆÄ¶ó¹ÌÅÍ(°£´Ü)
+//    // 2) íŒŒë¼ë¯¸í„°(ê°„ë‹¨)
 //    const float Rmin = 350.f;
 //    const float Rmax = 900.f;
 //    const int32 MaxTries = 24;
 //    const float GroundTraceUp = 1200.f;
 //    const float GroundTraceDown = 3000.f;
-//    const float PlaceCheckRadius = 80.f;   // ½ºÆù¹° ´ë·« ¹İ°æ
+//    const float PlaceCheckRadius = 80.f;   // ìŠ¤í°ë¬¼ ëŒ€ëµ ë°˜ê²½
 //    const ECollisionChannel GroundChannel = ECC_Visibility;
-//    const ECollisionChannel PlaceCheckChannel = ECC_Pawn; // ÇÊ¿ä½Ã Ä¿½ºÅÒ Ã¤³Î·Î ±³Ã¼
+//    const ECollisionChannel PlaceCheckChannel = ECC_Pawn; // í•„ìš”ì‹œ ì»¤ìŠ¤í…€ ì±„ë„ë¡œ êµì²´
 //
-//    // Ãæµ¹ ¹«½Ã ¸ñ·Ï
+//    // ì¶©ëŒ ë¬´ì‹œ ëª©ë¡
 //    FCollisionQueryParams QP(SCENE_QUERY_STAT(P3_SpawnWeakPoint), false, Boss);
 //    QP.AddIgnoredActor(Boss);
 //    QP.AddIgnoredActor(DeadMinion);
 //
-//    // 3) ÈÄº¸ »ùÇÃ¸µ ¡æ ¹Ù´Ú Æ®·¹ÀÌ½º ¡æ ÀÚ¸® ºñ¾ú´ÂÁö ±¸ ½ºÀ¬
+//    // 3) í›„ë³´ ìƒ˜í”Œë§ â†’ ë°”ë‹¥ íŠ¸ë ˆì´ìŠ¤ â†’ ìë¦¬ ë¹„ì—ˆëŠ”ì§€ êµ¬ ìŠ¤ìœ•
 //    auto TryFindSpot = [&](FVector& OutLoc, FRotator& OutRot)->bool
 //        {
 //            for (int32 i = 0; i < MaxTries; ++i)
@@ -550,20 +588,20 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 //                const float th = FMath::FRandRange(0.f, 2.f * PI);
 //                const FVector XY = DeadMinion->GetActorLocation() + FVector(r * FMath::Cos(th), r * FMath::Sin(th), 0.f);
 //
-//                // ¹Ù´Ú Ã£±â
+//                // ë°”ë‹¥ ì°¾ê¸°
 //                FHitResult Hit;
 //                const FVector Start = XY + FVector(0, 0, GroundTraceUp);
 //                const FVector End = XY - FVector(0, 0, GroundTraceDown);
 //                if (!World->LineTraceSingleByChannel(Hit, Start, End, GroundChannel, QP)) continue;
 //
-//                // »ìÂ¦ ¶ç¿ì°í °æ»ç Á¤·Ä
+//                // ì‚´ì§ ë„ìš°ê³  ê²½ì‚¬ ì •ë ¬
 //                const FVector Loc = Hit.ImpactPoint + Hit.Normal * 2.f;
 //                const FRotator Rot = FRotationMatrix::MakeFromZ(Hit.Normal).Rotator();
 //
-//                // ÀÚ¸® ºñ¾ú´ÂÁö(±¸ ½ºÀ¬)
+//                // ìë¦¬ ë¹„ì—ˆëŠ”ì§€(êµ¬ ìŠ¤ìœ•)
 //                const FCollisionShape Sphere = FCollisionShape::MakeSphere(PlaceCheckRadius);
 //                FHitResult Block;
-//                const FVector P = Loc + FVector(0, 0, 50.f); // »ìÂ¦ À§¿¡¼­ Á¤Áö ½ºÀ¬
+//                const FVector P = Loc + FVector(0, 0, 50.f); // ì‚´ì§ ìœ„ì—ì„œ ì •ì§€ ìŠ¤ìœ•
 //                const bool bBlocked = World->SweepSingleByChannel(Block, P, P, FQuat::Identity, PlaceCheckChannel, Sphere, QP);
 //                if (!bBlocked) { OutLoc = Loc; OutRot = Rot; return true; }
 //            }
@@ -573,12 +611,12 @@ void UGA_BossPhase3::OnMinionDied(FGameplayEventData Payload)
 //    FVector SpawnLoc;  FRotator SpawnRot;
 //    if (!TryFindSpot(SpawnLoc, SpawnRot))
 //    {
-//        // 4) ¸¶Áö¸· ¾ÈÀü¸Á: ¹Ì´Ï¾ğ À§Ä¡ Á¶±İ ¿·
+//        // 4) ë§ˆì§€ë§‰ ì•ˆì „ë§: ë¯¸ë‹ˆì–¸ ìœ„ì¹˜ ì¡°ê¸ˆ ì˜†
 //        SpawnLoc = DeadMinion->GetActorLocation() + FVector(200.f, 0.f, -30.f);
 //        SpawnRot = FRotator::ZeroRotator;
 //    }
 //
-//    // 5) ½ºÆù & ÃÊ±âÈ­
+//    // 5) ìŠ¤í° & ì´ˆê¸°í™”
 //    if (AActor* Spawned = World->SpawnActor<AActor>(WeakPointClass, FTransform(SpawnRot, SpawnLoc)))
 //    {
 //        if (AWeakPointActor* WP = Cast<AWeakPointActor>(Spawned))
@@ -613,7 +651,7 @@ void UGA_BossPhase3::StartMoveToTargetOrAttack()
     AActor* Target = GetTargetFromBlackboard();
     if (!Target)
     {
-        // Å¸°ÙÀÌ ¾øÀ¸¸é Àá±ñ µÚ Àç½Ãµµ
+        // íƒ€ê²Ÿì´ ì—†ìœ¼ë©´ ì ê¹ ë’¤ ì¬ì‹œë„
         const float Delay = FMath::FRandRange(0.5f, 1.0f);
         Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
         return;
@@ -622,7 +660,7 @@ void UGA_BossPhase3::StartMoveToTargetOrAttack()
     const float DistXY = FVector::Dist2D(Boss->GetActorLocation(), Target->GetActorLocation());
     if (DistXY <= ApproachAcceptanceRadius)
     {
-        // ÀÌ¹Ì µµÂø ¹üÀ§ ¡æ °ğ¹Ù·Î °ø°İ
+        // ì´ë¯¸ ë„ì°© ë²”ìœ„ â†’ ê³§ë°”ë¡œ ê³µê²©
         StartRandomAttackMontageOrReschedule();
         return;
     }
@@ -630,12 +668,12 @@ void UGA_BossPhase3::StartMoveToTargetOrAttack()
     AAIController* AI = Cast<AAIController>(Boss->GetController());
     if (!AI)
     {
-        // ÄÁÆ®·Ñ·¯ ¾øÀ¸¸é ¹Ù·Î °ø°İ(ÃÖ¼ÒÇÑÀ¸·Î µ¿ÀÛ º¸Àå)
+        // ì»¨íŠ¸ë¡¤ëŸ¬ ì—†ìœ¼ë©´ ë°”ë¡œ ê³µê²©(ìµœì†Œí•œìœ¼ë¡œ ë™ì‘ ë³´ì¥)
         StartRandomAttackMontageOrReschedule();
         return;
     }
 
-    // ±âÁ¸ µ¨¸®°ÔÀÌÆ® Áßº¹ ¹æÁö
+    // ê¸°ì¡´ ë¸ë¦¬ê²Œì´íŠ¸ ì¤‘ë³µ ë°©ì§€
     if (MoveFinishedHandle.IsValid())
     {
         AI->GetPathFollowingComponent()->OnRequestFinished.Remove(MoveFinishedHandle);
@@ -652,7 +690,7 @@ void UGA_BossPhase3::StartMoveToTargetOrAttack()
     FPathFollowingRequestResult R = AI->MoveTo(Req);
     CurrentMoveId = R.MoveId;
 
-    // °á°ú°¡ ¹Ù·Î ÆÇÁ¤³ª´Â °æ¿ì Ã³¸®
+    // ê²°ê³¼ê°€ ë°”ë¡œ íŒì •ë‚˜ëŠ” ê²½ìš° ì²˜ë¦¬
     if (R.Code == EPathFollowingRequestResult::AlreadyAtGoal)
     {
         bMovingToAttack = false;
@@ -662,13 +700,13 @@ void UGA_BossPhase3::StartMoveToTargetOrAttack()
     if (R.Code == EPathFollowingRequestResult::Failed)
     {
         bMovingToAttack = false;
-        // ÀÌµ¿ ½ÇÆĞ ¡æ Âª°Ô ½¬°í Àç½Ãµµ
+        // ì´ë™ ì‹¤íŒ¨ â†’ ì§§ê²Œ ì‰¬ê³  ì¬ì‹œë„
         const float Delay = FMath::FRandRange(0.6f, 1.2f);
         Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
         return;
     }
 
-    // Á¤»óÀûÀ¸·Î ÀÌµ¿ ½ÃÀÛ ¡æ ¿Ï·á Äİ¹é ¹ÙÀÎµù
+    // ì •ìƒì ìœ¼ë¡œ ì´ë™ ì‹œì‘ â†’ ì™„ë£Œ ì½œë°± ë°”ì¸ë”©
     if (UPathFollowingComponent* PFC = AI->GetPathFollowingComponent())
     {
         MoveFinishedHandle = PFC->OnRequestFinished.AddUObject(
@@ -689,13 +727,13 @@ void UGA_BossPhase3::OnMoveFinished(FAIRequestID RequestID, const FPathFollowing
         MoveFinishedHandle.Reset();
     }
 
-    // ³»°¡ ¿äÃ»ÇÑ MoveTo°¡ ¾Æ´Ï¸é ¹«½Ã(´Ù¸¥ ½Ã½ºÅÛ°ú Ãæµ¹ ¹æÁö)
+    // ë‚´ê°€ ìš”ì²­í•œ MoveToê°€ ì•„ë‹ˆë©´ ë¬´ì‹œ(ë‹¤ë¥¸ ì‹œìŠ¤í…œê³¼ ì¶©ëŒ ë°©ì§€)
     if (RequestID.IsValid() && CurrentMoveId.IsValid() && RequestID != CurrentMoveId)
     {
         return;
     }
 
-    // µµÂøÇßÀ¸¸é °ø°İ, ½ÇÆĞ¸é Àç½Ãµµ
+    // ë„ì°©í–ˆìœ¼ë©´ ê³µê²©, ì‹¤íŒ¨ë©´ ì¬ì‹œë„
     if (Result.IsSuccess())
     {
         StartRandomAttackMontageOrReschedule();
@@ -715,7 +753,7 @@ void UGA_BossPhase3::StartRandomAttackMontageOrReschedule()
     ACharacter* Boss = Cast<ACharacter>(GetAvatarActorFromActorInfo());
     if (!Boss) return;
 
-    // »ç¿ëÇÒ ¸ùÅ¸ÁÖ ¼öÁı
+    // ì‚¬ìš©í•  ëª½íƒ€ì£¼ ìˆ˜ì§‘
     TArray<UAnimMontage*> Candidates;
     for (UAnimMontage* M : AttackMontages)
     {
@@ -724,7 +762,7 @@ void UGA_BossPhase3::StartRandomAttackMontageOrReschedule()
 
     if (Candidates.Num() == 0)
     {
-        // ¸ùÅ¸ÁÖ ¾øÀ¸¸é ´ÙÀ½ ½Ãµµ ¿¹¾à
+        // ëª½íƒ€ì£¼ ì—†ìœ¼ë©´ ë‹¤ìŒ ì‹œë„ ì˜ˆì•½
         const float Delay = FMath::FRandRange(AttackIntervalMin, AttackIntervalMax);
         Boss->GetWorldTimerManager().SetTimer(AttackTimer, this, &UGA_BossPhase3::Tick_Attack, Delay, false);
         return;
@@ -751,7 +789,7 @@ void UGA_BossPhase3::StartRandomAttackMontageOrReschedule()
 
 void UGA_BossPhase3::ForceKillPhaseMinions()
 {
-    // ¼­¹ö¿¡¼­¸¸ Àû¿ë
+    // ì„œë²„ì—ì„œë§Œ ì ìš©
     AActor* Boss = GetAvatarActorFromActorInfo();
     if (!Boss || !Boss->HasAuthority())
     {
@@ -761,12 +799,12 @@ void UGA_BossPhase3::ForceKillPhaseMinions()
     if (!GE_ForceKillMinion)
     {
         UE_LOG(LogTemp, Warning, TEXT("[P3] GE_ForceKillMinion is not set."));
-        // ±×·¡µµ ¹è¿­¸¸ Á¤¸®ÇÏ°í Á¾·á
+        // ê·¸ë˜ë„ ë°°ì—´ë§Œ ì •ë¦¬í•˜ê³  ì¢…ë£Œ
         PhaseMinions.Reset();
         return;
     }
 
-    // µÚ¿¡¼­ºÎÅÍ ¾ÈÀüÇÏ°Ô Á¦°Å
+    // ë’¤ì—ì„œë¶€í„° ì•ˆì „í•˜ê²Œ ì œê±°
     for (int32 i = PhaseMinions.Num() - 1; i >= 0; --i)
     {
         ACharacter* Minion = PhaseMinions[i].Get();
@@ -784,7 +822,7 @@ void UGA_BossPhase3::ForceKillPhaseMinions()
             continue;
         }
 
-        // ÀÌ¹Ì Á×¾ú°Å³ª(HP<=0) Death Ã³¸® ÁßÀÌ¸é ½ºÅµ
+        // ì´ë¯¸ ì£½ì—ˆê±°ë‚˜(HP<=0) Death ì²˜ë¦¬ ì¤‘ì´ë©´ ìŠ¤í‚µ
         const float CurHP = MinionASC->GetNumericAttribute(UMonsterAttributeSet::GetHealthAttribute());
         if (CurHP <= 0.f)
         {
@@ -792,10 +830,10 @@ void UGA_BossPhase3::ForceKillPhaseMinions()
             continue;
         }
 
-        // Health¸¦ 0À¸·Î ¸¸µå´Â Àü¿ë GE Àû¿ë
+        // Healthë¥¼ 0ìœ¼ë¡œ ë§Œë“œëŠ” ì „ìš© GE ì ìš©
         {
             FGameplayEffectContextHandle Ctx = MinionASC->MakeEffectContext();
-            Ctx.AddInstigator(Boss, Boss); // ÃâÃ³: º¸½º
+            Ctx.AddInstigator(Boss, Boss); // ì¶œì²˜: ë³´ìŠ¤
 
             FGameplayEffectSpecHandle Spec = MinionASC->MakeOutgoingSpec(GE_ForceKillMinion, 1.f, Ctx);
             if (Spec.IsValid())
@@ -804,10 +842,18 @@ void UGA_BossPhase3::ForceKillPhaseMinions()
             }
         }
 
-        // ¸ñ·Ï¿¡¼­ Á¦°Å (Áßº¹ Àû¿ë ¹æÁö)
+        // ëª©ë¡ì—ì„œ ì œê±° (ì¤‘ë³µ ì ìš© ë°©ì§€)
         PhaseMinions.RemoveAt(i);
     }
 
-    // ¾ÈÀüÇÏ°Ô ºñ¿öµÎ±â
+    // ì•ˆì „í•˜ê²Œ ë¹„ì›Œë‘ê¸°
     PhaseMinions.Shrink();
+}
+
+void UGA_BossPhase3::PlayImpactSfxAt(FVector ImpactLoc)
+{
+    if (!RockImpactSound) return;
+
+    // ì—¬ê¸°ì„œ êµ³ì´ Boss ìœ íš¨ì„± í™•ì¸ ì—†ì´ this ì»¨í…ìŠ¤íŠ¸ë¡œ ì¬ìƒí•´ë„ OK
+    UGameplayStatics::PlaySoundAtLocation(this, RockImpactSound, ImpactLoc);
 }

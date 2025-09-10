@@ -155,7 +155,6 @@ void ABossCinematicTrigger::OnBeginOverlap(UPrimitiveComponent* _OverlappedComp,
     bool _bFromSweep, const FHitResult& _SweepResult)
 {
     if (bOneShot && bTriggered) return;
-    if (!HasAuthority()) return; // 서버에서만 발동
 
     if (!_OtherActor) return;
 
@@ -188,6 +187,10 @@ void ABossCinematicTrigger::TriggerOnce(AActor* _OtherActor)
     {
         SendBossIntroEvent();
     }
+
+    OnCinematicTriggered.Broadcast(_OtherActor);
+    BP_OnCinematicTriggered(_OtherActor);
+
     if (IntroAbilityClass)
     {
         ActivateBossIntroAbility();
@@ -258,4 +261,9 @@ void ABossCinematicTrigger::PlayBossIntroMontage()
 
     // 서버에서 재생하면 네트워크 복제되는 캐릭터는 클라에도 반영됩니다(보스가 Networked Character인 경우).
     BossChar->PlayAnimMontage(BossIntroMontage, 1.f);
+}
+
+void ABossCinematicTrigger::PlayCinematicNow()
+{
+    BP_OnCinematicTriggered(this);
 }

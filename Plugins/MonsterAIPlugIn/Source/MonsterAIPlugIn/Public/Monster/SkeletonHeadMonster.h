@@ -28,4 +28,14 @@ protected:
 
     UPROPERTY()
     bool bAssembleRequested = false;
+
+
+protected:
+    // 죽을 때 재생할 사운드
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* DeathSound = nullptr;
+
+    // 한 번만 실행되도록 체크
+    bool bDeathSoundPlayed = false;
+
 };
