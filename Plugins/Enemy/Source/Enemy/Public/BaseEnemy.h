@@ -93,6 +93,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Montage")
 	UHitReactionDataAsset* EnemyMontageData;
 
+protected:
+	// Item
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	TSubclassOf<AActor> DropItem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	float DropLocationZOffset = 10.0f;
+
 // Death ø¨√‚
 protected:
 	FTimerHandle DissolveTimerHandle;
