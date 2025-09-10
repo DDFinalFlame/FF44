@@ -5,6 +5,7 @@
 #include "MonsterTags.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "MonsterAttributeSet.h"
 
 ABossLightningProjectile::ABossLightningProjectile()
 {
@@ -49,6 +50,17 @@ void ABossLightningProjectile::BeginPlay()
 void ABossLightningProjectile::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+    if (UAbilitySystemComponent* BossASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetBoss.Get()))
+    {
+        if (const UMonsterAttributeSet* Attr = Cast<UMonsterAttributeSet>(BossASC->GetAttributeSet(UMonsterAttributeSet::StaticClass())))
+        {
+            if (Attr->GetHealth() <= 0.f)
+            {
+                Destroy();
+            }
+        }
+    }
 
 }
 

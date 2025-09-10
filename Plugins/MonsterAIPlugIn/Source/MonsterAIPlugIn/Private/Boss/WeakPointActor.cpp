@@ -31,6 +31,24 @@ AWeakPointActor::AWeakPointActor()
     Mesh->OnComponentHit.AddDynamic(this, &AWeakPointActor::OnMeshHit);
 }
 
+
+void AWeakPointActor::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // 전용 서버에서는 재생 안 함
+    if (GetNetMode() == NM_DedicatedServer) return;
+
+    if (SpawnSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(
+            this,
+            SpawnSound,
+            GetActorLocation()
+        );
+    }
+}
+
 void AWeakPointActor::InitializeWeakPoint(AActor* _BossActor, float _DamageToBoss)
 {
     OwnerBoss = _BossActor;
