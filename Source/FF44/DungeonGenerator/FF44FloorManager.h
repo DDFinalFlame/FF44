@@ -14,6 +14,11 @@ class AFF44Portal;
 class UAudioComponent;
 class USoundBase;
 
+class UFF44GameInstance;
+class UAbilitySystemComponent;
+class UFF44InventoryComponent;
+class ABasePlayer;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloorEvent, int32, FloorIndex);
 
 UCLASS()
@@ -173,4 +178,7 @@ private:
     // Inline helpers
     bool IsBossFloor() const { return (CurrentFloor % FloorsPerBossCycle) == 0; }
     int32 SeedForFloor() const { return ::HashCombine(::GetTypeHash(BaseSeed), ::GetTypeHash(CurrentFloor)); }
+
+    UFUNCTION(BlueprintCallable, Category = "Player")
+    void CapturePlayerStateForInstance();
 };

@@ -10,6 +10,8 @@
 #include "DungeonGenerator/DungeonBase/FF44RoomBase.h"
 #include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
+#include "Player/BasePlayer.h"
+#include "GameInstance/FF44GameInstance.h"
 
 AFF44FloorManager::AFF44FloorManager()
 {
@@ -318,6 +320,7 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
         if (MonsterSpawner)      MonsterSpawner->CleanupSpawned();
         if (InteractableSpawner) InteractableSpawner->CleanupSpawned();
 
+        CapturePlayerStateForInstance();
         UGameplayStatics::OpenLevelBySoftObjectPtr(this, LobbyLevel);
         return;
     }
@@ -349,4 +352,18 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
         NextFloor();
         return;
     }
+}
+
+void AFF44FloorManager::CapturePlayerStateForInstance()
+{
+    if (!HasAuthority()) return;
+
+    UFF44GameInstance* Instance = Cast<UFF44GameInstance>(GetGameInstance());
+    ABasePlayer* Player = Cast<ABasePlayer>(UGameplayStatics::GetPlayerCharacter(this, 0));
+    if (!Instance || !Player) return;
+
+    Instance->PendingCompState.CaptureFrom(
+        Player->GetAbilitySystemComponent(),
+        Player->GetInventoryComponent()
+    );
 }
