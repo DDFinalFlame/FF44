@@ -10,6 +10,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "BossLightningProjectile.h"
+#include "MonsterAttributeSet.h"
+#include "AbilitySystemComponent.h"
 
 //디버깅용
 #include "Engine/TargetPoint.h"
@@ -79,6 +81,18 @@ void AWeakPointActor::NotifyHitByPlayerWeapon(const FHitResult& Hit, AActor* Att
 void AWeakPointActor::SpawnProjectileTowardBoss()
 {
     if (!ProjectileClass || !OwnerBoss.IsValid()) return;
+    // 보스 체력 확인.
+    if (UAbilitySystemComponent* BossASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerBoss.Get()))
+    {
+        if (const UMonsterAttributeSet* Attr = Cast<UMonsterAttributeSet>(BossASC->GetAttributeSet(UMonsterAttributeSet::StaticClass())))
+        {
+            if (Attr->GetHealth() <= 0.f)
+            {
+                // 보스가 이미 죽었으면 발사 안 함
+                return;
+            }
+        }
+    }
 
     UWorld* World = GetWorld();
     if (!World) return;

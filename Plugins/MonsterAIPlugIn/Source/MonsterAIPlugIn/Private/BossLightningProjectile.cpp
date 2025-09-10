@@ -4,6 +4,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "MonsterTags.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 ABossLightningProjectile::ABossLightningProjectile()
 {
@@ -37,6 +38,10 @@ void ABossLightningProjectile::BeginPlay()
         Movement->Activate(true);
     }
 
+    if (SpawnSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, SpawnSound, GetActorLocation());
+    }
 
 }
 
@@ -67,6 +72,10 @@ void ABossLightningProjectile::OnOverlap(UPrimitiveComponent* OverlappedComp, AA
 
     if (OtherActor == TargetBoss.Get())
     {
+        if (HitSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+        }
         // 보스에게 데미지 이벤트 전달
         FGameplayEventData Payload;
         Payload.EventTag = MonsterTags::Event_Boss_P2_WeakPointDestroyed;
