@@ -214,4 +214,11 @@ void AFF44FloorManager::HandlePortalInteracted(AFF44Portal* Portal, FName Portal
         }
         return;
     }
+
+    if (PortalTag == TEXT("PortalLobby"))
+    {
+
+
+    }
+    
 }
