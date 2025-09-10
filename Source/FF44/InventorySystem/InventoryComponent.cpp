@@ -68,6 +68,14 @@ bool UInventoryComponent::IsRoomAvailable(FItemRow* _ItemToAdd, int32 _Index)
 	return true;
 }
 
+void UInventoryComponent::SetAllItems(TMap<FItemRow*, FIntPoint> _AllItems)
+{
+	{ AllItems = _AllItems; }
+
+	for (auto item : AllItems)
+			item.Key->OwnerInventory = this;
+}
+
 // Index에 Item을 바로 추가
 void UInventoryComponent::AddItemAt(FItemRow* _ItemToAdd, int32 _Index)
 {

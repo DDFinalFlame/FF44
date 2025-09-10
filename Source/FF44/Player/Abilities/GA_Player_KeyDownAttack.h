@@ -21,6 +21,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Notify")
 	FName EndAttackName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+	class USoundBase* LoopSwingSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+	class USoundBase* EndSwingSound;
+
+	UPROPERTY()
+	class UAudioComponent* Audio;
+
 public:
 	UGA_Player_KeyDownAttack();
 

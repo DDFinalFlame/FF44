@@ -1,8 +1,35 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "GameInstance/FF44GameInstance.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "AbilitySystemComponent.h"
+#include "InventorySystem/InventoryComponent.h"
+
+void FPlayerCompState::CaptureFrom(UAbilitySystemComponent* _ASC, UInventoryComponent* _IC)
+{
+    if (_ASC)
+    {
+
+    }
+
+    if (_IC)
+    {
+        Items = _IC->GetItems();
+        AllItems = _IC->GetAllItems();
+    }
+}
+
+void FPlayerCompState::ApplyTo(UAbilitySystemComponent* _ASC, UInventoryComponent* _IC) const
+{
+    if (_ASC)
+    {
+
+    }
+
+    if (_IC && !Items.IsEmpty() && !AllItems.IsEmpty())
+    {
+        _IC->SetItems(Items);
+        _IC->SetAllItems(AllItems);
+    }
+}
 
 void UFF44GameInstance::AddGold(int32 Amount)
 {
@@ -50,5 +77,3 @@ bool UFF44GameInstance::RemoveItemById(FName ItemId)
 
     return false;
 }
-
-
