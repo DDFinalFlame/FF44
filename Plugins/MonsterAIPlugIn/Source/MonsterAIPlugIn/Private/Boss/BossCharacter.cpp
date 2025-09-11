@@ -11,6 +11,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "MonsterAttributeSet.h"
 #include "Camera/CameraComponent.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
+
+
 
 
 
@@ -32,7 +36,27 @@ void ABossCharacter::BeginPlay()
         ActivatePhaseWatcherOnce();
     }
 
+    TryCacheBlackboardOnce();
+}
 
+
+void ABossCharacter::TryCacheBlackboardOnce()
+{
+    if (CachedBB) return;
+
+    if (AAIController* AICon = Cast<AAIController>(GetController()))
+    {
+        CachedBB = AICon->GetBlackboardComponent();
+        if (!CachedBB)
+        {
+            // 다음 틱에 다시 시도 (BB 초기화 지연 대비)
+            GetWorldTimerManager().SetTimerForNextTick(this, &ABossCharacter::TryCacheBlackboardOnce);
+        }
+    }
+    else
+    {
+        GetWorldTimerManager().SetTimerForNextTick(this, &ABossCharacter::TryCacheBlackboardOnce);
+    }
 }
 
 
@@ -50,6 +74,8 @@ void ABossCharacter::Tick(float DeltaSeconds)
             {
                 bDeathSoundPlayed = true;
 
+                StopBattleBGM(true, BattleBGMFadeOut);
+
                 if (DeathSound)
                 {
                     UGameplayStatics::PlaySoundAtLocation(
@@ -58,9 +84,53 @@ void ABossCharacter::Tick(float DeltaSeconds)
                         GetActorLocation()
                     );
                 }
+
+                if (!bDeathExtrasSpawned)
+                {
+                    bDeathExtrasSpawned = true;
+                    SpawnDeathSideActors();
+                }
             }
         }
     }
+
+    if (!CachedBB) TryCacheBlackboardOnce();
+    if (CachedBB)
+    {
+        const uint8 Raw = CachedBB->GetValueAsEnum(KEY_BossState);
+        const EBossState_BB State = static_cast<EBossState_BB>(Raw);
+
+        if (State == EBossState_BB::CombatReady)
+        {
+            StartBattleBGM();
+        }
+
+    }
+}
+
+void ABossCharacter::SpawnDeathSideActors()
+{
+    if (!DeathSpawnClass1 && (!DeathSpawnClass2)) return;
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    const FVector Loc = GetActorLocation();
+    const FRotator Rot = GetActorRotation();
+
+    const FVector F = GetActorForwardVector(); // 앞
+    const FVector R = GetActorRightVector();   // 오른쪽
+
+    const FVector Base = Loc - F * DeathSpawnBackOffset + FVector(0, 0, DeathSpawnZOffset);
+    const FVector LeftPos = Base - R * DeathSpawnSideOffset; // 왼쪽 뒤
+    const FVector RightPos = Base + R * DeathSpawnSideOffset; // 오른쪽 뒤
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    Params.Instigator = this;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    World->SpawnActor<AActor>(DeathSpawnClass1, LeftPos, Rot, Params);
+    World->SpawnActor<AActor>(DeathSpawnClass2, RightPos, Rot, Params);
 }
 
 void ABossCharacter::ActivatePhaseWatcherOnce()
@@ -105,6 +175,11 @@ void ABossCharacter::SetBossState_EBB(uint8 NewState)
     if (!BB) return;
 
     BB->SetValueAsEnum(KEY_BossState, NewState);
+
+    //if (static_cast<EBossState_BB>(NewState) == EBossState_BB::CombatReady)
+    //{
+    //    StartBattleBGM();
+    //}
 }
 
 void ABossCharacter::SetBossState_Name(FName BBKeyName, uint8 NewState)
@@ -186,4 +261,40 @@ void ABossCharacter::SpawnAndAttachWeapons()
         RegisterWeapon(NewWeapon);
     }
 
+}
+
+
+void ABossCharacter::StartBattleBGM()
+{
+    if (!BattleBGM) return;
+
+    if (BattleBGMComp && BattleBGMComp->IsPlaying())
+        return;
+
+    USceneComponent* AttachParent = GetMesh() ? GetMesh() : GetRootComponent();
+    BattleBGMComp = UGameplayStatics::SpawnSoundAttached(
+        BattleBGM,
+        AttachParent,
+        NAME_None,
+        FVector::ZeroVector,
+        EAttachLocation::KeepRelativeOffset,
+        /*bStopWhenAttachedToDestroyed=*/ true
+    );
+
+    if (BattleBGMComp)
+    {
+        BattleBGMComp->SetVolumeMultiplier(BattleBGMVolume);
+        if (!BattleBGMComp->IsPlaying())
+            BattleBGMComp->Play();
+    }
+}
+
+void ABossCharacter::StopBattleBGM(bool bFadeOut, float FadeOutTime)
+{
+    if (BattleBGMComp)
+    {
+        if (bFadeOut) BattleBGMComp->FadeOut(FadeOutTime, 0.f);
+        else          BattleBGMComp->Stop();
+        BattleBGMComp = nullptr;
+    }
 }

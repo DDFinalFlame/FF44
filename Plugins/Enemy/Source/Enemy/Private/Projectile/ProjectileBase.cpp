@@ -82,20 +82,25 @@ void AProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActo
 	if (!OtherActor || OtherActor == this) { return; }
 	if (OtherActor == GetOwner()) { return; }
 
-	FGameplayEventData EventData;
+	// 플레이어일 때만 신호 보내
+	if (OtherActor->ActorHasTag("Player"))
+	{
+		FGameplayEventData EventData;
 
-	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
-	EventData.Instigator = GetOwner();
-	EventData.Target = OtherActor;
+		EventData.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Player.Hit"));
+		EventData.Instigator = GetOwner();
+		EventData.Target = OtherActor;
 
-	/* HitResult를 TargetData로 포장 **/
-	EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+		/* HitResult를 TargetData로 포장 **/
+		EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
 
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-		OtherActor,
-		EventData.EventTag,
-		EventData
-	);
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+			OtherActor,
+			EventData.EventTag,
+			EventData
+		);
+
+	}
 
 	Destroy();
 }

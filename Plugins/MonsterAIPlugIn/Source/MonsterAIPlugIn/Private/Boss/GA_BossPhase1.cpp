@@ -20,7 +20,82 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Data/staticName.h"
 #include "Boss/FallingRockActor.h"
+#include "Components/CapsuleComponent.h"
 
+
+static bool FindSafeSpawnLocation(
+    UWorld* World,
+    const FVector& DesiredXY,              // 원하는 XY 중심 (Z는 무시)
+    float CapsuleRadius, float CapsuleHalfHeight,
+    FVector& OutLoc,
+    float NavSearchExtent = 300.f,         // 네비 투영 extents
+    float GroundTraceUp = 1000.f,          // 위쪽 탐색 높이
+    float GroundTraceDown = 2000.f,        // 아래쪽 탐색 깊이
+    int32 MaxAngleSamples = 16,            // 한 반경에서 시도할 각도 샘플
+    int32 RadiusSteps = 6,                 // 반경 증가 단계 수
+    float InitialProbe = 0.f,              // 시작 보정 반경
+    float Step = 60.f                      // 보정 반경 증가폭
+) {
+    if (!World) return false;
+
+    FVector Base = DesiredXY;
+
+    // 1) 네비 투영(있으면 사용)
+    if (UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(World))
+    {
+        FNavLocation Out;
+        if (Nav->ProjectPointToNavigation(DesiredXY, Out, FVector(NavSearchExtent)))
+        {
+            Base = Out.Location;
+        }
+    }
+
+    auto GroundSnap = [&](const FVector& InXY, FVector& Out) -> bool
+        {
+            FVector Start = InXY + FVector(0, 0, GroundTraceUp);
+            FVector End = InXY - FVector(0, 0, GroundTraceDown);
+            FHitResult Hit;
+            if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
+            {
+                Out = Hit.ImpactPoint;
+                Out.Z += CapsuleHalfHeight + 2.f; // 바닥에서 살짝 띄움
+                return true;
+            }
+            // 트레이스 실패 시, 기존 Z 유지(최소한의 방어)
+            Out = FVector(InXY.X, InXY.Y, DesiredXY.Z + CapsuleHalfHeight + 2.f);
+            return false;
+        };
+
+    auto IsFree = [&](const FVector& L) -> bool
+        {
+            FCollisionShape Shape = FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight);
+            // Pawn 채널 기준으로 겹침 검사(프로젝트에 맞게 채널 조절)
+            return !World->OverlapBlockingTestByChannel(
+                L, FQuat::Identity, ECC_Pawn, Shape,
+                FCollisionQueryParams(SCENE_QUERY_STAT(FindSafeSpawn_Overlap), false));
+        };
+
+    // 2) 기본 위치 Z 맞추고 검사
+    FVector TryLoc;
+    GroundSnap(Base, TryLoc);
+    if (IsFree(TryLoc)) { OutLoc = TryLoc; return true; }
+
+    // 3) 원형으로 반경을 늘리며 빈자리 탐색
+    for (int32 r = 0; r < RadiusSteps; ++r)
+    {
+        const float R = InitialProbe + Step * r;
+        for (int32 i = 0; i < MaxAngleSamples; ++i)
+        {
+            const float Theta = (2.f * PI) * (float(i) / MaxAngleSamples);
+            const FVector XY = Base + FVector(R * FMath::Cos(Theta), R * FMath::Sin(Theta), 0.f);
+
+            GroundSnap(XY, TryLoc);
+            if (IsFree(TryLoc)) { OutLoc = TryLoc; return true; }
+        }
+    }
+
+    return false; // 끝까지 실패
+}
 
 static FVector RandomPointInAnnulus2D(const FVector& Center, float Rmin, float Rmax)
 {
@@ -289,27 +364,64 @@ int32 UGA_BossPhase1::SpawnMinions(AActor* Boss)
     UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(World);
     AActor* Player = GetPhaseTargetPlayer();
 
+    float CapR = 42.f, CapH = 96.f;
+    if (const ACharacter* CDO = Cast<ACharacter>(MinionClass->GetDefaultObject()))
+    {
+        if (const UCapsuleComponent* Cap = CDO->GetCapsuleComponent())
+        {
+            CapR = Cap->GetUnscaledCapsuleRadius();
+            CapH = Cap->GetUnscaledCapsuleHalfHeight();
+        }
+    }
+
+    // 스폰 파라미터: 충돌 보정 허용
+    FActorSpawnParameters Params;
+    Params.SpawnCollisionHandlingOverride =
+        ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+    int32 SpawnedCount = 0;
+
     for (int32 i = 0; i < Count; ++i)
     {
         const float Deg = StepDeg * i;
         const FVector Dir = UKismetMathLibrary::GetForwardVector(FRotator(0.f, Deg, 0.f));
-        const FVector Desired = Origin + Dir * SpawnRadius;
+        const FVector DesiredXY = Origin + Dir * SpawnRadius; // Z는 나중에 바닥 스냅으로
 
-        FVector SpawnLoc = Desired;
+        // Nav로 한 번 보정(있으면)
+        FVector NavBased = DesiredXY;
         if (Nav)
         {
             FNavLocation Out;
-            if (Nav->ProjectPointToNavigation(Desired, Out, FVector(200.f)))
+            if (Nav->ProjectPointToNavigation(DesiredXY, Out, FVector(300.f)))
             {
-                SpawnLoc = Out.Location;
+                NavBased = Out.Location;
             }
         }
 
-        const FTransform T(FRotator::ZeroRotator, SpawnLoc);
-        AActor* Spawned = World->SpawnActor<AActor>(MinionClass, T);
+        // 안전한 위치 찾기 시도
+        FVector SafeLoc;
+        const bool bFound = FindSafeSpawnLocation(
+            World, NavBased, CapR, CapH, SafeLoc,
+            /*NavSearchExtent=*/300.f,
+            /*GroundTraceUp=*/1000.f,
+            /*GroundTraceDown=*/2000.f,
+            /*MaxAngleSamples=*/16,
+            /*RadiusSteps=*/6,
+            /*InitialProbe=*/0.f,
+            /*Step=*/FMath::Max(60.f, CapR * 1.5f) // 캡슐 크기에 비례한 스텝
+        );
+
+        const FVector UseLoc = bFound ? SafeLoc
+            : (NavBased + FVector(0, 0, CapH + 2.f)); // 실패 시에도 강행
+
+        const FTransform T(FRotator::ZeroRotator, UseLoc);
+
+        AActor* Spawned = World->SpawnActor<AActor>(MinionClass, T, Params);
         if (AMonsterCharacter* MC = Cast<AMonsterCharacter>(Spawned))
         {
-            MC->SetOwnerBoss(GetAvatarActorFromActorInfo()); 
+            ++SpawnedCount;
+
+            MC->SetOwnerBoss(GetAvatarActorFromActorInfo());
 
             if (!Player || !TrySetupMinionBlackboard(MC, Player))
             {
@@ -317,7 +429,8 @@ int32 UGA_BossPhase1::SpawnMinions(AActor* Boss)
             }
         }
     }
-    return Count;
+
+    return SpawnedCount;
 }
 
 void UGA_BossPhase1::StartCastTick()

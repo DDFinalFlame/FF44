@@ -6,7 +6,7 @@ namespace SLGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Attack_Running, "Enemy.Attack.Running");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Attack_Special, "Enemy.Attack.Special");
 
-
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_State_Intro, "Enemy.State.Intro");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_State_Attack, "Enemy.State.Attack");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_State_Hit, "Enemy.State.Hit");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_State_Patrol, "Enemy.State.Patrol");
@@ -18,6 +18,7 @@ namespace SLGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_EvadeStart, "Enemy.Boss.Attack.EvadeStart");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Boss_Attack_EvadeEnd, "Enemy.Boss.Attack.EvadeEnd");
 
+	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_IntroStart, "Enemy.Event.IntroStart");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_SummonStart, "Enemy.Event.SummonStart");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Recall, "Enemy.Event.Recall");
 	UE_DEFINE_GAMEPLAY_TAG(Enemy_Event_Buff, "Enemy.Event.Buff");

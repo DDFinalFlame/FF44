@@ -93,6 +93,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat | Montage")
 	UHitReactionDataAsset* EnemyMontageData;
 
+protected:
+	// Item
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	TSubclassOf<AActor> DropItem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	float DropLocationZOffset = 10.0f;
+
 // Death 연출
 protected:
 	FTimerHandle DissolveTimerHandle;
@@ -135,7 +143,7 @@ public:
 	/* Death 애니메이션 종료 **/
 	void EndDeath();
 	/* 월드에서 사라지기 **/
-	void StartDissolve();
+	virtual void StartDissolve();
 
 protected:
 	// mesh가 단일 구조가 아닌 경우 이거 override해서 Dissolve 적용

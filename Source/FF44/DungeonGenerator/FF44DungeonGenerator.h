@@ -11,6 +11,7 @@
 class AFF44RoomBase;
 class AFF44StarterRoom;
 class AFF44BossArenaRoom;
+class USoundBase;
 
 USTRUCT(BlueprintType)
 struct FFF44DGThemeRow : public FTableRowBase
@@ -55,6 +56,9 @@ struct FFF44DGThemeRow : public FTableRowBase
 
     UPROPERTY(EditAnywhere, Category = "Seal")
     TSoftClassPtr<AActor> SmallExitCapClass;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    TSoftObjectPtr<USoundBase> ThemeMusic;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonComplete);
@@ -116,6 +120,16 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Rooms|Seal")
     TSubclassOf<AActor> SmallExitCapClass;
+
+    /* ===========================
+	   Audio (theme music)
+       =========================== */
+
+    UPROPERTY(Transient)
+    USoundBase* LoadedThemeMusic = nullptr;
+
+    UFUNCTION(BlueprintPure, Category = "Audio")
+    USoundBase* GetLoadedThemeMusic() const { return LoadedThemeMusic; }
 
     /* ===========================
        Markers (for external spawners)

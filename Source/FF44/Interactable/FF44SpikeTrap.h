@@ -8,6 +8,9 @@
 
 class UStaticMeshComponent;
 class UBoxComponent;
+class USoundBase;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpikeTrapRaised);
 
 UCLASS()
 class FF44_API AFF44SpikeTrap : public AFF44TrapBase
@@ -32,6 +35,13 @@ protected:
     virtual bool CanInteract_Implementation(AActor* Interactor) const override;
     virtual void Interact_Implementation(AActor* Interactor) override;
 
+    UFUNCTION(BlueprintImplementableEvent, Category = "SpikeTrap|Events")
+    void BP_OnSpikesRaised();
+
+public:
+    UPROPERTY(BlueprintAssignable, Category = "SpikeTrap|Events")
+    FOnSpikeTrapRaised OnSpikesRaised;
+
 private:
     void StartCycle();
     void RaiseSpikes();
@@ -50,6 +60,9 @@ private:
 
     UPROPERTY(VisibleAnywhere, Category = "SpikeTrap|Components")
     UBoxComponent* DamageArea;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpikeTrap|Audio", meta = (AllowPrivateAccess = "true"))
+    USoundBase* RaiseSFX = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpikeTrap|Timing", meta = (AllowPrivateAccess = "true", ClampMin = "0"))
     float TriggerDelay = 0.25f;

@@ -275,6 +275,9 @@ void ABaseEnemy::OnDeath()
 		Weapon.Value->Destroy();
 	}
 	WeaponMap.Empty();
+
+	// Boss Evade 시 death 대응. ...
+	GetMesh()->SetVisibility(true);
 }
 
 // 사용하지 않고 있음. Iron Asset의 Ragdoll 문제
@@ -325,6 +328,12 @@ void ABaseEnemy::StartDissolve()
 			if (CurrentAmount >= 1.0f)
 			{
 				GetWorldTimerManager().ClearTimer(DissolveTimerHandle);
+				if (DropItem)
+				{
+					FVector Location = GetActorLocation();
+					Location.Z -= DropLocationZOffset;
+					GetWorld()->SpawnActor<AActor>(DropItem, Location, FRotator::ZeroRotator);
+				}
 				Destroy();
 			}
 		},
