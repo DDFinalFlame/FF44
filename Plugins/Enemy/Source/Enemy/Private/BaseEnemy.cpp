@@ -248,6 +248,8 @@ void ABaseEnemy::EndCurrentBehavior()
 
 void ABaseEnemy::OnDeath()
 {
+	ChangeState(EAIBehavior::Die);
+
 	/* AI Controller 중단 **/
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
 	{
@@ -275,6 +277,9 @@ void ABaseEnemy::OnDeath()
 		Weapon.Value->Destroy();
 	}
 	WeaponMap.Empty();
+
+	// Boss Evade 시 death 대응. ...
+	GetMesh()->SetVisibility(true);
 }
 
 // 사용하지 않고 있음. Iron Asset의 Ragdoll 문제

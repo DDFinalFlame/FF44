@@ -4,7 +4,8 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_HitReact, "Ability.Player.HitR
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Dodge, "Ability.Player.Dodge");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Attack, "Ability.Player.Attack");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Attack_KeyDown, "Ability.Player.Attack.KeyDown");
-UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Potion, "Ability.Player.Potion");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Potion, "Ability.Player.Potion");	// 삭제
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_UseItem, "Ability.Player.UseItem");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Equip, "Ability.Player.Equip");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Ability_Player_Death, "Ability.Player.Death");
 
@@ -23,7 +24,9 @@ UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_1, "State.Player.Attack.Co
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_2, "State.Player.Attack.Combo.2");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_3, "State.Player.Attack.Combo.3");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Combo_Enable, "State.Player.Attack.Combo.Enable");
-UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Drink, "State.Player.Drink");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_Drink, "State.Player.Drink");	// 삭제
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_ItemUse, "State.Player.UseItem");
+UE_DEFINE_GAMEPLAY_TAG(PlayerTags::State_Player_ItemUse_Potion, "State.Player.UseItem.Potion");
 
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Hit, "Event.Player.Hit");
 UE_DEFINE_GAMEPLAY_TAG(PlayerTags::Event_Player_Grabbed, "Event.Player.Grabbed");

@@ -4,6 +4,8 @@
 #include "Interactable/FF44FireTrap.h"
 #include "Components/BoxComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Pawn.h"
 #include "Player/BasePlayer.h"
@@ -21,6 +23,12 @@ AFF44FireTrap::AFF44FireTrap()
     FireEffect = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FireEffect"));
     FireEffect->SetupAttachment(RootComponent);
     FireEffect->bAutoActivate = false;
+
+    LoopAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("LoopAudio"));
+    LoopAudio->SetupAttachment(RootComponent);
+    LoopAudio->bAutoActivate = false;
+    LoopAudio->bAutoDestroy = false;
+    LoopAudio->bAllowSpatialization = true;
 
     bUseTriggerBox = true;
 }
@@ -52,6 +60,29 @@ void AFF44FireTrap::SetActive(bool bInActive)
     {
         DamageArea->SetGenerateOverlapEvents(bInActive);
         DamageArea->SetCollisionEnabled(bInActive ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+    }
+
+    if (LoopAudio)
+    {
+        if (bInActive && ActiveLoopSFX)
+        {
+            if (!LoopAudio->IsPlaying())
+            {
+                LoopAudio->SetSound(ActiveLoopSFX);
+                LoopAudio->OnAudioFinished.RemoveDynamic(this, &AFF44FireTrap::HandleLoopAudioFinished);
+                LoopAudio->OnAudioFinished.AddDynamic(this, &AFF44FireTrap::HandleLoopAudioFinished);
+                LoopAudio->Play(0.f);
+            }
+        }
+        else
+        {
+            if (LoopAudio->IsPlaying())
+            {
+                LoopAudio->Stop();
+            }
+            LoopAudio->OnAudioFinished.RemoveDynamic(this, &AFF44FireTrap::HandleLoopAudioFinished);
+            LoopAudio->SetSound(nullptr);
+        }
     }
 }
 
@@ -106,4 +137,12 @@ void AFF44FireTrap::OnDamageEnd(UPrimitiveComponent* Overlapped, AActor* OtherAc
         auto playerAbility = Player->GetAbilitySystemComponent();
         playerAbility->ClearAbility(DamageAbilityHandle);
 	}
+}
+
+void AFF44FireTrap::HandleLoopAudioFinished()
+{
+    if (bActive && ActiveLoopSFX && LoopAudio)
+    {
+        LoopAudio->Play(0.f);
+    }
 }

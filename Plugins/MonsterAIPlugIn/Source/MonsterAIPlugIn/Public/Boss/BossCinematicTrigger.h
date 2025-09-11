@@ -105,7 +105,7 @@ protected:
         bool _bFromSweep, const FHitResult& _SweepResult);
 
 
-    void TriggerOnce(AActor* _OtherActor);
+    virtual void TriggerOnce(AActor* _OtherActor);
     void PlayBossIntroMontage();
     void ActivateBossIntroAbility();
     void SendBossIntroEvent();

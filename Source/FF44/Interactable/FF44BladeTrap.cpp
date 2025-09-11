@@ -7,6 +7,9 @@
 #include "Player/BasePlayer.h"
 #include "AbilitySystemBlueprintLibrary.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+
 AFF44BladeTrap::AFF44BladeTrap()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -42,6 +45,9 @@ void AFF44BladeTrap::BeginPlay()
         HingeAxisWorld = Pivot->GetRightVector().GetSafeNormal();
     }
 
+    PrevAngleDeg = 0.f;
+    bFirstTick = true;
+
 	SetActive(true);
 }
 
@@ -57,6 +63,27 @@ void AFF44BladeTrap::Tick(float DeltaSeconds)
     const FQuat SwingQ(HingeAxisWorld, FMath::DegreesToRadians(Angle));
     const FQuat FinalQ = SwingQ * BaseRotation.Quaternion();
     Pivot->SetWorldRotation(FinalQ);
+
+    if (bFirstTick)
+    {
+        PrevAngleDeg = Angle;
+        bFirstTick = false;
+        return;
+    }
+
+    if (bActive && MidPassSFX)
+    {
+        const bool bCrossedFromNegToPos = (PrevAngleDeg < 0.f && Angle >= 0.f);
+        const bool bCrossedFromPosToNeg = (PrevAngleDeg > 0.f && Angle <= 0.f);
+
+        if (bCrossedFromNegToPos || bCrossedFromPosToNeg)
+        {
+            const FVector SfxLoc = BladeMesh ? BladeMesh->GetComponentLocation() : GetActorLocation();
+            UGameplayStatics::PlaySoundAtLocation(this, MidPassSFX, SfxLoc);
+        }
+    }
+
+    PrevAngleDeg = Angle;
 }
 
 void AFF44BladeTrap::OnDamageBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)

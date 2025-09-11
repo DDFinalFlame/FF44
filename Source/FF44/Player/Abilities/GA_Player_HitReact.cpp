@@ -110,15 +110,22 @@ void UGA_Player_HitReact::EndAbility(const FGameplayAbilitySpecHandle Handle,
 void UGA_Player_HitReact::OnBlendInHitReact()
 {
 	// Ability를 가지고 있는지?
-	if (!EventData.Instigator) return;
+	if (EventData.Instigator) {
+		if (UAbilitySystemComponent* ASC = EventData.Instigator->FindComponentByClass<UAbilitySystemComponent>())
+		{
+			// ASC 사용 가능
+			FGameplayEffectSpecHandle specHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 0.f, EventData.ContextHandle);
+			FGameplayEffectSpec* spec = specHandle.Data.Get();
 
-	if (UAbilitySystemComponent* ASC = EventData.Instigator->FindComponentByClass<UAbilitySystemComponent>())
+			OwnerPlayer->GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*spec);
+		}
+	}
+	else
 	{
-		// ASC 사용 가능
-		FGameplayEffectSpecHandle specHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 0.f, EventData.ContextHandle);
+		auto ASC = OwnerPlayer->GetAbilitySystemComponent();
+		FGameplayEffectSpecHandle specHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 0.f, ASC->MakeEffectContext());
 		FGameplayEffectSpec* spec = specHandle.Data.Get();
-
-		OwnerPlayer->GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*spec);
+		ASC->ApplyGameplayEffectSpecToSelf(*spec);
 	}
 
 	const FVector  Loc = OwnerPlayer->GetActorLocation();

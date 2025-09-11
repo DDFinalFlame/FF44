@@ -85,7 +85,7 @@ void UGA_BossEnemyHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 				float CurrentHealth = MyAttrSet->GetHealth();
 				float MaxHealth = MyAttrSet->GetMaxHealth();
 				Enemy->SetPhase(CurrentHealth, MaxHealth);
-				GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Value: %f"), CurrentHealth));
+				//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Value: %f"), CurrentHealth));
 			}
 		}
 	}
