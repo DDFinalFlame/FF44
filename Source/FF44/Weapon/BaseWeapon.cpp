@@ -94,14 +94,14 @@ void ABaseWeapon::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AAct
         }
     }
     // 디버깅박스.
-    if (UWorld* World = GetWorld())
-    {
-        // ImpactPoint 위치에 반경 10짜리 초록색 스피어를 3초 동안 표시
-        DrawDebugSphere(World, HR.ImpactPoint, 10.0f, 12, FColor::Green, false, 3.0f);
+    //if (UWorld* World = GetWorld())
+    //{
+    //    // ImpactPoint 위치에 반경 10짜리 초록색 스피어를 3초 동안 표시
+    //    DrawDebugSphere(World, HR.ImpactPoint, 10.0f, 12, FColor::Green, false, 3.0f);
 
-        // ImpactNormal 방향 확인용 라인
-        DrawDebugLine(World, HR.ImpactPoint, HR.ImpactPoint + HR.ImpactNormal * 50.0f, FColor::Red, false, 1.0f, 0, 1.5f);
-    }
+    //    // ImpactNormal 방향 확인용 라인
+    //    DrawDebugLine(World, HR.ImpactPoint, HR.ImpactPoint + HR.ImpactNormal * 50.0f, FColor::Red, false, 1.0f, 0, 1.5f);
+    //}
 
     // 보스 태그 달아줭
     if (OtherActor->ActorHasTag(FName(TEXT("Boss"))))
