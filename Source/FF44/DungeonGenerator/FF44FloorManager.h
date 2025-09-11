@@ -11,6 +11,13 @@ class AFF44DungeonGenerator;
 class AFF44MonsterSpawner;
 class AFF44InteractableSpawner;
 class AFF44Portal;
+class UAudioComponent;
+class USoundBase;
+
+class UFF44GameInstance;
+class UAbilitySystemComponent;
+class UFF44InventoryComponent;
+class ABasePlayer;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloorEvent, int32, FloorIndex);
 
@@ -24,6 +31,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
     /* ===========================
@@ -86,7 +94,44 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Flow")
     void NextFloor();
 
+    UPROPERTY(EditAnywhere, Category = "Maps")
+    TSoftObjectPtr<UWorld> LobbyLevel;
+
+    /* ===========================
+       Public API
+       =========================== */
+
+public:
+    UFUNCTION(BlueprintCallable, Category = "Audio")
+    void PlayCurrentFloorMusic();
+
+    UFUNCTION(BlueprintCallable, Category = "Audio")
+    void StopMusic(bool bImmediate = false);
+
+protected:
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    float MusicFadeInTime = 0.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    float MusicFadeOutTime = 0.3f;
+
+    UPROPERTY(VisibleAnywhere, Category = "Audio")
+    UAudioComponent* MusicComponent = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    bool bMuteMusicInBossArena = true;
+
+    UPROPERTY(Transient)
+    bool bInBossArena = false;
+
 private:
+    FName ResolvePortalTag(class AFF44Portal* Portal, FName Passed) const;
+
+    FDelegateHandle PortalSpawnedHandle;
+
+    void BindSinglePortal(AFF44Portal* P);
+    void OnActorSpawned(AActor* A);
+
     /* ===========================
        Internals
        =========================== */
@@ -133,4 +178,7 @@ private:
     // Inline helpers
     bool IsBossFloor() const { return (CurrentFloor % FloorsPerBossCycle) == 0; }
     int32 SeedForFloor() const { return ::HashCombine(::GetTypeHash(BaseSeed), ::GetTypeHash(CurrentFloor)); }
+
+    UFUNCTION(BlueprintCallable, Category = "Player")
+    void CapturePlayerStateForInstance();
 };
