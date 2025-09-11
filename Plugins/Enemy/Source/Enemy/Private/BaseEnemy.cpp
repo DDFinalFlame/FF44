@@ -248,6 +248,8 @@ void ABaseEnemy::EndCurrentBehavior()
 
 void ABaseEnemy::OnDeath()
 {
+	ChangeState(EAIBehavior::Die);
+
 	/* AI Controller Áß´Ü **/
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
 	{

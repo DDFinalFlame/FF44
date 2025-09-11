@@ -26,7 +26,7 @@ void ABaseBoss::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	AEnemyBaseWeapon** FoundValue = WeaponMap.Find(EWeaponType::FXHand);
-	if (!*FoundValue) { return; }
+	if (IsValid(*FoundValue)) { return; }
  	AEnemyBaseWeapon* Weapon = *FoundValue;
 	if (!Weapon) { return; }
 
