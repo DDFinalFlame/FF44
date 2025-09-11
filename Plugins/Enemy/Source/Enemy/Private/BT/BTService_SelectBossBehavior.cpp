@@ -53,6 +53,12 @@ void UBTService_SelectBossBehavior::UpdateBehavior(UBlackboardComponent* Blackbo
 
 	TArray<EAIBehavior> Candidates;
 
+	// Intro Àç»ý Àü
+	if (Phase == 0)
+	{
+		return;
+	}
+
 	if (Phase == 1)
 	{
 		Candidates = { EAIBehavior::MeleeAttack, EAIBehavior::Evade };
