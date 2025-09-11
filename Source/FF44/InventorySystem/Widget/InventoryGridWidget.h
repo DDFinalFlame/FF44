@@ -43,6 +43,8 @@ protected:
 	UPROPERTY()
 	UInventoryWidget* InventoryWidget;
 
+	UPROPERTY()
+	TArray<UUserWidget*> Grids;
 
 protected:
 	UPROPERTY()
@@ -82,10 +84,11 @@ protected:
 
 public:
 	void SetInventoryWidget(UInventoryWidget* _Widget) { InventoryWidget = _Widget; }
-	void DrawInventoryGrid(AActor* _InventoryOwner);
+	bool DrawInventoryGrid(AActor* _InventoryOwner);
+	void DestroyInventoryGrid();
 	void DrawItemWidget(FItemRow* _Item);
 	void DrawItemWidget(FItemRow* _Item, UPanelSlot* _OtherPanel, UCanvasPanel* _OtherGrid);
-	void DrawItemWidgets();
+	void DrawItemWidgets();	
 
 protected:
 	void CreateLineSegments();

@@ -37,6 +37,8 @@ bool UInventoryComponent::TryAddItem(FItemRow* _ItemToAdd)
 // Index에 Item Dimension이 맞춰지는지
 bool UInventoryComponent::IsRoomAvailable(FItemRow* _ItemToAdd, int32 _Index)
 {
+	if (Rows == 0 || Colums == 0) return false;
+
 	FIntPoint Dimensions = _ItemToAdd->Dimension;
 	FIntPoint Tile = IndexToTile(_Index);
 
@@ -150,4 +152,18 @@ FItemRow* UInventoryComponent::GetItemAtIndex(int32 _Index)
 		return Items[_Index];
 
 	return nullptr;
+}
+
+bool UInventoryComponent::ConsumeItem(FName _ItemName)
+{
+	for (auto item : AllItems)
+	{
+		if (item.Key->ItemName == _ItemName)
+		{
+			RemoveItem(item.Key);
+			return true;
+		}
+	}
+
+	return false;
 }

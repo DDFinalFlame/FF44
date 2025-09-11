@@ -7,7 +7,8 @@ namespace PlayerTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Dodge);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Attack);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Attack_KeyDown);
-    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Potion);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Potion);  // 삭제
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_UseItem);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Equip);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Death);
 
@@ -27,7 +28,9 @@ namespace PlayerTags
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Combo_2);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Combo_3);
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Combo_Enable);
-    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Drink);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_Drink); // 삭제
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_ItemUse);
+    UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Player_ItemUse_Potion);
 
     // 이벤트 관련 신호
     UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Player_Hit);
