@@ -129,8 +129,14 @@ void ABossCharacter::SpawnDeathSideActors()
     Params.Instigator = this;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    World->SpawnActor<AActor>(DeathSpawnClass1, LeftPos, Rot, Params);
-    World->SpawnActor<AActor>(DeathSpawnClass2, RightPos, Rot, Params);
+    if (AActor* LeftActor = World->SpawnActor<AActor>(DeathSpawnClass1, LeftPos, Rot, Params))
+    {
+        LeftActor->SetLifeSpan(60.f);
+    }
+    if (AActor* RightActor = World->SpawnActor<AActor>(DeathSpawnClass2, RightPos, Rot, Params))
+    {
+        RightActor->SetLifeSpan(60.f); 
+    }
 }
 
 void ABossCharacter::ActivatePhaseWatcherOnce()
