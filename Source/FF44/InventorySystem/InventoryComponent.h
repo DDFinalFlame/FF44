@@ -57,6 +57,7 @@ public:
 	bool GetResultAtIndex(int32 _Index);
 	FItemRow* GetItemAtIndex(int32 _Index);
 
+	bool ConsumeItem(FName _ItemName);
 
 public:
 	int32 GetColums() { return Colums; }

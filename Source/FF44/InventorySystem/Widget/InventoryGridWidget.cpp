@@ -137,13 +137,13 @@ bool UInventoryGridWidget::IsRoomAvailableForPayload(FItemRow* _Item) const
 	return IC->IsRoomAvailable(_Item, IC->TileToIndex(DraggedItemTile));
 }
 
-void UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
+bool UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
 {
 	if (!_InventoryOwner)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Inventory Owner is null"));
 		IC = nullptr;
-		return;
+		return false;
 	}
 
 	if (_InventoryOwner->GetClass()->HasAnyClassFlags(CLASS_Abstract))
@@ -151,7 +151,7 @@ void UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
 		UE_LOG(LogTemp, Warning, TEXT("DrawInventoryGrid: Owner class is Abstract (%s)"),
 			*_InventoryOwner->GetClass()->GetName());
 		IC = nullptr;
-		return;
+		return false;
 	}
 
 	if (!_InventoryOwner->GetClass()->
@@ -160,7 +160,7 @@ void UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
 		UE_LOG(LogTemp, Warning, TEXT("DrawInventoryGrid: Owner (%s) does NOT implement InventorySystemInterface"),
 			*_InventoryOwner->GetName());
 		IC = nullptr;
-		return;
+		return false;
 	}
 
 	if (IInventorySystemInterface* interface = Cast<IInventorySystemInterface>(_InventoryOwner))
@@ -171,13 +171,15 @@ void UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("DrawInventoryGrid: InventoryComponent is null"),
 				*_InventoryOwner->GetName());
-			return;
+			return false;
 		}
 	}
 
 	Colums = IC->GetColums();
 	Rows = IC->GetRows();
 	TileSize = IC->GetTileSize();
+
+	if (Colums == 0 || Rows == 0) return false;
 
 	LineStructData.XLines = {};
 	LineStructData.YLines = {};
@@ -193,6 +195,22 @@ void UInventoryGridWidget::DrawInventoryGrid(AActor* _InventoryOwner)
 
 	CreateLineSegments();
 	CreateGridImage();
+
+	return true;
+}
+
+void UInventoryGridWidget::DestroyInventoryGrid()
+{
+	for (int32 i=0;i< Grids.Num();i++)
+	{
+		if (Grids[i])
+		{
+			Grids[i]->RemoveFromParent();
+			Grids[i] = nullptr;
+		}
+	}
+
+	Grids.Reset();
 }
 
 void UInventoryGridWidget::DrawItemWidget(FItemRow* _Item)
@@ -237,6 +255,7 @@ void UInventoryGridWidget::DrawItemWidget(FItemRow* _Item, UPanelSlot* _OtherPan
 void UInventoryGridWidget::DrawItemWidgets()
 {
 	if (!IC) return;
+	if (Colums == 0 || Rows == 0) return;
 
 	TArray<FItemRow*> Keys;
 	IC->GetAllItems().GetKeys(Keys);
@@ -302,6 +321,8 @@ void UInventoryGridWidget::CreateGridImage()
 			CanvasSlot->SetAlignment(FVector2D(0.f, 0.f));              // ÁÂ»ó´Ü Á¤·Ä
 			CanvasSlot->SetPosition(FVector2D((iCol) * (TileSize), (iRow) * (TileSize)));
 			CanvasSlot->SetSize(FVector2D(TileSize, TileSize));
+
+			Grids.Add(GridImageWidget);
 		}
 	}
 }

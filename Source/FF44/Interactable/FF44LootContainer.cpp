@@ -22,19 +22,16 @@ void AFF44LootContainer::BeginPlay()
 
     if (!ItemTable) return;
 
-    //auto item = ItemTable->FindRow<FItemRow>(FName("potion"), FString("Get Item"));
     TArray<FName> Names = ItemTable->GetRowNames();
     for (auto itemName : Names)
     {
-        //if (const FItemRow* Row = ItemTable->FindRow<FItemRow>(itemName, TEXT("Get Item")))
-        //{
-        //    TUniquePtr<FItemRow> NewItem = MakeUnique<FItemRow>(*Row); // 힙에 복제
-        //    FItemRow* Raw = NewItem.Get();                              // 고유 주소
-        //    InventoryComponent->TryAddItem(Raw);     // 포인터 인터페이스 유지 시
-        //}
-        FItemRow* row = ItemTable->FindRow<FItemRow>(itemName, FString("Get Item"));
-        FItemRow* item = new FItemRow(*row);
-        InventoryComponent->TryAddItem(item);
+        if (auto itemPCS = ItemData.Find(itemName)) {
+            for (int32 i = 0; i < *itemPCS; i++) {
+                FItemRow* row = ItemTable->FindRow<FItemRow>(itemName, FString("Get Item"));
+                FItemRow* item = new FItemRow(*row);
+                InventoryComponent->TryAddItem(item);
+            }
+        }
     }
 }
 

@@ -41,6 +41,9 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Data")
     UDataTable* ItemTable = nullptr;
 
+    UPROPERTY(EditAnywhere, Category = "Data")
+    TMap<FName, int32> ItemData;
+
 public:
 
     UFUNCTION(BlueprintCallable, Category = "Loot")
